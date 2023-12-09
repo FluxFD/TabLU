@@ -2,9 +2,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:tutorial/pages/eventInfo.dart';
 import 'package:tutorial/pages/globals.dart';
 import 'package:tutorial/pages/searchevents.dart';
+
+import '../main.dart';
 
 
 class EventsManagement extends StatefulWidget {
@@ -16,12 +19,16 @@ class EventsManagement extends StatefulWidget {
 
 class Event {
   final String eventName;
+  final String eventTime;
+  final String eventDate;
   final String eventId;
   final String eventCategory;
   final String eventOrganizer;
   final String eventVenue;
 
   Event({
+    required this.eventDate,
+    required this.eventTime,
     required this.eventName,
     required this.eventId,
     required this.eventCategory,
@@ -31,30 +38,38 @@ class Event {
 
   factory Event.fromJson(Map<String, dynamic> json) {
     return Event(
-      eventName: json['event_name'] ?? 'Default Event Name',
-      eventId: json['_id'] ?? '',
-      eventCategory: json['event_category'] ?? 'Default Category',
-      eventOrganizer: json['event_organizer'] ?? 'Default Organizer',
-      eventVenue: json['event_venue'] ?? 'Default Venue',
+      eventName: json['eventName'] ?? 'Default Event Name',
+      eventId: json['eventId'] ?? '',
+      eventCategory: json['eventCategory'] ?? 'Default Category',
+      eventOrganizer: json['eventOrganizer'] ?? 'Default Organizer',
+      eventVenue: json['eventVenue'] ?? 'Default Venue',
+      eventDate: json['eventDate'] ?? 'Default Date',
+      eventTime: json['eventTime'] ?? 'Default Time',
     );
   }
 }
 
 
 class _EventsManagementState extends State<EventsManagement> {
-    Future<List<Event>> fetchEventData(String eventId) async {
+  Future<List<Event>> fetchEventData(String eventId) async {
     try {
       final response = await http.get(Uri.parse('http://10.0.2.2:8080/events/$eventId'));
 
       if (response.statusCode == 200) {
-        final List<dynamic> eventDataList = json.decode(response.body);
-        final List<Event> events = eventDataList.map((eventData) {
-          return Event.fromJson(eventData);
-        }).toList();
-        return events;
+        final dynamic eventData = json.decode(response.body);
+
+        if (eventData is List) {
+          // If the response is a list, directly return the list of events
+          return eventData.map((event) => Event.fromJson(event)).toList();
+        } else if (eventData is Map<String, dynamic>) {
+          // If the response is a single event, wrap it in a list
+          return [Event.fromJson(eventData)];
+        } else {
+          throw Exception('Invalid API response format');
+        }
       } else {
-         print('API Error: Status Code ${response.statusCode}');
-         print('API Error Body: ${response.body}');
+        print('API Error: Status Code ${response.statusCode}');
+        print('API Error Body: ${response.body}');
         throw Exception('Failed to load event data. Status code: ${response.statusCode}');
       }
     } catch (e) {
@@ -63,8 +78,10 @@ class _EventsManagementState extends State<EventsManagement> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
+    String token = Provider.of<TokenProvider>(context).token;
     return Scaffold(
       appBar: AppBar(
         elevation: 0.3,
@@ -86,14 +103,14 @@ class _EventsManagementState extends State<EventsManagement> {
           onPressed: () {
            Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => SearchEvents(token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NTY2N2UzY2EwODcyZGI0NTNjZGFlOGQiLCJlbWFpbCI6ImF1YnJleWRhbm83QGdtYWlsLmNvbSIsInVzZXJuYW1lIjoiYWRtaW4xMjMiLCJpYXQiOjE3MDE1NjMzMDgsImV4cCI6MTcwMTU2NjkwOH0.lTl3R223HHLxj-vO1dJ1ulmGT1kPLOb2El_U-XZB1t4")
+        builder: (context) => SearchEvents(token: token)
       ),
            );
           },
         ),
       ),
       body: FutureBuilder<List<Event>>(
-        future: fetchEventData("65667e3ca0872db453cdae8d"),
+        future: fetchEventData("65729927141361b0d05d1fc8"),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
@@ -121,12 +138,12 @@ class _EventsManagementState extends State<EventsManagement> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.only(top: 5.0),
+                            padding: const EdgeInsets.only(top: 0),
                             child: Text('Status: Active'),
                           ),
-                          SizedBox(height: 4),
                           Row(
                             mainAxisSize: MainAxisSize.min,
+
                             children: [
                               IconButton(
                                 icon: Icon(Icons.edit),
@@ -137,6 +154,7 @@ class _EventsManagementState extends State<EventsManagement> {
                                       builder: (context) => CreateEventScreen(),
                                     ),
                                   );
+
                                 },
                               ),
                               IconButton(
@@ -154,6 +172,8 @@ class _EventsManagementState extends State<EventsManagement> {
                 );
               },
             );
+
+
           }
         },
       ),

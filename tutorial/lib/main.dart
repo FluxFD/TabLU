@@ -51,7 +51,8 @@ class User {
 }*/
 
 void main() async {
-  SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(statusBarColor: Colors.transparent));
+  SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(statusBarColor: Colors.transparent));
   WidgetsFlutterBinding.ensureInitialized();
   SharedPreferences prefs = await SharedPreferences.getInstance();
 
@@ -59,8 +60,9 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => AuthState()),
-        ChangeNotifierProvider(create: (context) => TokenProvider(prefs.getString('token') ?? '')),
-     //   ChangeNotifierProvider(create: (context) => UserProvider(User(userId: '', username: '', email: ''))),
+        ChangeNotifierProvider(
+            create: (context) => TokenProvider(prefs.getString('token') ?? '')),
+        //   ChangeNotifierProvider(create: (context) => UserProvider(User(userId: '', username: '', email: ''))),
       ],
       child: MyApp(),
     ),
@@ -74,11 +76,9 @@ class MyApp extends StatelessWidget {
     String token = Provider.of<TokenProvider>(context).token;
 
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(fontFamily: 'Poppins'),
- //home: JwtDecoder.isExpired(token) == false ? SearchEvents(token: token) : SplashScreen(),
- home: EventsManagement()
-  
-    );
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(fontFamily: 'Poppins'),
+        //home: JwtDecoder.isExpired(token) == false ? SearchEvents(token: token) : SplashScreen(),
+        home: Login());
   }
 }

@@ -8,6 +8,14 @@ const { someFunction, Event } = require('../models/event.model');
   router.post('/criteria', async (req, res) => {
     try {
       const { criterianame, percentage, eventId } = req.body;
+  
+      // Check if a criteria with the same name already exists
+      const existingCriteria = await Criteria.findOne({ criterianame });
+  
+      if (existingCriteria) {
+        return res.status(409).json({ error: 'Criteria with the same name already exists' });
+      }
+  
       const newCriteria = new Criteria({ 
         criterianame, 
         percentage, 
@@ -25,7 +33,7 @@ const { someFunction, Event } = require('../models/event.model');
       if (!Array.isArray(associatedEvent.criteria)) {
         associatedEvent.criteria = [];
       }
-
+  
       console.log('Before pushing criteria:', associatedEvent.criteria);
       associatedEvent.criteria.push(savedCriteria);
       console.log('After pushing criteria:', associatedEvent.criteria);
@@ -37,6 +45,7 @@ const { someFunction, Event } = require('../models/event.model');
       res.status(500).json({ error: error.message || 'Internal Server Error' });
     }
   });
+  
   
   
   router.get('/criteria', async (req, res) => {

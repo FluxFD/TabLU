@@ -204,7 +204,6 @@ router.get('/events', async (req, res) => {
 router.get('/events/:eventId', async (req, res) => {
   try {
     const eventId = req.params.eventId;
-
     if (!eventId || typeof eventId !== 'string') {
       return res.status(httpStatus.BAD_REQUEST).json({ error: 'Invalid event ID' });
     }
@@ -247,7 +246,8 @@ router.get('/events/:eventId', async (req, res) => {
       contestant: fetchedEvent.contestants,
       criteria: fetchedEvent.criteria,
     };
-
+    console.log(modifiedResponse);
+    
     return res.status(httpStatus.OK).json(modifiedResponse);
   } catch (err) {
     console.error('Error in /events/:eventId:', err);

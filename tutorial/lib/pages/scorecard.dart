@@ -24,7 +24,7 @@ class Event {
     required this.eventDate,
     required this.eventTime,
     required this.contestants,
-    required this.criterias, 
+    required this.criterias,
   });
   factory Event.fromJson(Map<String, dynamic> json) {
     return Event(
@@ -50,6 +50,7 @@ class Event {
     );
   }
 }
+
 class Contestant {
   String name;
   String course;
@@ -60,7 +61,7 @@ class Contestant {
   String? selectedImage;
   String? id;
   int totalScore;
-  List<int?> criteriaScores;
+  List<int?> criteriaScores = [];
   Contestant({
     required this.name,
     required this.course,
@@ -133,10 +134,11 @@ class Contestant {
   @override
   int get hashCode => id.hashCode;
 }
+
 class Criteria {
   String criterianame;
   String percentage;
-  String eventId; 
+  String eventId;
   int score;
   Criteria({
     required this.criterianame,
@@ -180,13 +182,12 @@ class User {
 class ScoreCard extends StatefulWidget {
   String eventId;
   final Map<String, dynamic> eventData;
- // final List<User> judges;
+  // final List<User> judges;
 
   ScoreCard({
-    required this.eventId, 
+    required this.eventId,
     required this.eventData,
-   // required this.judges
-
+    // required this.judges
   });
 
   void updateEventId(String newEventId) {
@@ -214,7 +215,7 @@ class _ScoreCardState extends State<ScoreCard> {
   void initState() {
     print('Init State - criteriaName: $criterianame');
     super.initState();
-      eventData = {};
+    eventData = {};
     initializeData();
     fetchEventDetails();
     contestant = Contestant(
@@ -228,7 +229,6 @@ class _ScoreCardState extends State<ScoreCard> {
     );
     calculateInitialTotalScores();
     criterianame = "InitialValue";
-
   }
 
   Future<void> initializeData() async {
@@ -236,8 +236,8 @@ class _ScoreCardState extends State<ScoreCard> {
       final fetchedEventData = await fetchEventData(widget.eventId);
       if (fetchedEventData != null) {
         setState(() {
-        //  _contestants = extractContestants(fetchedEventData);
-         // criterias = extractCriteria(fetchedEventData);
+          //  _contestants = extractContestants(fetchedEventData);
+          // criterias = extractCriteria(fetchedEventData);
         });
         print('Data initialized successfully');
       } else {
@@ -264,6 +264,7 @@ class _ScoreCardState extends State<ScoreCard> {
 
   // for scores
   void calculateTotalScore(Contestant contestant) {
+    print(contestant.criteriaScores);
     if (contestant == null || contestant.criterias == null) {
       print('Contestant or criterias is null');
       return;
@@ -299,75 +300,77 @@ class _ScoreCardState extends State<ScoreCard> {
     }
   }
 
- int? getCriteriaScore(
-  Contestant contestant, String criteriaName, int criteriaScore) {
-  print(
-      'Calling getCriteriaScore for ${contestant.name}, criteria: $criteriaName, score: $criteriaScore');
+  int? getCriteriaScore(
+      Contestant contestant, String criteriaName, int criteriaScore) {
+    print(
+        'Calling getCriteriaScore for ${contestant.name}, criteria: $criteriaName, score: $criteriaScore');
 
-  try {
-    Criteria matchingCriteria = contestant.criterias.firstWhere(
-      (criteria) =>
-          criteria.criterianame.trim().toLowerCase() ==
-          criteriaName.trim().toLowerCase(),
-      orElse: () {
-        print('Matching criteria not found for: $criteriaName');
-        // Handle the case when no matching criteria is found
-        // You can return a default criteria or throw an exception if needed
-         return Criteria(
-          criterianame: 'Default Criteria',
-          percentage: 'Default Percentage',
-          eventId: 'Default Event ID',
-          score: 0,
-        );
-      },
-    );
-    matchingCriteria.score = criteriaScore;
+    try {
+      Criteria matchingCriteria = contestant.criterias.firstWhere(
+        (criteria) =>
+            criteria.criterianame.trim().toLowerCase() ==
+            criteriaName.trim().toLowerCase(),
+        orElse: () {
+          print('Matching criteria not found for: $criteriaName');
+          // Handle the case when no matching criteria is found
+          // You can return a default criteria or throw an exception if needed
+          return Criteria(
+            criterianame: 'Default Criteria',
+            percentage: 'Default Percentage',
+            eventId: 'Default Event ID',
+            score: 0,
+          );
+        },
+      );
+      matchingCriteria.score = criteriaScore;
 
-    int index = _contestants.indexWhere((c) => c.id == contestant.id);
-    if (index != -1) {
-      _contestants[index].criteriaScores =
-          _contestants[index].criterias.map((criteria) => criteria.score).toList();
+      int index = _contestants.indexWhere((c) => c.id == contestant.id);
+      if (index != -1) {
+        _contestants[index].criteriaScores = _contestants[index]
+            .criterias
+            .map((criteria) => criteria.score)
+            .toList();
+      }
+
+      print(
+          'Updated criteria score for ${contestant.name}: ${matchingCriteria.score}');
+      return matchingCriteria.score;
+    } catch (e) {
+      print('Matching criteria not found for: $criteriaName');
+      // Handle specific exceptions if needed
+      return null;
     }
-
-    print('Updated criteria score for ${contestant.name}: ${matchingCriteria.score}');
-    return matchingCriteria.score;
-  } catch (e) {
-    print('Matching criteria not found for: $criteriaName');
-    // Handle specific exceptions if needed
-    return null;
   }
-}
 
-void updateTotalScore(Contestant contestant) {
-  print('Before updating total score: ${contestant.criteriaScores}');
+  void updateTotalScore(Contestant contestant) {
+    print(contestant.totalScore);
+    print('Before updating total score: ${contestant.criteriaScores}');
+    int totalScore = contestant.criteriaScores.isNotEmpty
+        ? contestant.criteriaScores.fold(0, (sum, score) => sum + (score ?? 0))
+        : 0;
 
-  int totalScore = contestant.criteriaScores.isNotEmpty
-      ? contestant.criteriaScores.fold(0, (sum, score) => sum + (score ?? 0))
-      : 0;
+    setState(() {
+      contestant.totalScore = 0;
+    });
 
-  setState(() {
-    contestant.totalScore = totalScore;
-  });
+    print('After updating total score: ${contestant.criteriaScores}');
+    print('Total score for ${contestant.name}: $totalScore');
+    print('Contestant after updating total score: $contestant');
+  }
 
-  print('After updating total score: ${contestant.criteriaScores}');
-  print('Total score for ${contestant.name}: $totalScore');
-  print('Contestant after updating total score: $contestant');
-}
+  void updateEventId(String newEventId) {
+    setState(() {
+      widget.eventId = newEventId;
+    });
+  }
 
-void updateEventId(String newEventId) {
-  setState(() {
-    widget.eventId = newEventId;
-  });
-}
+  void updateContestants(List<Contestant> contestants) {
+    setState(() {
+      _contestants = contestants;
+    });
 
-void updateContestants(List<Contestant> contestants) {
-  setState(() {
-    _contestants = contestants;
-  });
-
-  print('Updated Contestants List: $_contestants');
-}
-
+    print('Updated Contestants List: $_contestants');
+  }
 
   void showEditDialog(
     BuildContext context,
@@ -398,29 +401,28 @@ void updateContestants(List<Contestant> contestants) {
                   height: 250,
                   width: 200,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        height: 200,
-                        width: 200,
-                        child: Image.asset(
-                          'assets/icons/aubrey.jpg',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Center(
-                        child: Text(
-                          '${contestant.name}',
-                          style: const TextStyle(
-                            fontSize: 23,
-                            color: Color.fromARGB(255, 5, 70, 20),
-                            fontWeight: FontWeight.w600,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          height: 200,
+                          width: 200,
+                          child: Image.asset(
+                            'assets/icons/aubrey.jpg',
+                            fit: BoxFit.cover,
                           ),
                         ),
-                      ),
-                    ]
-                  ),
+                        const SizedBox(height: 10),
+                        Center(
+                          child: Text(
+                            '${contestant.name}',
+                            style: const TextStyle(
+                              fontSize: 23,
+                              color: Color.fromARGB(255, 5, 70, 20),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ]),
                 ),
                 const SizedBox(height: 8.0),
                 Container(
@@ -449,6 +451,21 @@ void updateContestants(List<Contestant> contestants) {
                                           color: Colors.white,
                                           fontWeight: FontWeight.w500,
                                         ),
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    height: 33,
+                                    width: 100,
+                                    padding: const EdgeInsets.all(8),
+                                    color: Colors.green,
+                                    alignment: Alignment.center,
+                                    child: const Text(
+                                      'Percentage',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
                                   ),
@@ -490,7 +507,7 @@ void updateContestants(List<Contestant> contestants) {
             TextButton(
               onPressed: () {
                 for (var c in _contestants) {
-                  updateTotalScore(c);
+                  updateTotalScore(c); // Ensure the total score is up-to-date
                 }
                 onCloseCallback(_contestants);
                 Navigator.of(context).pop();
@@ -505,6 +522,7 @@ void updateContestants(List<Contestant> contestants) {
       },
     );
   }
+
   Widget buildContestantList(List<Contestant> contestants) {
     return Expanded(
       child: ListView.builder(
@@ -513,7 +531,7 @@ void updateContestants(List<Contestant> contestants) {
           Contestant contestant = contestants[index];
           //  int totalScore = 0;
           return Container(
-            height: 80, 
+            height: 80,
             child: Card(
               elevation: 1.0,
               margin:
@@ -527,7 +545,7 @@ void updateContestants(List<Contestant> contestants) {
                       style: const TextStyle(fontSize: 16),
                     ),
                   ),
-                  const SizedBox(width: 75), 
+                  const SizedBox(width: 75),
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
@@ -568,8 +586,7 @@ void updateContestants(List<Contestant> contestants) {
                         contestant,
                         criterias,
                         (List<Contestant> updatedContestants) {
-                          setState(() {
-                          });
+                          setState(() {});
                         },
                       );
                     },
@@ -582,6 +599,7 @@ void updateContestants(List<Contestant> contestants) {
       ),
     );
   }
+
   Future<String> fetchEventId() async {
     final String url = 'http://10.0.2.2:8080/latest-event-id';
     try {
@@ -609,6 +627,7 @@ void updateContestants(List<Contestant> contestants) {
       throw Exception('Error during network request: $e');
     }
   }
+
   Future<void> fetchEventDetails() async {
     try {
       final String eventId = await fetchEventId();
@@ -625,12 +644,12 @@ void updateContestants(List<Contestant> contestants) {
             setState(() {
               events = [event];
               eventData = {
-              'eventName': event.eventName,
-              'eventDate': event.eventDate,
-              'eventTime': event.eventTime,
-             // 'accessCode': event.accessCode,
-              // Add other data as needed
-            };
+                'eventName': event.eventName,
+                'eventDate': event.eventDate,
+                'eventTime': event.eventTime,
+                // 'accessCode': event.accessCode,
+                // Add other data as needed
+              };
             });
             widget.updateEventId(eventId);
             fetchContestants(eventId);
@@ -652,6 +671,7 @@ void updateContestants(List<Contestant> contestants) {
       print('Error in fetchEventDetails: $e');
     }
   }
+
   Future<void> fetchContestants(String eventId) async {
     try {
       final response = await http.get(
@@ -726,11 +746,12 @@ void updateContestants(List<Contestant> contestants) {
       }
     } catch (e) {
       print('Error fetching criteria: $e');
-    
+
       throw e;
     }
     return [];
   }
+
   Future<void> fetchData() async {
     try {
       final fetchedCriteria = await fetchCriteria(widget.eventId);
@@ -755,7 +776,10 @@ void updateContestants(List<Contestant> contestants) {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
             final String eventId = snapshot.data ?? 'default_event_id';
-            return ScoreCard(eventId: eventId, eventData: eventData, );//judges: [],);
+            return ScoreCard(
+              eventId: eventId,
+              eventData: eventData,
+            ); //judges: [],);
           } else if (snapshot.hasError) {
             return Center(
               child: Text('Error: ${snapshot.error}'),
@@ -806,54 +830,56 @@ void updateContestants(List<Contestant> contestants) {
     if (eventData == null) {
       return const CircularProgressIndicator();
     }
-   final eventName = eventData['event_name'] ?? '';
-  final eventVenue = eventData['event_venue'] ?? '';
+    final eventName = eventData['event_name'] ?? '';
+    final eventVenue = eventData['event_venue'] ?? '';
     //---------------------------------------------------
     return Scaffold(
-        appBar: AppBar(
-          elevation: 0.0,
-          backgroundColor: Colors.white,
-          iconTheme: const IconThemeData(),
-          leading: IconButton(
+      appBar: AppBar(
+        elevation: 0.0,
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(),
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back,
+            color: Color(0xFF054E07),
+          ),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+        actions: [
+          IconButton(
             icon: const Icon(
-              Icons.arrow_back,
+              Icons.home,
               color: Color(0xFF054E07),
             ),
             onPressed: () {
-              Navigator.pop(context);
+              // var jsonResponse = json.decode(res.body);
+              // var myToken = jsonResponse['token'];
+              // prefs.setString('token', myToken);
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SearchEvents(
+                      token:
+                          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NTY2N2UzY2EwODcyZGI0NTNjZGFlOGQiLCJlbWFpbCI6ImF1YnJleWRhbm83QGdtYWlsLmNvbSIsInVzZXJuYW1lIjoiYWRtaW4xMjMiLCJpYXQiOjE3MDE1NjMzMDgsImV4cCI6MTcwMTU2NjkwOH0.lTl3R223HHLxj-vO1dJ1ulmGT1kPLOb2El_U-XZB1t4"),
+                ),
+              );
             },
           ),
-          actions: [
-            IconButton(
-              icon: const Icon(
-                Icons.home,
-                color: Color(0xFF054E07),
-              ),
-              onPressed: () {
-   // var jsonResponse = json.decode(res.body);
-   // var myToken = jsonResponse['token'];
-   // prefs.setString('token', myToken);
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const SearchEvents(token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NTY2N2UzY2EwODcyZGI0NTNjZGFlOGQiLCJlbWFpbCI6ImF1YnJleWRhbm83QGdtYWlsLmNvbSIsInVzZXJuYW1lIjoiYWRtaW4xMjMiLCJpYXQiOjE3MDE1NjMzMDgsImV4cCI6MTcwMTU2NjkwOH0.lTl3R223HHLxj-vO1dJ1ulmGT1kPLOb2El_U-XZB1t4"),
-      ),
-    );
-  },
-            ),
-          ],
-          centerTitle: true,
-          title: const Text(
-            'Score Sheet',
-            style: TextStyle(
-              fontSize: 18,
-              color: Color(0xFF054E07),
-            ),
+        ],
+        centerTitle: true,
+        title: const Text(
+          'Score Sheet',
+          style: TextStyle(
+            fontSize: 18,
+            color: Color(0xFF054E07),
           ),
         ),
+      ),
       body: SingleChildScrollView(
           child: Container(
               child: Column(children: [
-       Padding(
+        Padding(
           padding: const EdgeInsets.all(8.0),
           child: Container(
             height: 80,
@@ -876,14 +902,12 @@ void updateContestants(List<Contestant> contestants) {
                         ),
                       ),
                     ),
-                   
                   ],
                 ),
               ),
             ),
           ),
         ),
-        
         SizedBox(
           height: 500,
           width: 500,
@@ -969,29 +993,29 @@ void updateContestants(List<Contestant> contestants) {
             ),
           ),
         ),
-      Padding(
-  padding: const EdgeInsets.only(top: 8.0, left: 5.0, right: 5.0),
-  child: Container(
-    height: 600,
-    width: 500,
-    child: Card(
-      child: Column(
-        children: [
-          Container(
-            height: 35,
-            padding: const EdgeInsets.only(top: 5, left: 5, right: 5),
-            color: Colors.green,
-            alignment: Alignment.topCenter,
-            child: const Text(
-              'Judges',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        /*  Expanded(
+        Padding(
+          padding: const EdgeInsets.only(top: 8.0, left: 5.0, right: 5.0),
+          child: Container(
+            height: 600,
+            width: 500,
+            child: Card(
+              child: Column(
+                children: [
+                  Container(
+                    height: 35,
+                    padding: const EdgeInsets.only(top: 5, left: 5, right: 5),
+                    color: Colors.green,
+                    alignment: Alignment.topCenter,
+                    child: const Text(
+                      'Judges',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  /*  Expanded(
             child: ListView.builder(
               itemCount: widget.judges.length,
               itemBuilder: (context, index) {
@@ -1001,99 +1025,117 @@ void updateContestants(List<Contestant> contestants) {
                 );
               },
             ),)*/
-            
-            ],),),),),
-
+                ],
+              ),
+            ),
+          ),
+        ),
       ]))),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.only(left: 16, right: 16, bottom: 10),
         child: Row(
-
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-      OutlinedButton(
-  onPressed: () {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Container(
-          width: 100,
-          height: 50,
-          child: Container(
-            height: 20,
-            child: AlertDialog(
-              title: const Center(child: Text('Event Information',
-              style: TextStyle(
-                fontSize: 18),)),
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(child: Text('${events.isNotEmpty ? events[0]?.eventName ?? '' : ''}'.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 20
-                  ),
-                  )),
-                  
-                     Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Event ID: ${events.isNotEmpty ? events[0]?.eventId ?? '' : ''}',
-                      style: TextStyle(fontSize: 10),
-                      
+            OutlinedButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return Container(
+                      width: 100,
+                      height: 50,
+                      child: Container(
+                        height: 20,
+                        child: AlertDialog(
+                          title: const Center(
+                              child: Text(
+                            'Event Information',
+                            style: TextStyle(fontSize: 18),
+                          )),
+                          content: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Center(
+                                  child: Text(
+                                '${events.isNotEmpty ? events[0]?.eventName ?? '' : ''}'
+                                    .toUpperCase(),
+                                style: const TextStyle(fontSize: 20),
+                              )),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Event ID: ${events.isNotEmpty ? events[0]?.eventId ?? '' : ''}',
+                                    style: TextStyle(fontSize: 10),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.copy,
+                                      size: 22,
+                                    ),
+                                    onPressed: () {
+                                      Clipboard.setData(new ClipboardData(
+                                          text:
+                                              '${events.isNotEmpty ? events[0]?.eventId ?? '' : ''}'));
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              'Event ID copied to clipboard'),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                              Text(
+                                  'Date & Time: ${events.isNotEmpty ? events[0]?.eventDate ?? '' : ''}, ${events.isNotEmpty ? events[0]?.eventTime ?? '' : ''}',
+                                  style: TextStyle(fontSize: 14)),
+                              SizedBox(
+                                height: 10,
+                              ),
+                              Text(
+                                  'Category: ${events.isNotEmpty ? events[0]?.eventCategory ?? '' : ''}'),
+                              SizedBox(
+                                height: 10,
+                              ),
+                              Text(
+                                  'Venue: ${events.isNotEmpty ? events[0]?.eventVenue ?? '' : ''}'),
+                              SizedBox(
+                                height: 10,
+                              ),
+                              Text(
+                                  'Organizer: ${events.isNotEmpty ? events[0]?.eventOrganizer ?? '' : ''}'),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: const Text('Close'),
+                            ),
+                          ],
+                        ),
                       ),
-                      IconButton(
-                icon: const Icon(Icons.copy, size: 22,),
-                onPressed: () {
-               Clipboard.setData(new ClipboardData(text: '${events.isNotEmpty ? events[0]?.eventId ?? '' : ''}'));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Event ID copied to clipboard'),
-                    ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                  Text('Date & Time: ${events.isNotEmpty ? events[0]?.eventDate ?? '' : ''}, ${events.isNotEmpty ? events[0]?.eventTime ?? '' : ''}', style: 
-                  TextStyle(fontSize: 14)
-                  ),
-                  SizedBox(height: 10,),
-                  Text('Category: ${events.isNotEmpty ? events[0]?.eventCategory ?? '' : ''}'),
-                    SizedBox(height: 10,),
-               
-               Text('Venue: ${events.isNotEmpty ? events[0]?.eventVenue ?? '' : ''}'),
-                      SizedBox(height: 10,),
-                 Text('Organizer: ${events.isNotEmpty ? events[0]?.eventOrganizer ?? '' : ''}'),
-                ],
-                
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
+                    );
                   },
-                  child: const Text('Close'),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 50),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
-              ],
+                textStyle: const TextStyle(
+                  fontSize: 14,
+                  letterSpacing: 2.2,
+                  color: Colors.black,
+                ),
+              ),
+              child: const Text('INFO', style: TextStyle(color: Colors.green)),
             ),
-          ),
-        );
-      },
-    );
-  },
-  style: OutlinedButton.styleFrom(
-    padding: const EdgeInsets.symmetric(horizontal: 50),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(10),
-    ),
-    textStyle: const TextStyle(
-      fontSize: 14,
-      letterSpacing: 2.2,
-      color: Colors.black,
-    ),
-  ),
-  child: const Text('INFO', style: TextStyle(color: Colors.green)),
-),
             const SizedBox(width: 10),
             ElevatedButton(
               onPressed: () async {
@@ -1124,6 +1166,7 @@ void updateContestants(List<Contestant> contestants) {
       ),
     );
   }
+
   Widget buildContestantRow(Contestant contestant, int number) {
     return Card(
       elevation: 1.0,
@@ -1139,19 +1182,21 @@ void updateContestants(List<Contestant> contestants) {
       ),
     );
   }
+
   Widget buildCriteriaList(List<Criteria> criterias) {
     return Column(
       children: criterias.map((criteria) {
         return Column(
           children: [
-            buildCriteriaRow(criteria.criterianame),
+            buildCriteriaRow(criteria.criterianame, criteria.percentage),
             const SizedBox(height: 10),
           ],
         );
       }).toList(),
     );
   }
-  Widget buildCriteriaRow(String criterianame) {
+
+  Widget buildCriteriaRow(String criterianame, String percentage) {
     TextEditingController _scoreController = TextEditingController();
     return Row(
       children: [
@@ -1165,10 +1210,24 @@ void updateContestants(List<Contestant> contestants) {
             ),
           ),
         ),
-        const SizedBox(width: 100),
+        const SizedBox(width: 10), // Adjust the spacing as needed
+        Container(
+          width: 50, // Adjust the width as needed
+          child: Padding(
+            padding: const EdgeInsets.only(left: 20),
+            child: Text(
+              percentage, // Display the actual percentage value
+              style: const TextStyle(
+                color: Colors.green,
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 30),
         Expanded(
           child: Container(
-            height: 45,
+            height: 50,
             width: 90,
             child: TextField(
               controller: _scoreController,
@@ -1181,10 +1240,13 @@ void updateContestants(List<Contestant> contestants) {
                   if (contestant != null) {
                     if (criterianame != null) {
                       getCriteriaScore(
-                          contestant!, criterianame, criteriaScore!);
+                        contestant!,
+                        criterianame,
+                        criteriaScore!,
+                      );
                       int index = contestant.criterias.indexWhere(
-                        (criteria) =>
-                            criteria.criterianame.trim().toLowerCase() ==
+                            (criteria) =>
+                        criteria.criterianame.trim().toLowerCase() ==
                             criterianame.trim().toLowerCase(),
                       );
 
@@ -1192,14 +1254,17 @@ void updateContestants(List<Contestant> contestants) {
                         contestant.criterias[index].score = criteriaScore!;
                       } else {
                         print(
-                            'Warning: No matching criteria found in the contestant\'s list.');
+                          'Warning: No matching criteria found in the contestant\'s list.',
+                        );
                         print(
-                            'List of criteria names in the contestant: ${contestant.criterias.map((c) => c.criterianame).toList()}');
+                          'List of criteria names in the contestant: ${contestant.criterias.map((c) => c.criterianame).toList()}',
+                        );
                       }
                       updateTotalScore(contestant!);
                     } else {
                       print(
-                          'Warning: criteriaName is null. Set a default value or handle this case.');
+                        'Warning: criteriaName is null. Set a default value or handle this case.',
+                      );
                     }
                   } else {
                     print('Warning: Contestant is null.');
@@ -1235,7 +1300,9 @@ void updateContestants(List<Contestant> contestants) {
       ],
     );
   }
+
 }
+
 extension IndexedIterable<E> on Iterable<E> {
   Iterable<T> mapIndexed<T>(T Function(int index, E e) f) sync* {
     var index = 0;

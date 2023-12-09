@@ -55,6 +55,7 @@ router.post('/signin', async (req, res) => {
 
       // Respond with a success message and JWT token
       const token = jwt.sign({ userId: newUser.id }, secretKey, { expiresIn: '30d' });
+      
       res.status(201).json({ message: 'User registered successfully', token: token });
   } catch (error) {
       console.error(error);
@@ -82,8 +83,13 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign(
       { userId: user._id, email: user.email, username: user.username },
+      secretKey
+    );
+    
+    const refreshToken = jwt.sign(
+      { userId: user._id },
       secretKey,
-      { expiresIn: '1h' }
+      { expiresIn: "7d" }
     );
     res.status(200).json({ message: 'Successful login', user: user, token: token });
     console.log('Received Token:', token);

@@ -1,3 +1,4 @@
+//index.js
 const express = require('express');
 const app = express();
 const port = process.env.PORT || 8080;
@@ -11,7 +12,7 @@ const passportConfig = require('./passport-config');
 //const verifyToken = require('event.route');
 mongoose.set('strictPopulate', false);
 
-mongoose.connect("mongodb://127.0.0.1:27017/tabdb")
+mongoose.connect("mongodb+srv://jenrah09:jenrah09@cluster0.o3tvy4v.mongodb.net/tabdb")
   .then(() => {
     console.log('MongoDB connected successfully');
     app.listen(port, () => {
@@ -28,14 +29,15 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use('/uploads', express.static('uploads'));
 
-const corsOptions = {
-  origin: 'http://127.0.0.1:8080',
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  credentials: true,
-};
+// const corsOptions = {
+//   origin: 'http://127.0.0.1:8080',
+//   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+//   credentials: true,
+//   allowedHeaders: 'Content-Type, Authorization',
+// };
 
-app.use(cors(corsOptions));
-app.use(session({ secret: 'your-secret-key', resave: true, saveUninitialized: true }));
+// app.use(cors(corsOptions));
+app.use(session({ secret: 'default-secret-key', resave: true, saveUninitialized: true }));
 app.use(passportConfig.passport.initialize());
 app.use(passport.session());
 

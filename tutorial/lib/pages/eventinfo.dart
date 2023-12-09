@@ -7,6 +7,7 @@ import 'package:tutorial/pages/contestants.dart' as contestants;
 import 'package:tutorial/pages/searchevents.dart';
 import 'package:tutorial/pages/globals.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial/utility/sharedPref.dart';
 
 class Event {
   final String eventId;
@@ -17,7 +18,7 @@ class Event {
   final String eventDate;
   final String eventTime;
   final List<Contestant> contestants;
-  //final String userId; 
+  //final String userId;
 
   Event({
     required this.eventId,
@@ -68,32 +69,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       (_) => charset.codeUnitAt(random.nextInt(charset.length)),
     ));
   }
-Future<void> saveToken(String token) async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  prefs.setString('token', token);
-}
-Future<String?> retrieveToken() async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getString('token');
-}
-  
-Future<String?> login(String username, String password) async {
-  final response = await http.post(
-    Uri.parse('http://10.0.2.2:8080/login'), // Replace with your actual authentication endpoint
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({'username': username, 'password': password}),
-  );
 
-  if (response.statusCode == 200) {
-    final token = jsonDecode(response.body)['token'];
-    await saveToken(token);
-
-    return token;
-  } else {
-    print('Login failed: ${response.body}');
-    return null;
+  Future<String?> retrieveToken() async {
+    return SharedPreferencesUtils.retrieveToken();
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -121,7 +100,7 @@ Future<String?> login(String username, String password) async {
    // prefs.setString('token', myToken);
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const SearchEvents(token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NTY2N2UzY2EwODcyZGI0NTNjZGFlOGQiLCJlbWFpbCI6ImF1YnJleWRhbm83QGdtYWlsLmNvbSIsInVzZXJuYW1lIjoiYWRtaW4xMjMiLCJpYXQiOjE3MDE1NjMzMDgsImV4cCI6MTcwMTU2NjkwOH0.lTl3R223HHLxj-vO1dJ1ulmGT1kPLOb2El_U-XZB1t4"),
+        builder: (context) => const SearchEvents(token: ""),
       ),
     );
   },
@@ -545,7 +524,7 @@ Future<String?> login(String username, String password) async {
   }
   
 Future<String?> createEvent(Map<String, dynamic> eventData, String authToken) async {
-  eventData["accessCode"] = generateRandomAccessCode(8);
+  eventData["accessCode"] = generateRandomAccessCode(8); //Make a logic if event already exist dont change access code
 
   final response = await http.post(
     Uri.parse('http://10.0.2.2:8080/events'), // Use Uri.parse to convert the string to Uri
@@ -556,13 +535,15 @@ Future<String?> createEvent(Map<String, dynamic> eventData, String authToken) as
     body: jsonEncode(eventData),
   );
 
-  if (response.statusCode == 201) {
+  if (response.statusCode == 200) {
     final eventInfo = jsonDecode(response.body);
     final eventId = eventInfo["_id"];
 
     print('Event created successfully');
     return eventId;
   } else {
+    String? token = await retrieveToken();
+    print("JWT Token ${token}");
     print('Failed to create event: ${response.body}');
     return null;
   }

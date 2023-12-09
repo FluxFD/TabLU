@@ -269,7 +269,7 @@ class PageantItem extends StatelessWidget {
                     builder: (context) => ScoreCard(
                       eventId: event_id,
                       eventData: eventData,
-                  //    judges: [],
+                      //    judges: [],
                     ),
                   ),
                 );
@@ -291,7 +291,6 @@ class PageantItem extends StatelessWidget {
   }
 }
 
-
 // -------------------------------------------------------------------//
 // THIS IS FOR THE TALENT SHOW PAGE
 class TalentShowsScreen extends StatefulWidget {
@@ -301,8 +300,9 @@ class TalentShowsScreen extends StatefulWidget {
   @override
   State<TalentShowsScreen> createState() => _TalentShowsScreenState();
 }
+
 class _TalentShowsScreenState extends State<TalentShowsScreen> {
-late Map<String, dynamic> eventData;
+  late Map<String, dynamic> eventData;
   late Future<List<dynamic>> talentEvents = fetchTalentEvents();
 
   @override
@@ -468,7 +468,8 @@ class TalentShowItem extends StatelessWidget {
   final dynamic talentShowevent;
   final VoidCallback onDelete;
 
-  const TalentShowItem({Key? key, required this.talentShowevent, required this.onDelete})
+  const TalentShowItem(
+      {Key? key, required this.talentShowevent, required this.onDelete})
       : super(key: key);
 
   @override
@@ -476,7 +477,8 @@ class TalentShowItem extends StatelessWidget {
     if (talentShowevent == null) {
       return Container();
     }
-    final event_name = talentShowevent['event_name'] as String? ?? 'No Event Name';
+    final event_name =
+        talentShowevent['event_name'] as String? ?? 'No Event Name';
 
     final event_date = talentShowevent['event_date'] != null
         ? talentShowevent['event_date'] as String
@@ -521,8 +523,7 @@ class TalentShowItem extends StatelessWidget {
                       style: TextStyle(color: Colors.black, fontSize: 13),
                     ),
                     TextSpan(
-
-                    //  text: 'Event ID: $eventId',
+                      //  text: 'Event ID: $eventId',
                       style: TextStyle(
                           color: Colors.black,
                           fontSize: 13,
@@ -537,18 +538,20 @@ class TalentShowItem extends StatelessWidget {
         onTap: () {
           try {
             // Handle item tap if needed
-            if (talentShowevent != null && talentShowevent['event_name'] != null) {
+            if (talentShowevent != null &&
+                talentShowevent['event_name'] != null) {
               print('Tapped on ${talentShowevent['event_name']}');
 
               // Add additional null checks for event_id
-              final event_id =
-                  talentShowevent['_id'] != null ? talentShowevent['_id'] as String : '';
+              final event_id = talentShowevent['_id'] != null
+                  ? talentShowevent['_id'] as String
+                  : '';
               final eventData = {
                 'eventName': talentShowevent['event_name'] ?? '',
-                'eventDate': talentShowevent['event_date']?? '',
-                'eventTime': talentShowevent['event_time']?? '',
-                'accessCode': talentShowevent['acces_code']?? '',
-                'eventVenue': talentShowevent['event_venue']?? '',
+                'eventDate': talentShowevent['event_date'] ?? '',
+                'eventTime': talentShowevent['event_time'] ?? '',
+                'accessCode': talentShowevent['acces_code'] ?? '',
+                'eventVenue': talentShowevent['event_venue'] ?? '',
                 'eventOrganizer': talentShowevent['event_organizer'] ?? ''
               };
 
@@ -559,7 +562,7 @@ class TalentShowItem extends StatelessWidget {
                     builder: (context) => ScoreCard(
                       eventId: event_id,
                       eventData: eventData,
-                  //   judges: [],
+                      //   judges: [],
                     ),
                   ),
                 );
@@ -581,9 +584,8 @@ class TalentShowItem extends StatelessWidget {
   }
 }
 
-
 class DebatesScreen extends StatefulWidget {
-   final CodeModel.Event debateevent;
+  final CodeModel.Event debateevent;
   DebatesScreen({required this.debateevent});
   @override
   State<DebatesScreen> createState() => _DebatesScreenState();
@@ -591,7 +593,7 @@ class DebatesScreen extends StatefulWidget {
 
 class _DebatesScreenState extends State<DebatesScreen> {
   late Map<String, dynamic> eventData;
-  late Future<List<dynamic>> debateevent= fetchDebateEvents();
+  late Future<List<dynamic>> debateevent = fetchDebateEvents();
 
   @override
   void initState() {
@@ -756,7 +758,8 @@ class DebateItem extends StatelessWidget {
   final dynamic debateevent;
   final VoidCallback onDelete;
 
-  const DebateItem({Key? key, required this.debateevent, required this.onDelete})
+  const DebateItem(
+      {Key? key, required this.debateevent, required this.onDelete})
       : super(key: key);
 
   @override
@@ -828,14 +831,15 @@ class DebateItem extends StatelessWidget {
               print('Tapped on ${debateevent['event_name']}');
 
               // Add additional null checks for event_id
-              final event_id =
-                  debateevent['_id'] != null ? debateevent['_id'] as String : '';
+              final event_id = debateevent['_id'] != null
+                  ? debateevent['_id'] as String
+                  : '';
               final eventData = {
                 'eventName': debateevent['event_name'] ?? '',
-                'eventDate': debateevent['event_date']?? '',
-                'eventTime': debateevent['event_time']?? '',
-                'accessCode': debateevent['acces_code']?? '',
-                'eventVenue': debateevent['event_venue']?? '',
+                'eventDate': debateevent['event_date'] ?? '',
+                'eventTime': debateevent['event_time'] ?? '',
+                'accessCode': debateevent['acces_code'] ?? '',
+                'eventVenue': debateevent['event_venue'] ?? '',
                 'eventOrganizer': debateevent['event_organizer'] ?? ''
               };
 
@@ -846,7 +850,7 @@ class DebateItem extends StatelessWidget {
                     builder: (context) => ScoreCard(
                       eventId: event_id,
                       eventData: eventData,
-                 //     judges: [],
+                      //     judges: [],
                     ),
                   ),
                 );
@@ -868,9 +872,8 @@ class DebateItem extends StatelessWidget {
   }
 }
 
-
 class ArtContestScreen extends StatefulWidget {
-     final CodeModel.Event artcontestevent;
+  final CodeModel.Event artcontestevent;
   ArtContestScreen({required this.artcontestevent});
   @override
   State<ArtContestScreen> createState() => _ArtContestScreenState();
@@ -878,7 +881,7 @@ class ArtContestScreen extends StatefulWidget {
 
 class _ArtContestScreenState extends State<ArtContestScreen> {
   late Map<String, dynamic> eventData;
-  late Future<List<dynamic>> artcontestevent= fetchArtContestEvents();
+  late Future<List<dynamic>> artcontestevent = fetchArtContestEvents();
 
   @override
   void initState() {
@@ -1039,13 +1042,12 @@ class _ArtContestScreenState extends State<ArtContestScreen> {
   }
 }
 
-  
-
 class ArtContestItem extends StatelessWidget {
   final dynamic artcontestevent;
   final VoidCallback onDelete;
 
-  const ArtContestItem({Key? key, required this.artcontestevent, required this.onDelete})
+  const ArtContestItem(
+      {Key? key, required this.artcontestevent, required this.onDelete})
       : super(key: key);
 
   @override
@@ -1053,7 +1055,8 @@ class ArtContestItem extends StatelessWidget {
     if (artcontestevent == null) {
       return Container();
     }
-    final event_name = artcontestevent['event_name'] as String? ?? 'No Event Name';
+    final event_name =
+        artcontestevent['event_name'] as String? ?? 'No Event Name';
 
     final event_date = artcontestevent['event_date'] != null
         ? artcontestevent['event_date'] as String
@@ -1113,18 +1116,20 @@ class ArtContestItem extends StatelessWidget {
         onTap: () {
           try {
             // Handle item tap if needed
-            if (artcontestevent != null && artcontestevent['event_name'] != null) {
+            if (artcontestevent != null &&
+                artcontestevent['event_name'] != null) {
               print('Tapped on ${artcontestevent['event_name']}');
 
               // Add additional null checks for event_id
-              final event_id =
-                  artcontestevent['_id'] != null ? artcontestevent['_id'] as String : '';
+              final event_id = artcontestevent['_id'] != null
+                  ? artcontestevent['_id'] as String
+                  : '';
               final eventData = {
                 'eventName': artcontestevent['event_name'] ?? '',
-                'eventDate': artcontestevent['event_date']?? '',
-                'eventTime': artcontestevent['event_time']?? '',
-                'accessCode': artcontestevent['acces_code']?? '',
-                'eventVenue': artcontestevent['event_venue']?? '',
+                'eventDate': artcontestevent['event_date'] ?? '',
+                'eventTime': artcontestevent['event_time'] ?? '',
+                'accessCode': artcontestevent['acces_code'] ?? '',
+                'eventVenue': artcontestevent['event_venue'] ?? '',
                 'eventOrganizer': artcontestevent['event_organizer'] ?? ''
               };
 
@@ -1135,7 +1140,7 @@ class ArtContestItem extends StatelessWidget {
                     builder: (context) => ScoreCard(
                       eventId: event_id,
                       eventData: eventData,
-                 //     judges: [],
+                      //     judges: [],
                     ),
                   ),
                 );
@@ -1156,7 +1161,6 @@ class ArtContestItem extends StatelessWidget {
     );
   }
 }
-
 
 class CategoryModel {
   String name;
@@ -1201,7 +1205,6 @@ class CategoryModel {
               builder: (context) => PageantsScreen(
                   event: CodeModel.Event(
                 eventId: _id,
-             
                 eventName: event_name,
                 eventDate: event_date,
                 eventTime: event_time,
@@ -1214,9 +1217,8 @@ class CategoryModel {
             ),
           );
         } else if (name == 'Talent Shows') {
-            final Event eventInstance = Event(
+          final Event eventInstance = Event(
             eventId: _id,
-        
             eventName: event_name,
             eventDate: event_date,
             eventTime: event_time,
@@ -1231,9 +1233,8 @@ class CategoryModel {
             context,
             MaterialPageRoute(
               builder: (context) => TalentShowsScreen(
-                talentevent: CodeModel.Event(
+                  talentevent: CodeModel.Event(
                 eventId: _id,
-          
                 eventName: event_name,
                 eventDate: event_date,
                 eventTime: event_time,
@@ -1242,8 +1243,7 @@ class CategoryModel {
                 eventVenue: event_venue,
                 contestants: [],
                 criterias: [],
-              )
-              ),
+              )),
             ),
           );
         } else if (name == 'Debates') {
@@ -1251,9 +1251,8 @@ class CategoryModel {
             context,
             MaterialPageRoute(
               builder: (context) => DebatesScreen(
-                debateevent: CodeModel.Event(
+                  debateevent: CodeModel.Event(
                 eventId: _id,
-                
                 eventName: event_name,
                 eventDate: event_date,
                 eventTime: event_time,
@@ -1262,8 +1261,7 @@ class CategoryModel {
                 eventVenue: event_venue,
                 contestants: [],
                 criterias: [],
-              )
-              ),
+              )),
             ),
           );
         } else if (name == 'Art Contest') {
@@ -1271,7 +1269,7 @@ class CategoryModel {
             context,
             MaterialPageRoute(
               builder: (context) => ArtContestScreen(
-                artcontestevent: CodeModel.Event(
+                  artcontestevent: CodeModel.Event(
                 eventId: _id,
                 eventName: event_name,
                 eventDate: event_date,
@@ -1281,8 +1279,7 @@ class CategoryModel {
                 eventVenue: event_venue,
                 contestants: [],
                 criterias: [],
-              )
-              ),
+              )),
             ),
           );
         }

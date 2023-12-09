@@ -317,6 +317,7 @@ void initState() {
 
   try {
     Map<String, dynamic> jwtDecodedToken = JwtDecoder.decode(widget.token);
+    print(jwtDecodedToken);
 
     if (jwtDecodedToken.containsKey('email') && jwtDecodedToken['email'] != null) {
       email = jwtDecodedToken['email'].toString();

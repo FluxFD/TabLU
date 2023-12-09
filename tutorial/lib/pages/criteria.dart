@@ -194,6 +194,8 @@ Future<void> createCriteria(
   final url = Uri.parse("http://10.0.2.2:8080/criteria");
 
   try {
+    // Check if criteria with the same name already exists
+
     final response = await http.post(
       url,
       headers: <String, String>{
