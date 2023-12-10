@@ -286,11 +286,11 @@ class _SearchEventsState extends State<SearchEvents> {
       if (response.statusCode == 200) {
         try {
 
-            final Map<String, dynamic> eventJson = jsonDecode(response.body);
-            print('Decoded JSON: $eventJson');
-            // Rest of your code...
-            Event event = Event.fromJson(eventJson);
-            return [event];
+          final Map<String, dynamic> eventJson = jsonDecode(response.body);
+          print('Decoded JSON: $eventJson');
+          // Rest of your code...
+          Event event = Event.fromJson(eventJson);
+          return [event];
         } catch (e) {
           print('Error parsing JSON: $e');
           return [];
@@ -1239,10 +1239,20 @@ class _JoinEventsPageState extends State<JoinEvents> {
         children: [
           Card(
             child: ListTile(
-              title: Text('${widget.events.eventName}'),
+              title: Text(widget.events.eventName),
               subtitle: Padding(
                 padding: const EdgeInsets.only(top: 10.0),
-                child: Text('Event ID: ${widget.events.eventId}'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Event ID: ${widget.events.eventId}'),
+                    Text('Category: ${widget.events.eventCategory}'),
+                    Text('Venue: ${widget.events.eventVenue}'),
+                    Text('Organizer: ${widget.events.eventOrganizer}'),
+                    Text('Date: ${widget.events.eventDate}'),
+                    Text('Time: ${widget.events.eventTime}'),
+                  ],
+                ),
               ),
             ),
           ),
