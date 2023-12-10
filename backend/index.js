@@ -4,6 +4,7 @@ const app = express();
 const port = process.env.PORT || 8080;
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const verifyToken = require('./routes/event.route');
 const mongoose = require('mongoose');
 const passport = require('passport');
 const session = require('express-session'); // Add this line
@@ -41,7 +42,7 @@ app.use(session({ secret: 'default-secret-key', resave: true, saveUninitialized:
 app.use(passportConfig.passport.initialize());
 app.use(passport.session());
 
-const verifyToken = require('./routes/event.route');
+
 app.use(verifyToken);
 app.use('/', require('./routes/user.route'));
 app.use('/', require('./routes/event.route'));

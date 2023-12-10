@@ -3,7 +3,7 @@ import 'package:tutorial/pages/finalscore.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
-import 'package:tutorial/pages/searchevents.dart';
+import 'package:tutorial/pages/dashboard.dart';
 
 class Event {
   String eventId;
@@ -1235,7 +1235,7 @@ class _ScoreCardState extends State<ScoreCard> {
               onChanged: (score) {
                 print('onChanged - criteriaName: $criterianame');
                 setState(() {
-                  criteriaScore = int.tryParse(score) ?? 0;
+                  criteriaScore = int.tryParse(score) ?? 9;
 
                   if (contestant != null) {
                     if (criterianame != null) {

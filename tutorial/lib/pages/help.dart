@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:tutorial/pages/searchevents.dart';
+import 'package:tutorial/pages/dashboard.dart';
 import 'package:tutorial/pages/editprofile.dart';
 import 'package:tutorial/pages/forgotpassword.dart';
 import 'package:tutorial/pages/settings.dart';

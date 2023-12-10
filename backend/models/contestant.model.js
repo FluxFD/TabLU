@@ -1,3 +1,4 @@
+//contestant.model.js
 const mongoose = require('mongoose');
 
 const contestantSchema = new mongoose.Schema({
@@ -5,10 +6,11 @@ const contestantSchema = new mongoose.Schema({
   course: String,
   department: String,
   profilePic: String,
- /* eventId: {
+  eventId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Event',
   },
+  /*
   criteriascore: Number, // Assuming you want to use Number for criteria score
   criterianame: {
     type: String,

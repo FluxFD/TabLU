@@ -4,7 +4,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:http/http.dart' as http;
 import 'package:tutorial/pages/eventinfo.dart';
 import 'package:tutorial/pages/eventsjoined.dart';
-import 'package:tutorial/pages/searchevents.dart';
+import 'package:tutorial/pages/dashboard.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
 

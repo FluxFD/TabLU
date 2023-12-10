@@ -5,18 +5,18 @@ const { someFunction, Event } = require('../models/event.model');
 const Contestant = require('../models/contestant.model');
 const multer = require('multer');
 
-const contestantSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  course: { type: String, required: true },
-  department: { type: String, required: true },
-  profilePic: String,
-  eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Event', required: true },
-  /*criteriascore: { type: Int, required: true },
-  criterianame: { type: String, ref: 'Criteria', required: true },
-  criteriaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Criteria', required: true }*/
+// const contestantSchema = new mongoose.Schema({
+//   name: { type: String, required: true },
+//   course: { type: String, required: true },
+//   department: { type: String, required: true },
+//   profilePic: String,
+//   eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Event', required: true },
+//   /*criteriascore: { type: Int, required: true },
+//   criterianame: { type: String, ref: 'Criteria', required: true },
+//   criteriaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Criteria', required: true }*/
 
-  // other fields
-});
+//   // other fields
+// });
 
 
 

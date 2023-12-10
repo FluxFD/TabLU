@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:tutorial/models/codemodel.dart' as CodeModel;
 import 'dart:convert';
 import 'package:tutorial/pages/scorecard.dart';
+import 'package:tutorial/utility/sharedPref.dart';
 
 class PageantsScreen extends StatefulWidget {
   final CodeModel.Event event;
@@ -312,24 +313,39 @@ class _TalentShowsScreenState extends State<TalentShowsScreen> {
   }
 
   Future<List<dynamic>> fetchTalentEvents() async {
-    final response =
-        await http.get(Uri.parse('http://10.0.2.2:8080/talent-events'));
+    try {
+      // Retrieve the token from shared preferences
+      String? token = await SharedPreferencesUtils.retrieveToken();
+      if (token == null) {
+        print('No token found in shared preferences');
+        return []; // Return an empty list if there is no token
+      }
 
-    if (response.statusCode == 200) {
-      final List<dynamic> events = json.decode(response.body);
-      events.sort((a, b) {
-        DateTime dateA = DateTime.parse(a['event_date']);
-        DateTime dateB = DateTime.parse(b['event_date']);
-        return dateA.compareTo(dateB);
-      });
-      print('Pageant Events in Flutter: $events');
-      return events;
-    } else {
-      print('Error: ${response.statusCode}');
-      print('Response Body: ${response.body}');
-      throw Exception('Failed to load pageant events');
+      // Use the token in the Authorization header for your HTTP request
+      final response = await http.get(
+        Uri.parse('http://10.0.2.2:8080/talent-events'), // Replace with your API URL
+        headers: {
+          'Authorization': 'Bearer $token', // Using the token in the header
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Process and return the response data
+        List<dynamic> events = json.decode(response.body); // Assuming the response body is a JSON array
+        return events;
+      } else {
+        // Handle HTTP request errors
+        print('Failed to load events. Status code: ${response.statusCode}');
+        return []; // Return an empty list in case of failure
+      }
+    } catch (e) {
+      // Handle other errors like network errors
+      print('Error fetching events: $e');
+      return []; // Return an empty list in case of error
     }
   }
+
+
 
   void deleteEvent(String? eventId, BuildContext context) async {
     print('Deleting event with eventId: $eventId');
@@ -479,7 +495,6 @@ class TalentShowItem extends StatelessWidget {
     }
     final event_name =
         talentShowevent['event_name'] as String? ?? 'No Event Name';
-
     final event_date = talentShowevent['event_date'] != null
         ? talentShowevent['event_date'] as String
         : 'No Event Date';

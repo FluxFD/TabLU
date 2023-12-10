@@ -4,7 +4,7 @@ import 'package:tutorial/pages/login.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:tutorial/pages/searchevents.dart';
+import 'package:tutorial/pages/dashboard.dart';
 
 class Signin extends StatefulWidget {
   const Signin({Key? key});

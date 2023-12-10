@@ -117,7 +117,6 @@ function generateRandomAccessCode(length) {
 router.post('/events', verifyToken, async (req, res) => {
   console.log('Request Headers:', req.headers);
 
-
   try {
     console.log('Entered /events route');
 
@@ -183,6 +182,7 @@ router.get('/events', async (req, res) => {
   try {
    
     const userId = req.user._id;
+    
     const events = await Event.find({ user: userId }).populate('contestants').populate('criteria').exec();
 
     // Ensure that the user field is populated in the events
@@ -197,11 +197,58 @@ router.get('/events', async (req, res) => {
     return res.status(httpStatus.OK).send(populatedEvents);
   } catch (err) {
     console.error(err);
+    console.log(req)
     return res.status(httpStatus.INTERNAL_SERVER_ERROR).send(err.message);
   }
 });
 
-router.get('/events/:eventId', async (req, res) => {
+//Fetch all events data if user id matches
+router.get('/user-events', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user._id; 
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
+    const events = await Event.find({ user: userId })
+      .populate('contestants')
+      .populate('criteria')
+      .exec();
+
+    if (!events) {
+      return res.status(404).json({ error: 'No events found for this user' });
+    }
+    res.status(200).json(events);
+  } catch (error) {
+    console.error('Error fetching user events:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+//Fetc events by access code
+router.get('/events/:accessCode', async (req, res) => {
+  try {
+    const accessCode = req.params.accessCode;
+    console.log('Searching for events with Access Code:', accessCode);
+
+    const events = await Event.find({ access_code: accessCode });
+    console.log(accessCode);
+    if (events.length > 0) {
+      console.log('Events found:', events);
+      res.status(httpStatus.OK).json(events[0]);
+    } else {
+      console.log('No events found for the given access code');
+      res.status(httpStatus.NOT_FOUND).json({ message: 'No events found' });
+    }
+  } catch (error) {
+    console.error('Error searching for events:', error);
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
+
+router.get('/events/:eventId',verifyToken, async (req, res) => {
   try {
     const eventId = req.params.eventId;
     if (!eventId || typeof eventId !== 'string') {
@@ -342,9 +389,13 @@ router.get('/pageant-events', async (req, res) => {
 });
 
 
-router.get('/talent-events', async (req, res) => {
+router.get('/talent-events', verifyToken, async (req, res) => {
   try {
-    const talentShowEvents = await Event.find({ event_category: "Talent Shows" });
+    const userId = req.user._id; 
+    const talentShowEvents = await Event.find({
+      event_category: "Talent Shows",
+      user: userId, // Filter by the user ID
+    });
 
     console.log('Talent Shows:', talentShowEvents);
 
@@ -354,6 +405,7 @@ router.get('/talent-events', async (req, res) => {
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
+
 
 
 

@@ -4,7 +4,7 @@ import 'package:tutorial/main.dart';
 import 'dart:math';
 import 'dart:convert';
 import 'package:tutorial/pages/contestants.dart' as contestants;
-import 'package:tutorial/pages/searchevents.dart';
+import 'package:tutorial/pages/dashboard.dart';
 import 'package:tutorial/pages/globals.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial/utility/sharedPref.dart';
@@ -50,6 +50,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   TextEditingController _organizerController = TextEditingController();
   String? accessCode;
   String? eventId;
+  String? token;
 
   @override
   void initState() {
@@ -71,7 +72,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   }
 
   Future<String?> retrieveToken() async {
-    return SharedPreferencesUtils.retrieveToken();
+    return await SharedPreferencesUtils.retrieveToken();
   }
 
   @override
@@ -94,13 +95,13 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     Icons.arrow_back,
     color: Color.fromARGB(255, 5, 78, 7),
   ),
-  onPressed: () {
-   // var jsonResponse = json.decode(res.body);
-   // var myToken = jsonResponse['token'];
-   // prefs.setString('token', myToken);
+  onPressed: () async {
+    // Retrieve the token asynchronously
+    String? token = await retrieveToken();
+    // Navigate to the SearchEvents screen with the retrieved token
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const SearchEvents(token: ""),
+        builder: (context) => SearchEvents(token: token),
       ),
     );
   },
@@ -535,15 +536,15 @@ Future<String?> createEvent(Map<String, dynamic> eventData, String authToken) as
     body: jsonEncode(eventData),
   );
 
-  if (response.statusCode == 200) {
+  if (response.statusCode == 201) {
     final eventInfo = jsonDecode(response.body);
     final eventId = eventInfo["_id"];
 
     print('Event created successfully');
     return eventId;
   } else {
-    String? token = await retrieveToken();
-    print("JWT Token ${token}");
+    String? token = await retrieveToken(); //debugging purposes
+    print("JWT Token ${token}"); //debugging purposes
     print('Failed to create event: ${response.body}');
     return null;
   }

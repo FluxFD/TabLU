@@ -5,7 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:tutorial/pages/eventInfo.dart';
 import 'package:tutorial/pages/globals.dart';
-import 'package:tutorial/pages/searchevents.dart';
+import 'package:tutorial/pages/dashboard.dart';
+import 'package:tutorial/utility/sharedPref.dart';
 
 import '../main.dart';
 
@@ -38,23 +39,26 @@ class Event {
 
   factory Event.fromJson(Map<String, dynamic> json) {
     return Event(
-      eventName: json['eventName'] ?? 'Default Event Name',
-      eventId: json['eventId'] ?? '',
-      eventCategory: json['eventCategory'] ?? 'Default Category',
-      eventOrganizer: json['eventOrganizer'] ?? 'Default Organizer',
-      eventVenue: json['eventVenue'] ?? 'Default Venue',
-      eventDate: json['eventDate'] ?? 'Default Date',
-      eventTime: json['eventTime'] ?? 'Default Time',
+      eventName: json['event_name'] ?? 'Default Event Name',
+      eventId: json['event_id'] ?? '',
+      eventCategory: json['event_category'] ?? 'Default Category',
+      eventOrganizer: json['event_organizer'] ?? 'Default Organizer',
+      eventVenue: json['event_venue'] ?? 'Default Venue',
+      eventDate: json['event_date'] ?? 'Default Date',
+      eventTime: json['event_time'] ?? 'Default Time',
     );
   }
 }
 
 
 class _EventsManagementState extends State<EventsManagement> {
-  Future<List<Event>> fetchEventData(String eventId) async {
-    try {
-      final response = await http.get(Uri.parse('http://10.0.2.2:8080/events/$eventId'));
+  String? token;
 
+
+  Future<List<Event>> fetchEventData(String eventId) async {
+    token = await SharedPreferencesUtils.retrieveToken();
+    try {
+      final response = await http.get(Uri.parse('http://10.0.2.2:8080/api/events'));
       if (response.statusCode == 200) {
         final dynamic eventData = json.decode(response.body);
 
@@ -78,10 +82,44 @@ class _EventsManagementState extends State<EventsManagement> {
     }
   }
 
+  Future<List<Event>> fetchAllEvents() async {
+    try {
+      // Retrieve the token from shared preferences
+      String? token = await SharedPreferencesUtils.retrieveToken();
+      if (token == null) {
+        print('No token found in shared preferences');
+        throw Exception('Authentication token not found');
+      }
+
+      final url = Uri.parse("http://10.0.2.2:8080/user-events");
+      final response = await http.get(
+        url,
+        // Include the Authorization header with the token
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        List<dynamic> eventsJson = jsonDecode(response.body);
+        return eventsJson.map((json) => Event.fromJson(json)).toList();
+      } else {
+        print('Error fetching events: ${response.body}');
+        throw Exception('Failed to load events. Error: ${response.body}');
+      }
+    } catch (e) {
+      print('Error fetching events: $e');
+      throw Exception('Failed to load events. Error: $e');
+    }
+  }
+
+
+
+
+
 
   @override
   Widget build(BuildContext context) {
-    String token = Provider.of<TokenProvider>(context).token;
     return Scaffold(
       appBar: AppBar(
         elevation: 0.3,
@@ -110,7 +148,7 @@ class _EventsManagementState extends State<EventsManagement> {
         ),
       ),
       body: FutureBuilder<List<Event>>(
-        future: fetchEventData("65729927141361b0d05d1fc8"),
+        future: fetchAllEvents(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());

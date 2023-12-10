@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial/pages/forgotpassword.dart';
-import 'package:tutorial/pages/searchevents.dart';
+import 'package:tutorial/pages/dashboard.dart';
 import 'package:tutorial/pages/signin.dart';
 import 'package:http/http.dart' as http;
 import 'package:fluttertoast/fluttertoast.dart';
@@ -38,16 +38,10 @@ class _LoginPageState extends State<Login> {
   bool isPasswordTextField = true;
   Color usernameBorderColor = Colors.grey.withOpacity(0.5);
   Color passwordBorderColor = Colors.grey.withOpacity(0.5);
-  late SharedPreferences prefs;
 
   @override
   void initState() {
     super.initState();
-    initSharedPref();
-  }
-
-  void initSharedPref() async {
-    prefs = await SharedPreferences.getInstance();
   }
 
 /*Future<void> logIn() async {
@@ -164,24 +158,22 @@ class _LoginPageState extends State<Login> {
       if (res.statusCode == 200) {
         var jsonResponse = json.decode(res.body);
         var myToken = jsonResponse['token'];
-        prefs.setString('token', myToken);
+        print(jsonResponse); // debugging token
         authProvider.setToken(myToken);
-
         // Set the token using the AuthProvider
         Provider.of<AuthProvider>(context, listen: false).setToken(myToken);
-
         // Successful response
         print(res.body);
         usernameBorderColor = Colors.grey.withOpacity(0.5);
         passwordBorderColor = Colors.grey.withOpacity(0.5);
-        Future<void> saveToken(String token) async {
-          await SharedPreferencesUtils.saveToken(token);
-        }
+
         final Map<String, dynamic> response = json.decode(res.body);
         if (response.containsKey('message') &&
             response['message'] == 'Successful login') {
-          String token = Provider.of<TokenProvider>(context, listen: false).token;
-          await saveToken(token);
+          Future<void> saveToken(String token) async {
+            await SharedPreferencesUtils.saveToken(token);
+          }
+          await saveToken(myToken);
 
           // Navigate to the SearchEvents screen upon successful sign-in
           Navigator.push(
@@ -216,9 +208,6 @@ class _LoginPageState extends State<Login> {
   }
 
 // ===================================================================
-  Future<String?> getToken() async {
-    return prefs.getString('token');
-  }
 
 //==================================================================
   @override
