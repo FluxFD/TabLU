@@ -18,8 +18,6 @@ import 'package:provider/provider.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:tutorial/utility/sharedPref.dart';
 
-
-
 TextEditingController searchController = TextEditingController();
 
 class Event {
@@ -31,8 +29,8 @@ class Event {
   final String eventOrganizer;
   final String eventDate;
   final String eventTime;
-  final List<Contestant> contestants;
-  final List<Criteria> criterias;
+  // final List<Contestant> contestants;
+  // final List<Criteria> criterias;
   Event({
     required this.eventId,
     required this.accessCode,
@@ -42,8 +40,8 @@ class Event {
     required this.eventOrganizer,
     required this.eventDate,
     required this.eventTime,
-    required this.contestants,
-    required this.criterias,
+    // required this.contestants,
+    // required this.criterias,
   });
   Map<String, dynamic> toJson() {
     return {
@@ -55,25 +53,34 @@ class Event {
       'eventOrganizer': eventOrganizer,
       'eventDate': eventDate,
       'eventTime': eventTime,
-      'contestants': contestants.map((contestant) => contestant.toJson()).toList(),
-      'criterias': criterias.map((criteria) => criteria.toJson()).toList(),
+      // 'contestants':
+      //     contestants.map((contestant) => contestant.toJson()).toList(),
+      // 'criterias': criterias.map((criteria) => criteria.toJson()).toList(),
     };
   }
+
   factory Event.fromJson(Map<String, dynamic> json) {
     return Event(
       eventId: json['_id'] is String ? json['_id'] : '',
       accessCode: json['access_code'] is String ? json['access_code'] : '',
       eventName: json['event_name'] is String ? json['event_name'] : '',
-      eventCategory: json['event_category'] is String ? json['event_category'] : '',
+      eventCategory:
+          json['event_category'] is String ? json['event_category'] : '',
       eventVenue: json['event_venue'] is String ? json['event_venue'] : '',
-      eventOrganizer: json['event_organizer'] is String ? json['event_organizer'] : '',
+      eventOrganizer:
+          json['event_organizer'] is String ? json['event_organizer'] : '',
       eventDate: json['event_date'] is String ? json['event_date'] : '',
       eventTime: json['event_time'] is String ? json['event_time'] : '',
-      contestants: (json['contestants'] is List) ? (json['contestants'] as List).map((e) => Contestant.fromJson(e)).toList() : [],
-      criterias: (json['criteria'] is List) ? (json['criteria'] as List).map((e) => Criteria.fromJson(e)).toList() : [],
+      // contestants: (json['contestants'] is List)
+      //     ? (json['contestants'] as List)
+      //         .map((e) => Contestant.fromJson(e))
+      //         .toList()
+      //     : [],
+      //   criterias: (json['criteria'] is List)
+      //       ? (json['criteria'] as List).map((e) => Criteria.fromJson(e)).toList()
+      //       : [],
     );
   }
-
 }
 
 class Contestant {
@@ -113,6 +120,7 @@ class Contestant {
       'criteriaScores': criteriaScores,
     };
   }
+
   Contestant copyWith({
     String? name,
     String? course,
@@ -147,28 +155,28 @@ class Contestant {
       name: json['name'] != null ? json['name'].toString() : '',
       course: json['course'] != null ? json['course'].toString() : '',
       department:
-      json['department'] != null ? json['department'].toString() : '',
+          json['department'] != null ? json['department'].toString() : '',
       eventId: json['eventId'] != null ? json['eventId'].toString() : '',
       criterias: criteriaList != null
           ? List.unmodifiable(
-          criteriaList.map((criteria) => Criteria.fromJson(criteria)))
+              criteriaList.map((criteria) => Criteria.fromJson(criteria)))
           : [],
       profilePic:
-      json['profilePic'] != null ? json['profilePic'].toString() : '',
+          json['profilePic'] != null ? json['profilePic'].toString() : '',
       selectedImage:
-      json['selectedImage'] != null ? json['selectedImage'].toString() : '',
+          json['selectedImage'] != null ? json['selectedImage'].toString() : '',
       id: json['id'] != null ? json['id'].toString() : '',
       totalScore: json['totalScore'] != null ? json['totalScore'] : 0,
       criteriaScores: criteriaList != null && criteriaList.isNotEmpty
           ? List<int?>.from(
-          criteriaList.map((criteria) => criteria['score'] as int? ?? 0))
+              criteriaList.map((criteria) => criteria['score'] as int? ?? 0))
           : List<int?>.filled(criteriaList?.length ?? 0, null, growable: true),
     );
   }
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is Contestant && runtimeType == other.runtimeType && id == other.id;
+      other is Contestant && runtimeType == other.runtimeType && id == other.id;
 
   @override
   int get hashCode => id.hashCode;
@@ -199,6 +207,7 @@ class Criteria {
       score: score ?? this.score,
     );
   }
+
   Map<String, dynamic> toJson() {
     return {
       'criterianame': criterianame,
@@ -211,28 +220,25 @@ class Criteria {
   factory Criteria.fromJson(Map<String, dynamic> json) {
     return Criteria(
       criterianame:
-      json['criterianame'] != null ? json['criterianame'].toString() : '',
+          json['criterianame'] != null ? json['criterianame'].toString() : '',
       percentage:
-      json['percentage'] != null ? json['percentage'].toString() : '',
+          json['percentage'] != null ? json['percentage'].toString() : '',
       eventId: json['eventId'] != null ? json['eventId'].toString() : '',
       score: json['score'] != null ? int.parse(json['score'].toString()) : 0,
     );
   }
 }
 
-
-
 class SearchEvents extends StatefulWidget {
   final token;
   const SearchEvents({required this.token, Key? key}) : super(key: key);
-
-
 
   @override
   State<SearchEvents> createState() => _SearchEventsState();
 }
 
 late AuthState authState;
+
 class _SearchEventsState extends State<SearchEvents> {
   late CodeModel.Event eventInstance;
   List<CategoryModel> categories = [];
@@ -274,7 +280,7 @@ class _SearchEventsState extends State<SearchEvents> {
         return [];
       }
 
-      final url = Uri.parse("http://10.0.2.2:8080/events/$accessCode");
+      final url = Uri.parse("http://192.168.1.2:8080/events/$accessCode");
       final response = await http.get(
         url,
         headers: {
@@ -285,12 +291,22 @@ class _SearchEventsState extends State<SearchEvents> {
 
       if (response.statusCode == 200) {
         try {
+          final dynamic responseBody = jsonDecode(response.body);
 
-          final Map<String, dynamic> eventJson = jsonDecode(response.body);
-          print('Decoded JSON: $eventJson');
-          // Rest of your code...
-          Event event = Event.fromJson(eventJson);
-          return [event];
+          if (responseBody is List) {
+            // It's a JSON array
+            List<Event> events = responseBody.map((eventJson) {
+              return Event.fromJson(eventJson);
+            }).toList();
+            return events;
+          } else if (responseBody is Map<String, dynamic>) {
+            // It's a single JSON object
+            Event event = Event.fromJson(responseBody);
+            return [event];
+          } else {
+            print('Unexpected JSON format');
+            return [];
+          }
         } catch (e) {
           print('Error parsing JSON: $e');
           return [];
@@ -304,13 +320,6 @@ class _SearchEventsState extends State<SearchEvents> {
       throw Exception('Failed to load events. Error: $e');
     }
   }
-
-
-
-
-
-
-
 
   @override
   void initState() {
@@ -332,8 +341,10 @@ class _SearchEventsState extends State<SearchEvents> {
 
         // Use the decoded token data as required
         setState(() {
-          email = jwtDecodedToken['email']?.toString() ?? 'DefaultEmail@example.com';
-          username = jwtDecodedToken['username']?.toString() ?? 'DefaultUsername';
+          email = jwtDecodedToken['email']?.toString() ??
+              'DefaultEmail@example.com';
+          username =
+              jwtDecodedToken['username']?.toString() ?? 'DefaultUsername';
         });
       } else {
         print('No token found');
@@ -351,7 +362,6 @@ class _SearchEventsState extends State<SearchEvents> {
     }
   }
 
-
   TextEditingController searchController = TextEditingController();
 
   @override
@@ -361,17 +371,14 @@ class _SearchEventsState extends State<SearchEvents> {
       appBar: AppBar(
         elevation: 0.3,
         centerTitle: true,
-        title:
-        Text(
+        title: Text(
           'TabLU',
           style: TextStyle(
               color: Colors.black,
-              fontSize: 18, fontWeight: FontWeight.w500,
-              fontStyle: FontStyle.italic
-          ),
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+              fontStyle: FontStyle.italic),
         ),
-
-
         backgroundColor: Colors.white,
         iconTheme: const IconThemeData(),
         actions: [
@@ -381,12 +388,12 @@ class _SearchEventsState extends State<SearchEvents> {
               color: Color.fromARGB(255, 5, 78, 7),
             ),
             onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(builder: (context) => const Notif()));
+              Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (context) => const Notif()));
             },
           ),
         ],
       ),
-
       drawer: Drawer(
         child: Column(
           children: <Widget>[
@@ -411,9 +418,9 @@ class _SearchEventsState extends State<SearchEvents> {
                   showDialog(
                     context: context,
                     builder: (BuildContext context) {
-                      return Container(height: 500,
+                      return Container(
+                        height: 500,
                         child: AlertDialog(
-
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10.0),
                           ),
@@ -424,10 +431,12 @@ class _SearchEventsState extends State<SearchEvents> {
                                   height: 250,
                                   width: 200,
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
                                     children: [
                                       Padding(
-                                          padding: const EdgeInsets.only(top:16.0),
+                                          padding:
+                                              const EdgeInsets.only(top: 16.0),
                                           child: Container(
                                             height: 150,
                                             width: 150,
@@ -437,8 +446,7 @@ class _SearchEventsState extends State<SearchEvents> {
                                                 fit: BoxFit.fitWidth,
                                               ),
                                             ),
-                                          )
-                                      ),
+                                          )),
                                       const SizedBox(height: 7),
                                       Container(
                                         height: 40,
@@ -447,7 +455,8 @@ class _SearchEventsState extends State<SearchEvents> {
                                             'Username', // '${user.username}',
                                             style: const TextStyle(
                                               fontSize: 23,
-                                              color: Color.fromARGB(255, 5, 70, 20),
+                                              color: Color.fromARGB(
+                                                  255, 5, 70, 20),
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),
@@ -457,7 +466,9 @@ class _SearchEventsState extends State<SearchEvents> {
                                       Center(
                                         child: Text(
                                           'Email', // ${user.email}
-                                          style: TextStyle(fontSize:15, color: Colors.black),
+                                          style: TextStyle(
+                                              fontSize: 15,
+                                              color: Colors.black),
                                         ),
                                       ),
                                     ],
@@ -472,7 +483,8 @@ class _SearchEventsState extends State<SearchEvents> {
                                       child: Column(
                                         children: [
                                           Padding(
-                                            padding: const EdgeInsets.only(top: 20, left: 16),
+                                            padding: const EdgeInsets.only(
+                                                top: 20, left: 16),
                                             child: Row(
                                               children: [
                                                 Icon(Icons.home),
@@ -480,39 +492,55 @@ class _SearchEventsState extends State<SearchEvents> {
                                                 Text(
                                                   'Lives in ', // ${address}
                                                 ),
-
                                               ],
-
                                             ),
-
                                           ),
                                           Align(
                                             alignment: Alignment.topLeft,
                                             child: Column(
                                               children: [
                                                 Padding(
-                                                  padding: const EdgeInsets.only(top: 10,left: 16.0),
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          top: 10, left: 16.0),
                                                   child: Row(
                                                     children: [
                                                       Icon(Icons.edit),
-                                                      TextButton(onPressed: () {
-                                                        Navigator.of(context).push(MaterialPageRoute(builder: (context) => EditProfile()));
-                                                      }, child: Text('Edit Profile')),
+                                                      TextButton(
+                                                          onPressed: () {
+                                                            Navigator.of(
+                                                                    context)
+                                                                .push(MaterialPageRoute(
+                                                                    builder:
+                                                                        (context) =>
+                                                                            EditProfile()));
+                                                          },
+                                                          child: Text(
+                                                              'Edit Profile')),
                                                     ],
                                                   ),
                                                 ),
                                                 Padding(
-                                                  padding: const EdgeInsets.only( left: 16.0),
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          left: 16.0),
                                                   child: Row(
                                                     children: [
                                                       Icon(Icons.password),
-                                                      TextButton(onPressed: () {
-                                                        Navigator.of(context).push(MaterialPageRoute(builder: (context) => Forgotpass()));
-                                                      }, child: Text('Change Password')),
+                                                      TextButton(
+                                                          onPressed: () {
+                                                            Navigator.of(
+                                                                    context)
+                                                                .push(MaterialPageRoute(
+                                                                    builder:
+                                                                        (context) =>
+                                                                            Forgotpass()));
+                                                          },
+                                                          child: Text(
+                                                              'Change Password')),
                                                     ],
                                                   ),
                                                 ),
-
                                               ],
                                             ),
                                           )
@@ -539,7 +567,6 @@ class _SearchEventsState extends State<SearchEvents> {
                       );
                     },
                   );
-
                 },
                 child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -573,7 +600,8 @@ class _SearchEventsState extends State<SearchEvents> {
                   MaterialPageRoute(builder: (context) => EventsManagement()),
                 );
               },
-            ),/*
+            ),
+            /*
               ListTile(
               leading: const Icon(Icons.home),
               title: const Text('Criteria'),
@@ -629,16 +657,12 @@ class _SearchEventsState extends State<SearchEvents> {
                     builder: (context) => const getStarted(),
                   ),
                 );
-
-
               },
             ),
           ],
         ),
       ),
-      body:
-
-      ListView(children: [
+      body: ListView(children: [
         searchField(searchController),
         const SizedBox(height: 20),
 
@@ -652,10 +676,10 @@ class _SearchEventsState extends State<SearchEvents> {
               color: Color.fromARGB(255, 5, 70, 20),
               fontSize: 18,
               fontWeight: FontWeight.w600,
-            ), ),
+            ),
+          ),
         ),
         joinedEvents(),
-
 
         const SizedBox(height: 30),
         Container(
@@ -708,10 +732,7 @@ class _SearchEventsState extends State<SearchEvents> {
                       if (code[index].name == 'Create Events') {
                         Navigator.of(context).pushReplacement(MaterialPageRoute(
                             builder: (context) => CreateEventScreen()));
-                      }
-
-
-                      else if (code[index].name == 'Event Calendar') {
+                      } else if (code[index].name == 'Event Calendar') {
                         Navigator.of(context).pushReplacement(MaterialPageRoute(
                             builder: (context) =>
                                 CodeModel.EventCalendarScreen()));
@@ -773,12 +794,10 @@ class _SearchEventsState extends State<SearchEvents> {
         // i just added this
         // Text('This is the email' + email),
       ]),
-
     );
   }
 
   Container searchField(TextEditingController searchController) {
-
     return Container(
       margin: const EdgeInsets.only(top: 30, left: 20, right: 20),
       decoration: BoxDecoration(
@@ -822,7 +841,6 @@ class _SearchEventsState extends State<SearchEvents> {
             ),
             TextButton(
               onPressed: () async {
-
                 String accessCode = searchController.text;
 
                 if (accessCode.isNotEmpty) {
@@ -842,7 +860,7 @@ class _SearchEventsState extends State<SearchEvents> {
                           content: Text(
                               'No events found for the given access code.'),
                           backgroundColor:
-                          Colors.orange, // Choose a suitable color
+                              Colors.orange, // Choose a suitable color
                         ),
                       );
                     }
@@ -852,7 +870,7 @@ class _SearchEventsState extends State<SearchEvents> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content:
-                        Text('Failed to fetch events. Please try again.'),
+                            Text('Failed to fetch events. Please try again.'),
                         backgroundColor: Colors.red,
                       ),
                     );
@@ -903,7 +921,7 @@ class _SearchEventsState extends State<SearchEvents> {
                 color: Colors.white,
                 elevation: 1,
                 child: Padding(
-                  padding: const EdgeInsets.only(top:5.0, left: 16),
+                  padding: const EdgeInsets.only(top: 5.0, left: 16),
                   child: Row(
                     children: [
                       Icon(
@@ -946,7 +964,6 @@ class _SearchEventsState extends State<SearchEvents> {
       ),
     );
   }
-
 
   Column categoriesSection(List<CategoryModel> categories) {
     return Column(
@@ -1087,25 +1104,37 @@ class _SearchEventsState extends State<SearchEvents> {
   }
 }
 
-
 class EventApi {
-  static Future<void> requestJoinEvent(String userId, String eventId) async {
+  static Future<void> requestJoinEvent(String eventId) async {
     try {
+      String? token = await SharedPreferencesUtils.retrieveToken();
+      if (token == null || token.isEmpty) {
+        print('No token found');
+        return;
+      }
+      Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+      String userId = decodedToken['userId'];
+
       final response = await http.post(
-        Uri.parse("http://10.0.2.2:8080/api-join-event"),
-        body: {
+        Uri.parse("http://192.168.1.2:8080/api-join-event"),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
           'userId': userId,
           'eventId': eventId,
-        },
+        }),
       );
 
       if (response.statusCode == 200) {
         print('Join request successful');
       } else {
         print('Join request failed: ${response.reasonPhrase}');
+        throw Exception('Join request failed: ${response.reasonPhrase}');
       }
     } catch (e) {
       print('Error during join request: $e');
+      throw Exception('Failed to join the event. Please try again.');
     }
   }
 }
@@ -1115,7 +1144,6 @@ class User {
 
   User({
     required this.username,
-
   });
 }
 
@@ -1130,51 +1158,78 @@ class JoinEvents extends StatefulWidget {
 }
 
 class _JoinEventsPageState extends State<JoinEvents> {
-
-  void requestJoinEvent(BuildContext context) async {
-    String userId = 'USER_ID';
+  Future<void> fetchJudges() async {
     String eventId = widget.events.eventId;
 
     try {
-      await EventApi.requestJoinEvent(userId, eventId);
+      final response = await http.get(Uri.parse('/event-judges/$eventId'));
 
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        List<User> judges = data
+            .map((judgeData) => User(username: judgeData['username']))
+            .toList();
+
+        setState(() {
+          widget.judges = judges;
+        });
+        print(widget.judges);
+
+        // Display judges or perform any additional actions
+      } else {
+        throw Exception('Failed to load judges');
+      }
+    } catch (e) {
+      print('Error fetching judges: $e');
+    }
+  }
+
+  void requestJoinEvent(BuildContext context) async {
+    String eventId = widget.events.eventId;
+    try {
+      await EventApi.requestJoinEvent(eventId);
+
+      User user = getUser();
+
+      setState(() {
+        widget.judges.add(user);
+      });
+
+      // Fetch judges after successful join
+      await fetchJudges();
+      print(widget.judges);
+
+      Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Successfully joined the event as a judge.'),
           backgroundColor: Colors.green,
         ),
       );
-
-      User user = getUser();
-      setState(() {
-        widget.judges.add(user);
-      });
-
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => ScoreCard(eventId: eventId,
+          builder: (context) => ScoreCard(
+            eventId: eventId,
             eventData: widget.events.toJson(),
-            //   judges: []
+            judges: widget.judges,
           ),
         ),
       );
-
     } catch (e) {
+      Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Failed to join the event. Please try again.'),
+          content: Text('You already join the event.'),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
 
-
   User getUser() {
     return User(username: 'User');
   }
-
 
   Future<void> confirmToJoinEvent(BuildContext context) async {
     return showDialog<void>(
@@ -1200,7 +1255,6 @@ class _JoinEventsPageState extends State<JoinEvents> {
             TextButton(
               child: Text('Confirm'),
               onPressed: () {
-                Navigator.of(context).pop();
                 requestJoinEvent(context);
               },
             ),
@@ -1209,6 +1263,7 @@ class _JoinEventsPageState extends State<JoinEvents> {
       },
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1258,9 +1313,7 @@ class _JoinEventsPageState extends State<JoinEvents> {
           ),
           ElevatedButton(
             onPressed: () {
-
               confirmToJoinEvent(context);
-
             },
             style: ElevatedButton.styleFrom(
               primary: Colors.green,
@@ -1268,7 +1321,6 @@ class _JoinEventsPageState extends State<JoinEvents> {
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
-
             child: Text(
               'Join Event',
               style: TextStyle(

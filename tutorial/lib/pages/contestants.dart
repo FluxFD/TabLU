@@ -22,7 +22,7 @@ class Contestant {
       required this.course,
       required this.department,
       required this.eventId,
-    required this.criterias, 
+      required this.criterias,
       this.profilePic,
       this.selectedImage,
       this.id});
@@ -142,7 +142,7 @@ class _ContestantsState extends State<Contestants> {
 
   Future<void> createContestant(
       String eventId, Map<String, dynamic> contestantData) async {
-    final url = Uri.parse("http://10.0.2.2:8080/contestants");
+    final url = Uri.parse("http://192.168.1.2:8080/contestants");
 
     try {
       final response = await http.post(
@@ -192,7 +192,7 @@ class _ContestantsState extends State<Contestants> {
               children: [
                 CircleAvatar(
                   radius: 64,
-                     backgroundColor: Colors.grey[200],
+                  backgroundColor: Colors.grey[200],
                   backgroundImage: contestant.selectedImage != null
                       ? FileImage(contestant.selectedImage!)
                       : null,
@@ -277,7 +277,8 @@ class _ContestantsState extends State<Contestants> {
 
 // Function to update the contestant information in the database
   Future<void> updateContestant(String eventId, Contestant contestant) async {
-    final url = Uri.parse("http://10.0.2.2:8080/contestants/${contestant.id}");
+    final url =
+        Uri.parse("http://192.168.1.2:8080/contestants/${contestant.id}");
 
     try {
       final response = await http.put(
@@ -341,25 +342,20 @@ class _ContestantsState extends State<Contestants> {
           );
         },
       ),
-
-
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.green,
-        child: const Icon(Icons.add,
-        color: Colors.white,
+        child: const Icon(
+          Icons.add,
+          color: Colors.white,
         ),
         onPressed: () {
-          
           showDialog(
-            
             context: context,
             builder: (BuildContext context) {
               return AlertDialog(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.0),
                 ),
-
-    
                 title: const Text(
                   'Add Contestant Information',
                   style: TextStyle(
@@ -367,22 +363,19 @@ class _ContestantsState extends State<Contestants> {
                     color: Color(0xFF054E07),
                   ),
                 ),
-
-                
                 content: SingleChildScrollView(
-              
                   child: Column(
-                
                     children: [
-              CircleAvatar(
-                              radius: 64,
-                              backgroundColor: Colors.grey[400],
-                            //  backgroundImage: FileImage(_selectedImage!),
-                            ),
-                            SizedBox(height: 15,),
+                      CircleAvatar(
+                        radius: 64,
+                        backgroundColor: Colors.grey[400],
+                        //  backgroundImage: FileImage(_selectedImage!),
+                      ),
+                      SizedBox(
+                        height: 15,
+                      ),
                       ElevatedButton(
                         onPressed: () async {
-                          
                           await addProfilePicture(contestants.isNotEmpty
                               ? contestants[0]
                               : Contestant(
@@ -390,10 +383,8 @@ class _ContestantsState extends State<Contestants> {
                                   course: 'DefaultCourse',
                                   department: 'DefaultDepartment',
                                   eventId: widget.eventId,
-                                  criterias: []
-                                ));
+                                  criterias: []));
 
-                      
                           setState(() {});
                           if (_selectedImage != null) {
                             print(
@@ -465,16 +456,14 @@ class _ContestantsState extends State<Contestants> {
                   TextButton(
                     onPressed: () async {
                       Contestant newContestant = Contestant(
-                        name: _nameController.text,
-                        course: _courseController.text,
-                        department: _departmentController.text,
-                        profilePic: _selectedImage?.path,
-                        selectedImage: _selectedImage,
-                        eventId: widget.eventId,
-                        criterias: []
-                      );
+                          name: _nameController.text,
+                          course: _courseController.text,
+                          department: _departmentController.text,
+                          profilePic: _selectedImage?.path,
+                          selectedImage: _selectedImage,
+                          eventId: widget.eventId,
+                          criterias: []);
 
-        
                       insertItem(newContestant);
 
                       _nameController.clear();
@@ -495,7 +484,6 @@ class _ContestantsState extends State<Contestants> {
           );
         },
       ),
-
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.only(left: 16, right: 16, bottom: 10),
         child: Row(
@@ -527,7 +515,7 @@ class _ContestantsState extends State<Contestants> {
                   }
                 }
                 //  String eventId = widget.eventId;
-           
+
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => Criterias(
@@ -535,7 +523,6 @@ class _ContestantsState extends State<Contestants> {
                     ),
                   ),
                 );
-            
               },
               style: ElevatedButton.styleFrom(
                 primary: Colors.green,
@@ -598,7 +585,7 @@ class ListItemWidget extends StatelessWidget {
             onTap: () => changeProfilePicture(),
             child: CircleAvatar(
               radius: 32,
-                 backgroundColor: Colors.grey[400],
+              backgroundColor: Colors.grey[400],
               backgroundImage: contestant.selectedImage != null
                   ? FileImage(contestant.selectedImage!)
                   : null,

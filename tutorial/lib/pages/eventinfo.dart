@@ -29,11 +29,9 @@ class Event {
     required this.eventDate,
     required this.eventTime,
     required this.contestants,
-   // required this.userId
+    // required this.userId
   });
 }
-
-
 
 class CreateEventScreen extends StatefulWidget {
   @override
@@ -56,9 +54,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   void initState() {
     super.initState();
     accessCode = generateRandomAccessCode(8);
-    if(isAdding == false){
-
-    }
+    if (isAdding == false) {}
     //print('Generated Access Code: $accessCode');
   }
 
@@ -91,23 +87,21 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         backgroundColor: Colors.white,
         iconTheme: const IconThemeData(),
         leading: IconButton(
-  icon: const Icon(
-    Icons.arrow_back,
-    color: Color.fromARGB(255, 5, 78, 7),
-  ),
-  onPressed: () async {
-    // Retrieve the token asynchronously
-    String? token = await retrieveToken();
-    // Navigate to the SearchEvents screen with the retrieved token
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => SearchEvents(token: token),
-      ),
-    );
-  },
-),
-
-
+          icon: const Icon(
+            Icons.arrow_back,
+            color: Color.fromARGB(255, 5, 78, 7),
+          ),
+          onPressed: () async {
+            // Retrieve the token asynchronously
+            String? token = await retrieveToken();
+            // Navigate to the SearchEvents screen with the retrieved token
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => SearchEvents(token: token),
+              ),
+            );
+          },
+        ),
       ),
       body: SingleChildScrollView(
         child: SizedBox(
@@ -434,23 +428,23 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
               child: const Text('CLEAR', style: TextStyle(color: Colors.green)),
             ),
             const SizedBox(width: 10),
-           ElevatedButton(
-  onPressed: () async {
-     final String? authToken = await retrieveToken();
-     if (authToken != null) {
-    final event = createEventFromControllers();
-    final createdEventId = await createEvent(event, authToken);
-    if (createdEventId != null) {
-      Navigator.of(context).push(MaterialPageRoute(
-          builder: (context) =>
-              contestants.Contestants(eventId: createdEventId)));
-    }
-  } else {
-    // Handle the case where login fails
-    print('Failed to create an Event');
-  }
-},
-                style: ElevatedButton.styleFrom(
+            ElevatedButton(
+              onPressed: () async {
+                final String? authToken = await retrieveToken();
+                if (authToken != null) {
+                  final event = createEventFromControllers();
+                  final createdEventId = await createEvent(event, authToken);
+                  if (createdEventId != null) {
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (context) =>
+                            contestants.Contestants(eventId: createdEventId)));
+                  }
+                } else {
+                  // Handle the case where login fails
+                  print('Failed to create an Event');
+                }
+              },
+              style: ElevatedButton.styleFrom(
                 primary: Colors.green,
                 onPrimary: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 50),
@@ -520,33 +514,36 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       "eventDate": eventDate,
       "eventTime": eventTime,
       "accessCode": accessCode,
-     // "userId": userId,
+      // "userId": userId,
     };
   }
-  
-Future<String?> createEvent(Map<String, dynamic> eventData, String authToken) async {
-  eventData["accessCode"] = generateRandomAccessCode(8); //Make a logic if event already exist dont change access code
 
-  final response = await http.post(
-    Uri.parse('http://10.0.2.2:8080/events'), // Use Uri.parse to convert the string to Uri
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $authToken',
-    },
-    body: jsonEncode(eventData),
-  );
+  Future<String?> createEvent(
+      Map<String, dynamic> eventData, String authToken) async {
+    eventData["accessCode"] = generateRandomAccessCode(
+        8); //Make a logic if event already exist dont change access code
 
-  if (response.statusCode == 201) {
-    final eventInfo = jsonDecode(response.body);
-    final eventId = eventInfo["_id"];
+    final response = await http.post(
+      Uri.parse(
+          'http://192.168.1.2:8080/events'), // Use Uri.parse to convert the string to Uri
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $authToken',
+      },
+      body: jsonEncode(eventData),
+    );
 
-    print('Event created successfully');
-    return eventId;
-  } else {
-    String? token = await retrieveToken(); //debugging purposes
-    print("JWT Token ${token}"); //debugging purposes
-    print('Failed to create event: ${response.body}');
-    return null;
+    if (response.statusCode == 201) {
+      final eventInfo = jsonDecode(response.body);
+      final eventId = eventInfo["_id"];
+
+      print('Event created successfully');
+      return eventId;
+    } else {
+      String? token = await retrieveToken(); //debugging purposes
+      print("JWT Token ${token}"); //debugging purposes
+      print('Failed to create event: ${response.body}');
+      return null;
+    }
   }
-}
 }

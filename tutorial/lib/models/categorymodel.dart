@@ -74,7 +74,7 @@ class _PageantsScreenState extends State<PageantsScreen> {
         showLoadingIndicator(context);
 
         final response = await http
-            .delete(Uri.parse('http://10.0.2.2:8080/events/$eventId'));
+            .delete(Uri.parse('http://192.168.1.2:8080/events/$eventId'));
 
         Navigator.of(context).pop();
         print('DELETE Request Status Code: ${response.statusCode}');
@@ -270,6 +270,7 @@ class PageantItem extends StatelessWidget {
                     builder: (context) => ScoreCard(
                       eventId: event_id,
                       eventData: eventData,
+                      judges: [],
                       //    judges: [],
                     ),
                   ),
@@ -323,7 +324,8 @@ class _TalentShowsScreenState extends State<TalentShowsScreen> {
 
       // Use the token in the Authorization header for your HTTP request
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:8080/talent-events'), // Replace with your API URL
+        Uri.parse(
+            'http://192.168.1.2:8080/talent-events'), // Replace with your API URL
         headers: {
           'Authorization': 'Bearer $token', // Using the token in the header
         },
@@ -331,7 +333,8 @@ class _TalentShowsScreenState extends State<TalentShowsScreen> {
 
       if (response.statusCode == 200) {
         // Process and return the response data
-        List<dynamic> events = json.decode(response.body); // Assuming the response body is a JSON array
+        List<dynamic> events = json.decode(
+            response.body); // Assuming the response body is a JSON array
         return events;
       } else {
         // Handle HTTP request errors
@@ -344,8 +347,6 @@ class _TalentShowsScreenState extends State<TalentShowsScreen> {
       return []; // Return an empty list in case of error
     }
   }
-
-
 
   void deleteEvent(String? eventId, BuildContext context) async {
     print('Deleting event with eventId: $eventId');
@@ -378,7 +379,7 @@ class _TalentShowsScreenState extends State<TalentShowsScreen> {
         showLoadingIndicator(context);
 
         final response = await http
-            .delete(Uri.parse('http://10.0.2.2:8080/events/$eventId'));
+            .delete(Uri.parse('http://192.168.1.2:8080/events/$eventId'));
 
         Navigator.of(context).pop();
         print('DELETE Request Status Code: ${response.statusCode}');
@@ -577,6 +578,7 @@ class TalentShowItem extends StatelessWidget {
                     builder: (context) => ScoreCard(
                       eventId: event_id,
                       eventData: eventData,
+                      judges: [],
                       //   judges: [],
                     ),
                   ),
@@ -667,7 +669,7 @@ class _DebatesScreenState extends State<DebatesScreen> {
         showLoadingIndicator(context);
 
         final response = await http
-            .delete(Uri.parse('http://10.0.2.2:8080/events/$eventId'));
+            .delete(Uri.parse('http://192.168.1.2:8080/events/$eventId'));
 
         Navigator.of(context).pop();
         print('DELETE Request Status Code: ${response.statusCode}');
@@ -865,6 +867,7 @@ class DebateItem extends StatelessWidget {
                     builder: (context) => ScoreCard(
                       eventId: event_id,
                       eventData: eventData,
+                      judges: [],
                       //     judges: [],
                     ),
                   ),
@@ -955,7 +958,7 @@ class _ArtContestScreenState extends State<ArtContestScreen> {
         showLoadingIndicator(context);
 
         final response = await http
-            .delete(Uri.parse('http://10.0.2.2:8080/events/$eventId'));
+            .delete(Uri.parse('http://192.168.1.2:8080/events/$eventId'));
 
         Navigator.of(context).pop();
         print('DELETE Request Status Code: ${response.statusCode}');
@@ -1155,6 +1158,7 @@ class ArtContestItem extends StatelessWidget {
                     builder: (context) => ScoreCard(
                       eventId: event_id,
                       eventData: eventData,
+                      judges: [],
                       //     judges: [],
                     ),
                   ),

@@ -4,6 +4,7 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const Judge = require('../models/judges.model');
 const jwt = require('jsonwebtoken');
 const secretKey = process.env.JWT_SECRET || 'defaultSecretKey';
 const emailUser =  'avbreyrd@gmail.com'   // process.env.EMAIL_USER;
@@ -177,17 +178,59 @@ function generateVerificationCode() {
     }
   });
 
-  router.post('/api-join-event', (req, res) => {
-    // Extract data from the request body
-    const userId = req.body._id;
-    const eventId = req.body.eventId;
+  router.post('/api-join-event', async (req, res) => {
+    try {
+      let userId = req.body.userId;
+      let eventId = req.body.eventId;
+      // Check if the user is already a judge for this event
+      const existingJudge = await Judge.findOne({ eventId: eventId, userId: userId });
   
-    // Perform any necessary logic (e.g., save the join request to a database)
+      if (existingJudge) {
+        return res.status(400).json({ message: 'User is already a judge for this event' });
+      }
   
-    // Respond with a success message
-    res.status(200).json({ message: 'Join request successful' });
+      // If the user is not already a judge, create a new judge entry
+      const newJudge = new Judge({
+        eventId: eventId,
+        userId: userId,
+        // Add any other judge-specific fields as needed
+      });
+  
+      // Save the new judge to the database
+      await newJudge.save();
+  
+      // Respond with a success message
+      res.status(200).json({ message: 'Join request successful', judge: newJudge });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
   });
 
+  router.get('/event-judges/:eventId', async (req, res) => {
+    try {
+      const eventId = req.params.eventId;
+  
+      // Retrieve judges for the specified event and populate the 'userId' field with user details
+      const judges = await Judge.find({ eventId: eventId }).populate('userId', 'username');
+  
+      if (!judges || judges.length === 0) {
+        return res.status(404).json({ message: 'No judges found for the specified event' });
+      }
+  
+      // Extract relevant details for response
+      const formattedJudges = judges.map(judge => ({
+        judgeId: judge._id,
+        eventId: judge.eventId,
+        username: judge.userId.username, // Include the username
+      }));
+  
+      res.status(200).json({ message: 'Judges retrieved successfully', judges: formattedJudges });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
 
 
 

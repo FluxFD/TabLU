@@ -173,22 +173,13 @@ class Criteria {
   }
 }
 
-class User {
-  final String username;
-
-  User({required this.username});
-}
-
 class ScoreCard extends StatefulWidget {
   String eventId;
   final Map<String, dynamic> eventData;
-  // final List<User> judges;
+  final List<User> judges;
 
-  ScoreCard({
-    required this.eventId,
-    required this.eventData,
-    // required this.judges
-  });
+  ScoreCard(
+      {required this.eventId, required this.eventData, required this.judges});
 
   void updateEventId(String newEventId) {
     ScoreCard._scoreCardState.currentState?.updateEventId(newEventId);
@@ -601,7 +592,7 @@ class _ScoreCardState extends State<ScoreCard> {
   }
 
   Future<String> fetchEventId() async {
-    final String url = 'http://10.0.2.2:8080/latest-event-id';
+    final String url = 'http://192.168.1.2:8080/latest-event-id';
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -633,8 +624,8 @@ class _ScoreCardState extends State<ScoreCard> {
       final String eventId = await fetchEventId();
       print('Fetched Event ID: $eventId');
       if (eventId.isNotEmpty) {
-        final response =
-            await http.get(Uri.parse("http://10.0.2.2:8080/events/$eventId"));
+        final response = await http
+            .get(Uri.parse("http://192.168.1.2:8080/events/$eventId"));
         print('Event Details Response Status Code: ${response.statusCode}');
         if (response.statusCode == 200) {
           dynamic eventData = jsonDecode(response.body);
@@ -779,7 +770,8 @@ class _ScoreCardState extends State<ScoreCard> {
             return ScoreCard(
               eventId: eventId,
               eventData: eventData,
-            ); //judges: [],);
+              judges: widget.judges,
+            );
           } else if (snapshot.hasError) {
             return Center(
               child: Text('Error: ${snapshot.error}'),
@@ -802,7 +794,7 @@ class _ScoreCardState extends State<ScoreCard> {
 
   Future<Map<String, dynamic>> fetchEventData(String eventId) async {
     final response =
-        await http.get(Uri.parse('http://10.0.2.2:8080/events/$eventId'));
+        await http.get(Uri.parse('http://192.168.1.2:8080/events/$eventId'));
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> eventData = json.decode(response.body);
@@ -1015,16 +1007,17 @@ class _ScoreCardState extends State<ScoreCard> {
                       ),
                     ),
                   ),
-                  /*  Expanded(
-            child: ListView.builder(
-              itemCount: widget.judges.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(widget.judges[index].username),
-                  // Customize appearance as needed
-                );
-              },
-            ),)*/
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: widget.judges.length,
+                      itemBuilder: (context, index) {
+                        return ListTile(
+                          title: Text(widget.judges[index].username),
+                          // Customize appearance as needed
+                        );
+                      },
+                    ),
+                  )
                 ],
               ),
             ),
@@ -1245,8 +1238,8 @@ class _ScoreCardState extends State<ScoreCard> {
                         criteriaScore!,
                       );
                       int index = contestant.criterias.indexWhere(
-                            (criteria) =>
-                        criteria.criterianame.trim().toLowerCase() ==
+                        (criteria) =>
+                            criteria.criterianame.trim().toLowerCase() ==
                             criterianame.trim().toLowerCase(),
                       );
 
@@ -1300,7 +1293,6 @@ class _ScoreCardState extends State<ScoreCard> {
       ],
     );
   }
-
 }
 
 extension IndexedIterable<E> on Iterable<E> {

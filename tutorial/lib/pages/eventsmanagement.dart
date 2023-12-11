@@ -1,4 +1,4 @@
-// TO BE FIXED 
+// TO BE FIXED
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -9,7 +9,6 @@ import 'package:tutorial/pages/dashboard.dart';
 import 'package:tutorial/utility/sharedPref.dart';
 
 import '../main.dart';
-
 
 class EventsManagement extends StatefulWidget {
   const EventsManagement({Key? key}) : super(key: key);
@@ -50,15 +49,14 @@ class Event {
   }
 }
 
-
 class _EventsManagementState extends State<EventsManagement> {
   String? token;
-
 
   Future<List<Event>> fetchEventData(String eventId) async {
     token = await SharedPreferencesUtils.retrieveToken();
     try {
-      final response = await http.get(Uri.parse('http://10.0.2.2:8080/api/events'));
+      final response =
+          await http.get(Uri.parse('http://localhost:8080/api/events'));
       if (response.statusCode == 200) {
         final dynamic eventData = json.decode(response.body);
 
@@ -74,7 +72,8 @@ class _EventsManagementState extends State<EventsManagement> {
       } else {
         print('API Error: Status Code ${response.statusCode}');
         print('API Error Body: ${response.body}');
-        throw Exception('Failed to load event data. Status code: ${response.statusCode}');
+        throw Exception(
+            'Failed to load event data. Status code: ${response.statusCode}');
       }
     } catch (e) {
       print('Error in fetchEventData: $e');
@@ -91,7 +90,7 @@ class _EventsManagementState extends State<EventsManagement> {
         throw Exception('Authentication token not found');
       }
 
-      final url = Uri.parse("http://10.0.2.2:8080/user-events");
+      final url = Uri.parse("http://localhost:8080/user-events");
       final response = await http.get(
         url,
         // Include the Authorization header with the token
@@ -113,120 +112,113 @@ class _EventsManagementState extends State<EventsManagement> {
     }
   }
 
-
-
-
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0.3,
-        centerTitle: true,
-        title: const Text(
-          'Events Management',
-          style: TextStyle(
-            fontSize: 18,
-            color: Color.fromARGB(255, 5, 78, 7),
+        appBar: AppBar(
+          elevation: 0.3,
+          centerTitle: true,
+          title: const Text(
+            'Events Management',
+            style: TextStyle(
+              fontSize: 18,
+              color: Color.fromARGB(255, 5, 78, 7),
+            ),
+          ),
+          backgroundColor: Colors.white,
+          iconTheme: const IconThemeData(),
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back,
+              color: Color.fromARGB(255, 5, 78, 7),
+            ),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (context) => SearchEvents(token: token)),
+              );
+            },
           ),
         ),
-        backgroundColor: Colors.white,
-        iconTheme: const IconThemeData(),
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back,
-            color: Color.fromARGB(255, 5, 78, 7),
-          ),
-          onPressed: () {
-           Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => SearchEvents(token: token)
-      ),
-           );
-          },
-        ),
-      ),
-      body: FutureBuilder<List<Event>>(
-        future: fetchAllEvents(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error loading events'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('No events available'));
-          } else {
-            List<Event> events = snapshot.data!;
+        body: FutureBuilder<List<Event>>(
+          future: fetchAllEvents(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(child: Text('Error loading events'));
+            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return Center(child: Text('No events available'));
+            } else {
+              List<Event> events = snapshot.data!;
 
-            return ListView.builder(
-              itemCount: events.length,
-              itemBuilder: (context, index) {
-                Event event = events[index];
-                return Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Card(
-                    child: ListTile(
-                      title: Text(event.eventName),
-                      subtitle: Text(''), // Add actual event details if available
-                      onTap: () {
-                        _navigateToBlankPage();
-                      },
-                      trailing: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 0),
-                            child: Text('Status: Active'),
-                          ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-
-                            children: [
-                              IconButton(
-                                icon: Icon(Icons.edit),
-                                onPressed: () {
-                                  isAdding = false;
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (context) => CreateEventScreen(),
-                                    ),
-                                  );
-
-                                },
-                              ),
-                              IconButton(
-                                onPressed: () {
-                                  _navigateToBlankPage();
-                                },
-                                icon: Icon(Icons.remove_red_eye),
-                              ),
-                            ],
-                          ),
-                        ],
+              return ListView.builder(
+                itemCount: events.length,
+                itemBuilder: (context, index) {
+                  Event event = events[index];
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Card(
+                      child: ListTile(
+                        title: Text(event.eventName),
+                        subtitle:
+                            Text(''), // Add actual event details if available
+                        onTap: () {
+                          _navigateToBlankPage();
+                        },
+                        trailing: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 0),
+                              child: Text('Status: Active'),
+                            ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(Icons.edit),
+                                  onPressed: () {
+                                    isAdding = false;
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            CreateEventScreen(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                IconButton(
+                                  onPressed: () {
+                                    _navigateToBlankPage();
+                                  },
+                                  icon: Icon(Icons.remove_red_eye),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
-            );
-
-
-          }
-        },
-      ),
-     floatingActionButton: FloatingActionButton(
-  backgroundColor: Colors.green,
-  child: const Icon(Icons.add, color: Colors.white),
-  onPressed: () {
-      Navigator.of(context).push(MaterialPageRoute(builder: (context) => CreateEventScreen()));
-  },
-     )
-
-              );     
+                  );
+                },
+              );
+            }
+          },
+        ),
+        floatingActionButton: FloatingActionButton(
+          backgroundColor: Colors.green,
+          child: const Icon(Icons.add, color: Colors.white),
+          onPressed: () {
+            Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => CreateEventScreen()));
+          },
+        ));
   }
+
   void _navigateToBlankPage() {
-    Navigator.of(context).push(MaterialPageRoute(builder: (context) => BlankPage()));
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (context) => BlankPage()));
   }
 }
 

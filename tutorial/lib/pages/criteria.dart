@@ -16,7 +16,7 @@ class Criteria {
     //required this.contestantId,
   });
 
- Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson() {
     return {
       'criterianame': criterianame,
       'percentage': percentage,
@@ -24,15 +24,16 @@ class Criteria {
     };
   }
 }
+
 class Event {
   String event_name;
   String event_date;
   String event_time;
   String access_code;
-  String? event_venue;  // Added field
-  String? event_organizer;  // Added field
-  final List<dynamic>? contestants;  // Assuming contestants is a list of strings
-  final List<dynamic>? criteria;  // Assuming criteria is a list of strings
+  String? event_venue; // Added field
+  String? event_organizer; // Added field
+  final List<dynamic>? contestants; // Assuming contestants is a list of strings
+  final List<dynamic>? criteria; // Assuming criteria is a list of strings
 
   // Constructor
   Event({
@@ -50,12 +51,12 @@ class Event {
   factory Event.fromJson(Map<String, dynamic> json) {
     return Event(
       event_name: json['event_name'] ?? '',
-      event_date: json['event_date']?? '',
+      event_date: json['event_date'] ?? '',
       event_time: json['event_time'] ?? '',
       access_code: json['access_code'] ?? '',
       event_venue: json['event_venue'] ?? '',
       event_organizer: json['event_organizer'] ?? '',
-     contestants: json['contestants'] != null
+      contestants: json['contestants'] != null
           ? List<dynamic>.from(json['contestants'])
           : null,
       criteria: json['criteria'] != null
@@ -64,7 +65,6 @@ class Event {
     );
   }
 }
-
 
 class Criterias extends StatefulWidget {
   final String eventId;
@@ -127,7 +127,6 @@ class _CriteriasState extends State<Criterias> {
                     labelText: 'Percentage',
                     labelStyle: TextStyle(fontSize: 15, color: Colors.green),
                   ),
-                  
                 ),
               ],
             ),
@@ -181,50 +180,51 @@ class _CriteriasState extends State<Criterias> {
     }
   }
 
-Future<void> createCriteria(
-    String eventId, Map<String, dynamic> criteriaData) async {
+  Future<void> createCriteria(
+      String eventId, Map<String, dynamic> criteriaData) async {
     if (eventId == null) {
-    print('Error: Event ID is null');
-    return;
-  }
-  if (criteriaData == null || !criteriaData.containsKey('criterianame') || !criteriaData.containsKey('percentage')) {
-    print('Error: Invalid criteria data');
-    return;
-  }
-  final url = Uri.parse("http://10.0.2.2:8080/criteria");
-
-  try {
-    // Check if criteria with the same name already exists
-
-    final response = await http.post(
-      url,
-      headers: <String, String>{
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        ...criteriaData,
-        "eventId": eventId,
-      }),
-    );
-
-    if (response.statusCode == 201) {
-      print('Criteria created successfully');
-    } else {
-      print('Failed to create criteria. Status code: ${response.statusCode}');
-
-      // Check for null response body
-      final responseBody = response.body;
-      if (responseBody != null && responseBody.isNotEmpty) {
-        print('Response body: $responseBody');
-      } else {
-        print('Empty or null response body');
-      }
+      print('Error: Event ID is null');
+      return;
     }
-  } catch (e) {
-    print('Error creating criteria: $e');
-  }
-}
+    if (criteriaData == null ||
+        !criteriaData.containsKey('criterianame') ||
+        !criteriaData.containsKey('percentage')) {
+      print('Error: Invalid criteria data');
+      return;
+    }
+    final url = Uri.parse("http://192.168.1.2:8080/criteria");
 
+    try {
+      // Check if criteria with the same name already exists
+
+      final response = await http.post(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          ...criteriaData,
+          "eventId": eventId,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        print('Criteria created successfully');
+      } else {
+        print('Failed to create criteria. Status code: ${response.statusCode}');
+
+        // Check for null response body
+        final responseBody = response.body;
+        if (responseBody != null && responseBody.isNotEmpty) {
+          print('Response body: $responseBody');
+        } else {
+          print('Empty or null response body');
+        }
+      }
+    } catch (e) {
+      print('Error creating criteria: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -265,7 +265,10 @@ Future<void> createCriteria(
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.green,
-        child: const Icon(Icons.add, color: Colors.white,),
+        child: const Icon(
+          Icons.add,
+          color: Colors.white,
+        ),
         onPressed: () {
           _criteriaNameController.clear();
           _percentageController.clear();
@@ -300,7 +303,7 @@ Future<void> createCriteria(
                       ),
                       TextField(
                         controller: _percentageController,
-                         keyboardType: TextInputType.number,
+                        keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
                           labelText: 'Percentage',
                           labelStyle:
@@ -367,75 +370,83 @@ Future<void> createCriteria(
               child: const Text('CLEAR', style: TextStyle(color: Colors.green)),
             ),
             const SizedBox(width: 10),
-           ElevatedButton(
-  onPressed: () async {
-  try {
-    if (criterias.isNotEmpty) {
-      for (final criteria in criterias) {
-        if (widget.eventId != null) {
-          await createCriteria(widget.eventId!, criteria.toJson());
-        } else {
-          print('Error: Event ID is null');
-        }
-      }
-    }
-      
-      final String? eventId = await fetchEventId();
-      if (eventId != null) {
-         print('Fetching event with ID: $eventId');
-        final response = await http.get(Uri.parse('http://10.0.2.2:8080/events/$eventId'));
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  if (criterias.isNotEmpty) {
+                    for (final criteria in criterias) {
+                      if (widget.eventId != null) {
+                        await createCriteria(
+                            widget.eventId!, criteria.toJson());
+                      } else {
+                        print('Error: Event ID is null');
+                      }
+                    }
+                  }
 
-        if (response.statusCode == 200) {
-          final Event event = Event.fromJson(jsonDecode(response.body));
+                  final String? eventId = await fetchEventId();
+                  if (eventId != null) {
+                    print('Fetching event with ID: $eventId');
+                    final response = await http
+                        .get(Uri.parse('http://10.0.2.2:8080/events/$eventId'));
 
-          final eventData = {
-            'eventName': event.event_name,
-            'eventDate': event.event_date,
-            'eventTime': event.event_time,
-            'accessCode': event.access_code,
-            'eventVenue': event.event_venue ?? 'n/a',  // Uncomment this line if event_venue is not null
-            'eventOrganizer': event.event_organizer ?? 'n/a',  // Add other fields as needed
-            'contestants': event.contestants ?? [],  // Assuming contestants is an array
-            'criteria': event.criteria ?? [],  // Assuming criteria is an array
-            // Add other data as needed
-          };
+                    if (response.statusCode == 200) {
+                      final Event event =
+                          Event.fromJson(jsonDecode(response.body));
 
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => ScoreCard(
-                eventId: widget.eventId,
-                eventData: eventData,
-             //   judges: judges,
+                      final eventData = {
+                        'eventName': event.event_name,
+                        'eventDate': event.event_date,
+                        'eventTime': event.event_time,
+                        'accessCode': event.access_code,
+                        'eventVenue': event.event_venue ??
+                            'n/a', // Uncomment this line if event_venue is not null
+                        'eventOrganizer': event.event_organizer ??
+                            'n/a', // Add other fields as needed
+                        'contestants': event.contestants ??
+                            [], // Assuming contestants is an array
+                        'criteria': event.criteria ??
+                            [], // Assuming criteria is an array
+                        // Add other data as needed
+                      };
+
+                      // Navigator.of(context).push(
+                      //   MaterialPageRoute(
+                      //     builder: (context) => ScoreCard(
+                      //       eventId: widget.eventId,
+                      //       eventData: eventData,
+                      //       //   judges: judges,
+                      //     ),
+                      //   ),
+                      // );
+                    } else {
+                      print(
+                          'Failed to fetch event data. Status code: ${response.statusCode}');
+                    }
+                  } else {
+                    print(
+                        'Failed to fetch eventId. Defaulting to "default_event_id".');
+                  }
+                } catch (e) {
+                  print('Error fetching event data: $e');
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                primary: Colors.green,
+                onPrimary: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 50),
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 14,
+                  letterSpacing: 2.2,
+                  color: Colors.white,
+                ),
               ),
+              child: const Text('SAVE'),
             ),
-          );
-        } else {
-          print('Failed to fetch event data. Status code: ${response.statusCode}');
-        }
-      } else {
-        print('Failed to fetch eventId. Defaulting to "default_event_id".');
-      }
-    } catch (e) {
-      print('Error fetching event data: $e');
-    }
-  },
-  style: ElevatedButton.styleFrom(
-    primary: Colors.green,
-    onPrimary: Colors.white,
-    padding: const EdgeInsets.symmetric(horizontal: 50),
-    elevation: 2,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(10),
-    ),
-    textStyle: const TextStyle(
-      fontSize: 14,
-      letterSpacing: 2.2,
-      color: Colors.white,
-    ),
-  ),
-  child: const Text('SAVE'),
-),
-
           ],
         ),
       ),
@@ -517,7 +528,7 @@ class ListItemWidget extends StatelessWidget {
 }
 
 Future<String?> fetchEventId() async {
-  final String url = 'http://10.0.2.2:8080/latest-event-id';
+  final String url = 'http://192.168.1.2:8080/latest-event-id';
 
   try {
     final response = await http.get(Uri.parse(url));
@@ -556,8 +567,6 @@ Future<String?> fetchEventId() async {
   }
 }
 
-
-
 void main() {
   runApp(
     MaterialApp(
@@ -567,8 +576,10 @@ void main() {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
             if (snapshot.hasError || snapshot.data == null) {
-              print('Error: Unable to fetch valid Event ID. Defaulting to "default_event_id"');
-              final String eventId = 'default_event_id'; // Provide a default value
+              print(
+                  'Error: Unable to fetch valid Event ID. Defaulting to "default_event_id"');
+              final String eventId =
+                  'default_event_id'; // Provide a default value
               return Scaffold(
                 body: Criterias(eventId: eventId),
               );
@@ -589,4 +600,3 @@ void main() {
     ),
   );
 }
-
