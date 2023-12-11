@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:tutorial/pages/login.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class Forgotpass extends StatefulWidget {
   @override
@@ -10,9 +11,14 @@ class Forgotpass extends StatefulWidget {
 
 class _ForgotpassState extends State<Forgotpass> {
   TextEditingController resetPassword = TextEditingController();
+  bool isLoading = false;
 
   Future<void> sendVerificationCode(String email) async {
     try {
+      setState(() {
+        isLoading = true;
+      });
+
       var response = await http.post(
         Uri.parse('http://localhost:8080/send-verification-code'),
         body: {'email': email},
@@ -35,9 +41,15 @@ class _ForgotpassState extends State<Forgotpass> {
       } else {
         print(
             'Failed to send verification code. Status code: ${response.statusCode}');
+        // Show a SnackBar or another UI element to inform the user about the error.
       }
     } catch (e) {
       print('Error sending verification code: $e');
+      // Show a SnackBar or another UI element to inform the user about the error.
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
@@ -143,25 +155,29 @@ class _ForgotpassState extends State<Forgotpass> {
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: ElevatedButton(
-                    onPressed: () async {
-                      print('Sending verification code...');
-                      await sendVerificationCode(resetPassword.text);
-                      print('Verification code sent.');
-                    },
+                    onPressed: isLoading
+                        ? null
+                        : () async {
+                            print('Sending verification code...');
+                            await sendVerificationCode(resetPassword.text);
+                            print('Verification code sent.');
+                          },
                     style: ElevatedButton.styleFrom(
                       primary: Colors.green,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
                     ),
-                    child: const Text(
-                      'Recover Password',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w300,
-                      ),
-                    ),
+                    child: isLoading
+                        ? CircularProgressIndicator() // Show a loading indicator
+                        : const Text(
+                            'Recover Password',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w300,
+                            ),
+                          ),
                   ),
                 ),
               ],
@@ -237,7 +253,6 @@ class _EmailVerificationState extends State<EmailVerification> {
                         ),
                       ),
                       onChanged: (value) {
-                        // Move to the next box when a digit is entered
                         if (value.isNotEmpty && index < 3) {
                           FocusScope.of(context).nextFocus();
                         }
