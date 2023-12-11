@@ -1,9 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:tutorial/pages/login.dart';
 
 class Forgotpass extends StatefulWidget {
-   
   @override
   State<Forgotpass> createState() => _ForgotpassState();
 }
@@ -11,28 +11,35 @@ class Forgotpass extends StatefulWidget {
 class _ForgotpassState extends State<Forgotpass> {
   TextEditingController resetPassword = TextEditingController();
 
-   Future<void> sendVerificationCode(String email) async {
+  Future<void> sendVerificationCode(String email) async {
     try {
       var response = await http.post(
-        Uri.parse('http://10.0.2.2:8080/send-verification-code'),
+        Uri.parse('http://localhost:8080/send-verification-code'),
         body: {'email': email},
       );
 
       if (response.statusCode == 200) {
+        Map<String, dynamic> responseData = json.decode(response.body);
+        String resetToken = responseData['resetToken'];
+        String accessCode = responseData['accessCode'];
+
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => EmailVerification(resetToken: response.body),
+            builder: (context) => EmailVerification(
+              resetToken: resetToken,
+              accessCode: accessCode,
+            ),
           ),
         );
       } else {
-        print('Failed to send verification code. Status code: ${response.statusCode}');
+        print(
+            'Failed to send verification code. Status code: ${response.statusCode}');
       }
     } catch (e) {
       print('Error sending verification code: $e');
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -52,10 +59,11 @@ class _ForgotpassState extends State<Forgotpass> {
           },
         ),
         centerTitle: true,
-        title: const Text('Forgot Password', style: TextStyle(
-            fontSize: 18,
-            color: Color(0xFF054E07),
-          )),
+        title: const Text('Forgot Password',
+            style: TextStyle(
+              fontSize: 18,
+              color: Color(0xFF054E07),
+            )),
       ),
       backgroundColor: Colors.white,
       body: Stack(
@@ -71,35 +79,37 @@ class _ForgotpassState extends State<Forgotpass> {
                     children: [
                       Padding(
                         padding: EdgeInsets.only(left: 16),
-                       
                       ),
                       SizedBox(height: 30),
                     ],
                   ),
                 ),
-                
-                Container( 
+                Container(
                   child: const Padding(
-                   
                     padding: EdgeInsets.only(
                         left: 16.0, top: 180, bottom: 10.0, right: 16.0),
-                    child: Center(child: Padding(
-                  padding: EdgeInsets.only(left: 16.0, right: 16.0),
-                  child: Text('Mail Address Here', style: TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold, color: Color.fromARGB(255, 5, 70, 20),
-                  ),),
-                )),
-                    
+                    child: Center(
+                        child: Padding(
+                      padding: EdgeInsets.only(left: 16.0, right: 16.0),
+                      child: Text(
+                        'Mail Address Here',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color.fromARGB(255, 5, 70, 20),
+                        ),
+                      ),
+                    )),
                   ),
-                  
                 ),
                 const Text(
-                      'Enter your email and we will send you a \n a verification code',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 10,),
-                
+                  'Enter your email and we will send you a \n a verification code',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
                 Container(
                   width: x * 0.9,
                   child: TextField(
@@ -133,9 +143,9 @@ class _ForgotpassState extends State<Forgotpass> {
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: ElevatedButton(
-                    onPressed: () async{
-                       print('Sending verification code...');
-                     await sendVerificationCode(resetPassword.text);
+                    onPressed: () async {
+                      print('Sending verification code...');
+                      await sendVerificationCode(resetPassword.text);
                       print('Verification code sent.');
                     },
                     style: ElevatedButton.styleFrom(
@@ -164,39 +174,43 @@ class _ForgotpassState extends State<Forgotpass> {
 }
 
 class EmailVerification extends StatefulWidget {
-   final String resetToken;
+  final String resetToken;
+  final String accessCode;
 
-  EmailVerification({required this.resetToken});
+  EmailVerification({required this.resetToken, required this.accessCode});
   @override
   _EmailVerificationState createState() => _EmailVerificationState();
 }
 
 class _EmailVerificationState extends State<EmailVerification> {
-  List<TextEditingController> verificationCodeControllers = List.generate(4, (index) => TextEditingController());
+  List<TextEditingController> verificationCodeControllers =
+      List.generate(4, (index) => TextEditingController());
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          centerTitle: true,
-        title: const Text('Email Verfication', style: TextStyle(
-            fontSize: 18,
-            color: Color(0xFF054E07),
-          )),
+        centerTitle: true,
+        title: const Text('Email Verfication',
+            style: TextStyle(
+              fontSize: 18,
+              color: Color(0xFF054E07),
+            )),
       ),
       body: Center(
-      
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text('Get Your Code',
-              style: TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold, color: Color.fromARGB(255, 5, 70, 20),
-                  ),
-              
-              ), 
+              const Text(
+                'Get Your Code',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color.fromARGB(255, 5, 70, 20),
+                ),
+              ),
               const Text(
                 'Enter the 4-digit verification code sent to your email',
                 style: TextStyle(fontSize: 14, color: Colors.grey),
@@ -208,8 +222,8 @@ class _EmailVerificationState extends State<EmailVerification> {
                 children: List.generate(
                   4,
                   (index) => Container(
-                     width: 50, 
-                    margin: const EdgeInsets.symmetric(horizontal: 6.0),  
+                    width: 50,
+                    margin: const EdgeInsets.symmetric(horizontal: 6.0),
                     child: TextField(
                       controller: verificationCodeControllers[index],
                       keyboardType: TextInputType.number,
@@ -234,35 +248,48 @@ class _EmailVerificationState extends State<EmailVerification> {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-  onPressed: () {
-    // TODO: Implement code verification logic
-    // You can concatenate the entered digits and use the resulting code
-    // For simplicity, let's just print the entered code for now
-    String enteredCode = verificationCodeControllers.map((controller) => controller.text).join();
-    print('Entered verification code: $enteredCode');
-    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>  ResetPass(resetToken: widget.resetToken,),
+                onPressed: () {
+                  // TODO: Implement code verification logic
+                  // You can concatenate the entered digits and use the resulting code
+                  // For simplicity, let's just print the entered code for now
+                  String enteredCode = verificationCodeControllers
+                      .map((controller) => controller.text)
+                      .join();
+                  if (enteredCode == widget.accessCode) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ResetPass(
+                          resetToken: widget.resetToken,
+                          accessCode: widget.accessCode,
                         ),
-                      );
-  },
-  style: ElevatedButton.styleFrom(
-    primary: Colors.green,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(20),
-    ),
-  ),
-  child: const Text('Verify and Proceed', style: TextStyle(
- color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w300,
-  ),
- 
-  
-  ),
-),
-
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                            'Invalid verification code. Please try again.'),
+                        duration: Duration(seconds: 3),
+                      ),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  primary: Colors.green,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                child: const Text(
+                  'Verify and Proceed',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w300,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -272,10 +299,10 @@ class _EmailVerificationState extends State<EmailVerification> {
 }
 
 class ResetPass extends StatefulWidget {
-final String resetToken;
+  final String resetToken;
 
-   ResetPass({Key? key, required this.resetToken}) : super(key: key);
-
+  ResetPass({Key? key, required this.resetToken, required String accessCode})
+      : super(key: key);
 
   @override
   State<ResetPass> createState() => _ResetPassState();
@@ -422,31 +449,32 @@ class _ResetPassState extends State<ResetPass> {
               ),
             ),
             const SizedBox(height: 20),
-          ElevatedButton(
-  onPressed: () async {
-    String newPassword = newPasswordController.text;
-    String confirmPassword = confirmPasswordController.text;
+            ElevatedButton(
+              onPressed: () async {
+                String newPassword = newPasswordController.text;
+                String confirmPassword = confirmPasswordController.text;
 
-    if (newPassword == confirmPassword) {
-      // Perform the password reset
-      print('Password reset successful. New Password: $newPassword');
-      print('Sending resetToken: ${widget.resetToken}');
-      print('Sending newPassword: $newPassword');
-      // Show Snackbar
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Password reset successful'),
-          duration: Duration(seconds: 3),
-        ),
-      );
+                if (newPassword == confirmPassword) {
+                  // Perform the password reset
+                  print(
+                      'Password reset successful. New Password: $newPassword');
+                  print('Sending resetToken: ${widget.resetToken}');
+                  print('Sending newPassword: $newPassword');
+                  // Show Snackbar
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Password reset successful'),
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
 
-      // Navigate to the Login screen
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => Login(),
-        ),
-      );
+                  // Navigate to the Login screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => Login(),
+                    ),
+                  );
                 } else {
                   print('Passwords do not match');
                 }
