@@ -48,4 +48,5 @@ app.use('/', require('./routes/user.route'));
 app.use('/', require('./routes/event.route'));
 app.use('/', require('./routes/contestant.route'));
 app.use('/', require('./routes/criteria.route'));
+app.use('/', require('./routes/notification.route'));
 app.use('/api', require('./routes/event.route'));

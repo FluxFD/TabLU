@@ -383,15 +383,30 @@ class _SearchEventsState extends State<SearchEvents> {
         iconTheme: const IconThemeData(),
         actions: [
           IconButton(
-            icon: const Icon(
-              Icons.notifications,
-              color: Color.fromARGB(255, 5, 78, 7),
-            ),
-            onPressed: () {
-              Navigator.of(context)
-                  .push(MaterialPageRoute(builder: (context) => const Notif()));
-            },
-          ),
+              icon: const Icon(
+                Icons.notifications,
+                color: Color.fromARGB(255, 5, 78, 7),
+              ),
+              onPressed: () async {
+                // Retrieve the token from shared preferences
+                String? token = await SharedPreferencesUtils.retrieveToken();
+
+                if (token != null && token.isNotEmpty) {
+                  // Decode the token to get the userId
+                  print("Hello");
+                  Map<String, dynamic> jwtDecodedToken =
+                      JwtDecoder.decode(token);
+                  String userId = jwtDecodedToken['userId'];
+                  print("Hello");
+                  // Navigate to the Notif screen with the retrieved userId
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => Notif(userId: userId),
+                  ));
+                } else {
+                  // Handle the case where the token is not available
+                  print('No token found');
+                }
+              }),
         ],
       ),
       drawer: Drawer(
@@ -1128,6 +1143,13 @@ class EventApi {
 
       if (response.statusCode == 200) {
         print('Join request successful');
+        print('sending notification');
+
+        // Notify the receiver (organizer)
+        await NotificationApi.sendJoinNotification(
+          userId: userId,
+          eventId: eventId,
+        );
       } else {
         print('Join request failed: ${response.reasonPhrase}');
         throw Exception('Join request failed: ${response.reasonPhrase}');
@@ -1135,6 +1157,97 @@ class EventApi {
     } catch (e) {
       print('Error during join request: $e');
       throw Exception('Failed to join the event. Please try again.');
+    }
+  }
+}
+
+class NotificationApi {
+  static Future<void> sendJoinNotification({
+    required String userId,
+    required String eventId,
+  }) async {
+    try {
+      // Retrieve the token from SharedPreferences
+      final token = await SharedPreferencesUtils.retrieveToken();
+
+      // Check if the token is not null before decoding
+      if (token != null) {
+        // Decode the token to extract user information
+        final Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+
+        // Extract userId from the decoded token
+        final String username = decodedToken['username'];
+        // Fetch event information before sending the notification
+        final eventInfoResponse = await http.get(
+          Uri.parse("http://192.168.1.2:8080/notifications/$eventId"),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        );
+
+        if (eventInfoResponse.statusCode == 200) {
+          // Parse the response to extract event information
+
+          final dynamic decodedResponse = jsonDecode(eventInfoResponse.body);
+
+          final String eventName;
+          final String user;
+          // Check if the list is not empty and extract information from the first element
+          if (decodedResponse is List) {
+            // Handle the case where the response is a list
+            if (decodedResponse.isNotEmpty) {
+              final Map<String, dynamic> eventInfo = decodedResponse[0];
+              eventName = eventInfo['eventName'];
+              user = eventInfo['user'];
+            } else {
+              print('Event list is empty.');
+              throw Exception('No event information available.');
+            }
+          } else if (decodedResponse is Map<String, dynamic>) {
+            // Handle the case where the response is a map
+            eventName = decodedResponse['eventName'];
+            user = decodedResponse['user'];
+          } else {
+            // Handle unexpected JSON format
+            print('Unexpected JSON format: $decodedResponse');
+            throw Exception('Unexpected JSON format');
+          }
+
+          // Compose the notification body
+          final String notificationBody =
+              'User $username has requested access to event $eventName';
+          // Send the join notification
+          final response = await http.post(
+            Uri.parse("http://192.168.1.2:8080/notifications"),
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'userId': userId,
+              'body': notificationBody,
+              'receiver': user,
+            }),
+          );
+
+          if (response.statusCode == 201) {
+            print('Notification sent successfully');
+          } else {
+            print('Failed to send notification: ${response.reasonPhrase}');
+            throw Exception(
+                'Failed to send notification: ${response.reasonPhrase}');
+          }
+        } else {
+          print(
+              'Failed to fetch event information: ${eventInfoResponse.reasonPhrase}');
+          throw Exception(
+              'Failed to fetch event information: ${eventInfoResponse.reasonPhrase}');
+        }
+      } else {
+        print('Token is null. Unable to send notification.');
+      }
+    } catch (e) {
+      print('Error sending notification: $e');
+      throw Exception('Failed to send notification. Please try again.');
     }
   }
 }
