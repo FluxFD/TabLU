@@ -53,8 +53,9 @@ class Event {
       'eventOrganizer': eventOrganizer,
       'eventDate': eventDate,
       'eventTime': eventTime,
-      'contestants': contestants.map((contestant) => contestant.toJson()).toList(),
-      'criterias': criterias.map((criteria) => criteria.toJson()).toList(),
+      // 'contestants':
+      //     contestants.map((contestant) => contestant.toJson()).toList(),
+      // 'criterias': criterias.map((criteria) => criteria.toJson()).toList(),
     };
   }
 
@@ -70,8 +71,14 @@ class Event {
           json['event_organizer'] is String ? json['event_organizer'] : '',
       eventDate: json['event_date'] is String ? json['event_date'] : '',
       eventTime: json['event_time'] is String ? json['event_time'] : '',
-      contestants: (json['contestants'] is List) ? (json['contestants'] as List).map((e) => Contestant.fromJson(e)).toList() : [],
-      criterias: (json['criteria'] is List) ? (json['criteria'] as List).map((e) => Criteria.fromJson(e)).toList() : [],
+      // contestants: (json['contestants'] is List)
+      //     ? (json['contestants'] as List)
+      //         .map((e) => Contestant.fromJson(e))
+      //         .toList()
+      //     : [],
+      //   criterias: (json['criteria'] is List)
+      //       ? (json['criteria'] as List).map((e) => Criteria.fromJson(e)).toList()
+      //       : [],
     );
   }
 }
@@ -273,7 +280,7 @@ class _SearchEventsState extends State<SearchEvents> {
         return [];
       }
 
-      final url = Uri.parse("http://10.0.2.2:8080/events/$accessCode");
+      final url = Uri.parse("http://192.168.1.2:8080/events/$accessCode");
       final response = await http.get(
         url,
         headers: {
@@ -1109,8 +1116,11 @@ class EventApi {
       String userId = decodedToken['userId'];
 
       final response = await http.post(
-        Uri.parse("http://10.0.2.2:8080/api-join-event"),
-        body: {
+        Uri.parse("http://192.168.1.2:8080/api-join-event"),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
           'userId': userId,
           'eventId': eventId,
         }),
@@ -1148,6 +1158,31 @@ class JoinEvents extends StatefulWidget {
 }
 
 class _JoinEventsPageState extends State<JoinEvents> {
+  Future<void> fetchJudges() async {
+    String eventId = widget.events.eventId;
+
+    try {
+      final response = await http.get(Uri.parse('/event-judges/$eventId'));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        List<User> judges = data
+            .map((judgeData) => User(username: judgeData['username']))
+            .toList();
+
+        setState(() {
+          widget.judges = judges;
+        });
+        print(widget.judges);
+
+        // Display judges or perform any additional actions
+      } else {
+        throw Exception('Failed to load judges');
+      }
+    } catch (e) {
+      print('Error fetching judges: $e');
+    }
+  }
 
   void requestJoinEvent(BuildContext context) async {
     String eventId = widget.events.eventId;
