@@ -363,11 +363,9 @@ class _ScoreCardState extends State<ScoreCard> {
     print('Updated Contestants List: $_contestants');
   }
 
-  void showEditDialog(
+  void showContestantDetailsDialog(
     BuildContext context,
     Contestant contestant,
-    List<Criteria> criterias,
-    Function(List<Contestant>) onCloseCallback,
   ) {
     showDialog(
       context: context,
@@ -378,7 +376,7 @@ class _ScoreCardState extends State<ScoreCard> {
           ),
           title: const Center(
             child: Text(
-              'Score Card',
+              'Contestant Details',
               style: TextStyle(
                 fontSize: 18,
                 color: Color.fromARGB(255, 5, 70, 20),
@@ -387,104 +385,105 @@ class _ScoreCardState extends State<ScoreCard> {
           ),
           content: SingleChildScrollView(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
-                  height: 250,
-                  width: 200,
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          height: 200,
-                          width: 200,
-                          child: Image.asset(
-                            'assets/icons/aubrey.jpg',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Center(
-                          child: Text(
-                            '${contestant.name}',
-                            style: const TextStyle(
-                              fontSize: 23,
-                              color: Color.fromARGB(255, 5, 70, 20),
-                              fontWeight: FontWeight.w600,
+                  height: 200,
+                  width: 300,
+                  child: Image.asset(
+                    'assets/icons/aubrey.jpg',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Card(
+                  elevation: 5.0,
+                  child: Container(
+                    width: 300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text.rich(
+                            TextSpan(
+                              text: 'Fullname: ',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: '${contestant.name}',
+                                  style: TextStyle(
+                                    color: Colors.green,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.normal,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                      ]),
-                ),
-                const SizedBox(height: 8.0),
-                Container(
-                  height: 400,
-                  width: 500,
-                  child: Card(
-                    child: Container(
-                      child: Column(
-                        children: [
-                          Table(
-                            children: [
-                              TableRow(
-                                children: [
-                                  Container(
-                                    height: 33,
-                                    width: 100,
-                                    padding: const EdgeInsets.all(8),
-                                    color: Colors.green,
-                                    alignment: Alignment.center,
-                                    child: const Align(
-                                      alignment: Alignment.topCenter,
-                                      child: Text(
-                                        'Criteria',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  Container(
-                                    height: 33,
-                                    width: 100,
-                                    padding: const EdgeInsets.all(8),
-                                    color: Colors.green,
-                                    alignment: Alignment.center,
-                                    child: const Text(
-                                      'Percentage',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                  Container(
-                                    height: 33,
-                                    width: 100,
-                                    padding: const EdgeInsets.all(8),
-                                    color: Colors.green,
-                                    alignment: Alignment.center,
-                                    child: const Text(
-                                      'Score',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                          const SizedBox(height: 8.0),
+                          Text.rich(
+                            TextSpan(
+                              text: 'Age: ',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
                               ),
-                            ],
+                              children: [
+                                TextSpan(
+                                  text: '${contestant.course}',
+                                  style: TextStyle(
+                                    color: Colors.green,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.normal,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          const SizedBox(height: 30),
-                          Column(
-                            children: [
-                              buildCriteriaList(criterias),
-                              const SizedBox(height: 20),
-                            ],
+                          const SizedBox(height: 8.0),
+                          Text.rich(
+                            TextSpan(
+                              text: 'Address: ',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: '${contestant.department}',
+                                  style: TextStyle(
+                                    color: Colors.green,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.normal,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8.0),
+                          Text.rich(
+                            TextSpan(
+                              text: 'Event ID: ',
+                              style: TextStyle(
+                                color: Colors.black54,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: '${contestant.eventId}',
+                                  style: TextStyle(
+                                    color: Colors.black54,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.normal,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -497,14 +496,10 @@ class _ScoreCardState extends State<ScoreCard> {
           actions: [
             TextButton(
               onPressed: () {
-                for (var c in _contestants) {
-                  updateTotalScore(c); // Ensure the total score is up-to-date
-                }
-                onCloseCallback(_contestants);
                 Navigator.of(context).pop();
               },
               child: const Text(
-                'Save',
+                'Close',
                 style: TextStyle(color: Colors.green),
               ),
             ),
@@ -514,28 +509,98 @@ class _ScoreCardState extends State<ScoreCard> {
     );
   }
 
-  Widget buildContestantList(List<Contestant> contestants) {
+  Widget buildContestantList(
+      List<Contestant> contestants, List<Criteria>? criterias) {
     return Expanded(
       child: ListView.builder(
         itemCount: contestants.length,
         itemBuilder: (BuildContext context, int index) {
           Contestant contestant = contestants[index];
-          //  int totalScore = 0;
+
+          List<Widget> inputFields = [];
+          if (criterias != null && criterias.isNotEmpty) {
+            if (contestant.criteriaScores == null) {
+              contestant.criteriaScores =
+                  List<double>.filled(criterias.length, 0.0).cast<int?>();
+            } else if (contestant.criteriaScores.length != criterias.length) {
+              contestant.criteriaScores.length = criterias.length;
+            }
+
+            for (int i = 0; i < criterias.length; i++) {
+              Criteria criteria = criterias[i];
+              double percentage = double.tryParse(criteria.percentage) ?? 0.0;
+              assert(i < contestant.criteriaScores.length);
+              num criteriaScore = contestant.criteriaScores[i] ?? 0;
+
+              TextEditingController textController =
+                  TextEditingController(text: "0");
+
+              inputFields.add(
+                Expanded(
+                  child: Container(
+                    height: 30,
+                    padding: const EdgeInsets.only(top: 5),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.green),
+                      borderRadius: BorderRadius.circular(5.0),
+                    ),
+                    margin: EdgeInsets.all(10),
+                    child: Container(
+                      margin: EdgeInsets.only(
+                        bottom: 8.0,
+                        right: 0.0,
+                      ),
+                      child: Center(
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                initialValue: criteriaScore.toString(),
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                decoration: InputDecoration(
+                                  border: InputBorder.none,
+                                ),
+                                onChanged: (value) {
+                                  setState(() {
+                                    contestant.criteriaScores[i] =
+                                        double.tryParse(value)?.toInt() ?? 0;
+                                  });
+                                },
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: Text(
+                                '%',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }
+          }
+
           return Container(
             height: 80,
             child: Card(
-              elevation: 1.0,
+              elevation: 5.0,
               margin:
                   const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
               child: Row(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      '${index + 1}',
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ),
                   const SizedBox(width: 75),
                   Expanded(
                     child: Padding(
@@ -546,40 +611,14 @@ class _ScoreCardState extends State<ScoreCard> {
                       ),
                     ),
                   ),
-                  Expanded(
-                    child: Container(
-                      height: 33,
-                      padding: const EdgeInsets.only(top: 5),
-                      alignment: Alignment.topCenter,
-                      child: Column(
-                        children: [
-                          Text(
-                            contestant.criteriaScores
-                                .fold(0, (sum, score) => sum + (score ?? 0))
-                                .toString(),
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          )
-                        ],
-                      ),
-                    ),
-                  ),
+                  ...inputFields,
                   IconButton(
                     icon: const Icon(
-                      Icons.edit,
-                      color: Colors.red,
+                      Icons.remove_red_eye,
+                      color: Colors.green,
                     ),
                     onPressed: () {
-                      showEditDialog(
-                        context,
-                        contestant,
-                        criterias,
-                        (List<Contestant> updatedContestants) {
-                          setState(() {});
-                        },
-                      );
+                      showContestantDetailsDialog(context, contestant);
                     },
                   ),
                 ],
@@ -592,7 +631,7 @@ class _ScoreCardState extends State<ScoreCard> {
   }
 
   Future<String> fetchEventId() async {
-    final String url = 'http://192.168.1.2:8080/latest-event-id';
+    final String url = 'http://localhost:8080/latest-event-id';
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -625,7 +664,7 @@ class _ScoreCardState extends State<ScoreCard> {
       print('Fetched Event ID: $eventId');
       if (eventId.isNotEmpty) {
         final response =
-            await http.get(Uri.parse("http://192.168.1.2:8080/event/$eventId"));
+            await http.get(Uri.parse("http://localhost:8080/event/$eventId"));
         print('Event Details Response Status Code: ${response.statusCode}');
         if (response.statusCode == 200) {
           dynamic eventData = jsonDecode(response.body);
@@ -794,7 +833,7 @@ class _ScoreCardState extends State<ScoreCard> {
 
   Future<Map<String, dynamic>> fetchEventData(String eventId) async {
     final response =
-        await http.get(Uri.parse('http://192.168.1.2:8080/events/$eventId'));
+        await http.get(Uri.parse('http://localhost:8080/events/$eventId'));
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> eventData = json.decode(response.body);
@@ -825,6 +864,7 @@ class _ScoreCardState extends State<ScoreCard> {
     final eventName = eventData['event_name'] ?? '';
     final eventVenue = eventData['event_venue'] ?? '';
     //---------------------------------------------------
+
     return Scaffold(
       appBar: AppBar(
         elevation: 0.0,
@@ -919,22 +959,6 @@ class _ScoreCardState extends State<ScoreCard> {
                             color: Colors.green,
                             alignment: Alignment.topCenter,
                             child: const Text(
-                              'Number',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Container(
-                            height: 33,
-                            padding: const EdgeInsets.only(top: 5),
-                            color: Colors.green,
-                            alignment: Alignment.topCenter,
-                            child: const Text(
                               'Name',
                               style: TextStyle(
                                 fontSize: 14,
@@ -944,22 +968,27 @@ class _ScoreCardState extends State<ScoreCard> {
                             ),
                           ),
                         ),
-                        Expanded(
-                          child: Container(
-                            height: 33,
-                            padding: const EdgeInsets.only(top: 5),
-                            color: Colors.green,
-                            alignment: Alignment.topCenter,
-                            child: const Text(
-                              'Total Score',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500,
+                        ...criterias.map((criteria) {
+                          double percentage =
+                              double.tryParse(criteria.percentage) ?? 0.0;
+                          return Expanded(
+                            child: Container(
+                              height: 33,
+                              padding: const EdgeInsets.only(top: 5),
+                              color: Colors.green,
+                              alignment: Alignment.topCenter,
+                              child: buildCriteriaRow(
+                                criteria.criterianame,
+                                percentage,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
-                          ),
-                        ),
+                          );
+                        }),
                         Expanded(
                           child: Container(
                             height: 33,
@@ -978,7 +1007,7 @@ class _ScoreCardState extends State<ScoreCard> {
                         ),
                       ],
                     ),
-                    buildContestantList(_contestants),
+                    buildContestantList(_contestants, criterias),
                   ],
                 ),
               ),
@@ -1176,123 +1205,138 @@ class _ScoreCardState extends State<ScoreCard> {
     );
   }
 
-  Widget buildCriteriaList(List<Criteria> criterias) {
-    return Column(
+  Widget buildCriteriaList(List<Criteria> criterias, {TextStyle? style}) {
+    return Row(
       children: criterias.map((criteria) {
-        return Column(
-          children: [
-            buildCriteriaRow(criteria.criterianame, criteria.percentage),
-            const SizedBox(height: 10),
-          ],
+        double percentage = double.tryParse(criteria.percentage) ?? 0.0;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: buildCriteriaRow(
+            criteria.criterianame,
+            percentage,
+            style: style,
+          ),
         );
       }).toList(),
     );
   }
 
-  Widget buildCriteriaRow(String criterianame, String percentage) {
-    TextEditingController _scoreController = TextEditingController();
-    return Row(
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 20),
-          child: Text(
-            criterianame,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              color: Colors.green,
-            ),
-          ),
-        ),
-        const SizedBox(width: 10), // Adjust the spacing as needed
-        Container(
-          width: 50, // Adjust the width as needed
-          child: Padding(
-            padding: const EdgeInsets.only(left: 20),
-            child: Text(
-              percentage, // Display the actual percentage value
-              style: const TextStyle(
-                color: Colors.green,
-              ),
-            ),
-          ),
-        ),
+  Text buildCriteriaRow(String criterianame, double percentage,
+      {TextStyle? style}) {
+    TextStyle finalStyle = TextStyle(
+      color: Colors.white,
+      fontWeight: FontWeight.bold,
+    ).merge(style ?? TextStyle());
 
-        const SizedBox(width: 30),
-        Expanded(
-          child: Container(
-            height: 50,
-            width: 90,
-            child: TextField(
-              controller: _scoreController,
-              keyboardType: TextInputType.number,
-              onChanged: (score) {
-                print('onChanged - criteriaName: $criterianame');
-                setState(() {
-                  criteriaScore = int.tryParse(score) ?? 9;
-
-                  if (contestant != null) {
-                    if (criterianame != null) {
-                      getCriteriaScore(
-                        contestant!,
-                        criterianame,
-                        criteriaScore!,
-                      );
-                      int index = contestant.criterias.indexWhere(
-                        (criteria) =>
-                            criteria.criterianame.trim().toLowerCase() ==
-                            criterianame.trim().toLowerCase(),
-                      );
-
-                      if (index != -1) {
-                        contestant.criterias[index].score = criteriaScore!;
-                      } else {
-                        print(
-                          'Warning: No matching criteria found in the contestant\'s list.',
-                        );
-                        print(
-                          'List of criteria names in the contestant: ${contestant.criterias.map((c) => c.criterianame).toList()}',
-                        );
-                      }
-                      updateTotalScore(contestant!);
-                    } else {
-                      print(
-                        'Warning: criteriaName is null. Set a default value or handle this case.',
-                      );
-                    }
-                  } else {
-                    print('Warning: Contestant is null.');
-                  }
-                });
-              },
-              decoration: InputDecoration(
-                hintStyle: const TextStyle(
-                  color: Colors.grey,
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  vertical: 10.0,
-                  horizontal: 15.0,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
-                  borderSide: const BorderSide(
-                    color: Color.fromARGB(255, 5, 70, 20),
-                    width: 2.0,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(
-                    color: Colors.grey.withOpacity(0.5),
-                    width: 1.0,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
+    return Text(
+      '$criterianame: $percentage%',
+      style: finalStyle,
     );
   }
+  // Widget buildCriteriaRow(String criterianame, String percentage) {
+  //   TextEditingController _scoreController = TextEditingController();
+  //   return Row(
+  //     children: [
+  //       Padding(
+  //         padding: const EdgeInsets.only(left: 20),
+  //         child: Text(
+  //           criterianame,
+  //           style: const TextStyle(
+  //             fontWeight: FontWeight.w500,
+  //             color: Colors.green,
+  //           ),
+  //         ),
+  //       ),
+  //       const SizedBox(width: 10), // Adjust the spacing as needed
+  //       Container(
+  //         width: 50, // Adjust the width as needed
+  //         child: Padding(
+  //           padding: const EdgeInsets.only(left: 20),
+  //           child: Text(
+  //             percentage, // Display the actual percentage value
+  //             style: const TextStyle(
+  //               color: Colors.green,
+  //             ),
+  //           ),
+  //         ),
+  //       ),
+
+  //       const SizedBox(width: 30),
+  //       Expanded(
+  //         child: Container(
+  //           height: 50,
+  //           width: 90,
+  //           child: TextField(
+  //             controller: _scoreController,
+  //             keyboardType: TextInputType.number,
+  //             onChanged: (score) {
+  //               print('onChanged - criteriaName: $criterianame');
+  //               setState(() {
+  //                 criteriaScore = int.tryParse(score) ?? 9;
+
+  //                 if (contestant != null) {
+  //                   if (criterianame != null) {
+  //                     getCriteriaScore(
+  //                       contestant!,
+  //                       criterianame,
+  //                       criteriaScore!,
+  //                     );
+  //                     int index = contestant.criterias.indexWhere(
+  //                       (criteria) =>
+  //                           criteria.criterianame.trim().toLowerCase() ==
+  //                           criterianame.trim().toLowerCase(),
+  //                     );
+
+  //                     if (index != -1) {
+  //                       contestant.criterias[index].score = criteriaScore!;
+  //                     } else {
+  //                       print(
+  //                         'Warning: No matching criteria found in the contestant\'s list.',
+  //                       );
+  //                       print(
+  //                         'List of criteria names in the contestant: ${contestant.criterias.map((c) => c.criterianame).toList()}',
+  //                       );
+  //                     }
+  //                     updateTotalScore(contestant!);
+  //                   } else {
+  //                     print(
+  //                       'Warning: criteriaName is null. Set a default value or handle this case.',
+  //                     );
+  //                   }
+  //                 } else {
+  //                   print('Warning: Contestant is null.');
+  //                 }
+  //               });
+  //             },
+  //             decoration: InputDecoration(
+  //               hintStyle: const TextStyle(
+  //                 color: Colors.grey,
+  //               ),
+  //               contentPadding: const EdgeInsets.symmetric(
+  //                 vertical: 10.0,
+  //                 horizontal: 15.0,
+  //               ),
+  //               focusedBorder: OutlineInputBorder(
+  //                 borderRadius: BorderRadius.circular(30),
+  //                 borderSide: const BorderSide(
+  //                   color: Color.fromARGB(255, 5, 70, 20),
+  //                   width: 2.0,
+  //                 ),
+  //               ),
+  //               enabledBorder: OutlineInputBorder(
+  //                 borderRadius: BorderRadius.circular(10),
+  //                 borderSide: BorderSide(
+  //                   color: Colors.grey.withOpacity(0.5),
+  //                   width: 1.0,
+  //                 ),
+  //               ),
+  //             ),
+  //           ),
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 }
 
 extension IndexedIterable<E> on Iterable<E> {
