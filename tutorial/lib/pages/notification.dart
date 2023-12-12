@@ -127,6 +127,16 @@ class _NotifState extends State<Notif> {
     );
   }
 
+  Future<void> refreshNotifications() async {
+    try {
+      setState(() {
+        notifications = fetchNotifications(widget.userId);
+      });
+    } catch (error) {
+      print('Error refreshing notifications: $error');
+    }
+  }
+
   Future<void> updateJudgeConfirmationStatus(String userId) async {
     try {
       final response = await http.post(
@@ -147,6 +157,38 @@ class _NotifState extends State<Notif> {
     }
   }
 
+  Future<void> rejectJudgeRequest(String userId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('http://localhost:8080/reject-request/$userId'),
+      );
+
+      if (response.statusCode == 200) {
+        print('Judge request rejected successfully');
+      } else {
+        print('Failed to reject judge request');
+      }
+    } catch (error) {
+      print('Error rejecting judge request: $error');
+    }
+  }
+
+  Future<void> deleteNotification(String userId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('http://localhost:8080/delete-notification/$userId'),
+      );
+
+      if (response.statusCode == 200) {
+        print('Notification deleted successfully');
+      } else {
+        print('Failed to delete notification');
+      }
+    } catch (error) {
+      print('Error deleting notification: $error');
+    }
+  }
+
   void showConfirmationDialog(
       BuildContext context, String notificationBody, String userId) {
     showDialog(
@@ -157,17 +199,21 @@ class _NotifState extends State<Notif> {
           content: Text('Do you want to accept or reject this notification?\n'),
           actions: [
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 // Handle accept logic here
                 updateJudgeConfirmationStatus(userId);
+                await deleteNotification(userId);
+                await refreshNotifications();
                 Navigator.of(context).pop(); // Close the dialog
               },
               child: Text('Accept'),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 // Handle reject logic here
-                print('Rejected: $notificationBody');
+                rejectJudgeRequest(userId);
+                await deleteNotification(userId);
+                await refreshNotifications();
                 Navigator.of(context).pop(); // Close the dialog
               },
               child: Text('Reject'),

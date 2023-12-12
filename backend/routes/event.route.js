@@ -248,7 +248,7 @@ router.get('/events/:accessCode', async (req, res) => {
 });
 
 
-router.get('/events/:eventId',verifyToken, async (req, res) => {
+router.get('/event/:eventId', async (req, res) => {
   try {
     const eventId = req.params.eventId;
     if (!eventId || typeof eventId !== 'string') {

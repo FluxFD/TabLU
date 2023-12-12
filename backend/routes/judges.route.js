@@ -54,4 +54,19 @@ router.post('/update-confirmation', async (req, res) => {
   }
 });
 
+router.delete('/reject-request/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    // Delete judge entry with the specified userId
+    await Judge.findOneAndDelete({ userId: userId });
+
+    res.status(200).json({ message: 'Judge request rejected and entry deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
 module.exports = router;

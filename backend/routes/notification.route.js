@@ -101,6 +101,20 @@ router.get('/notifications/:eventId', async (req, res) => {
   }
   
 });
+
+router.delete('/delete-notification/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    // Delete notification document with the specified userId
+    await Notification.findOneAndDelete({ userId: userId });
+
+    res.status(200).json({ message: 'Notification deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
   
 
 module.exports = router;

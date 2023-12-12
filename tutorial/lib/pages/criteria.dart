@@ -419,6 +419,7 @@ class _CriteriasState extends State<Criterias> {
                       //     ),
                       //   ),
                       // );
+                      Navigator.of(context).pop();
                     } else {
                       print(
                           'Failed to fetch event data. Status code: ${response.statusCode}');

@@ -624,8 +624,8 @@ class _ScoreCardState extends State<ScoreCard> {
       final String eventId = await fetchEventId();
       print('Fetched Event ID: $eventId');
       if (eventId.isNotEmpty) {
-        final response = await http
-            .get(Uri.parse("http://192.168.1.2:8080/events/$eventId"));
+        final response =
+            await http.get(Uri.parse("http://192.168.1.2:8080/event/$eventId"));
         print('Event Details Response Status Code: ${response.statusCode}');
         if (response.statusCode == 200) {
           dynamic eventData = jsonDecode(response.body);
@@ -666,7 +666,7 @@ class _ScoreCardState extends State<ScoreCard> {
   Future<void> fetchContestants(String eventId) async {
     try {
       final response = await http.get(
-        Uri.parse("http://10.0.2.2:8080/events/$eventId/contestants"),
+        Uri.parse("http://localhost:8080/events/$eventId/contestants"),
       );
       if (response.statusCode == 200) {
         final dynamic contestantData = jsonDecode(response.body);
@@ -699,7 +699,7 @@ class _ScoreCardState extends State<ScoreCard> {
       {VoidCallback? onCriteriaFetched}) async {
     try {
       final response = await http
-          .get(Uri.parse("http://10.0.2.2:8080/events/$eventId/criteria"));
+          .get(Uri.parse("http://localhost:8080/events/$eventId/criteria"));
       print('Fetch Criteria - Status Code: ${response.statusCode}');
       print('Fetch Criteria - Response Body: ${response.body}');
 
