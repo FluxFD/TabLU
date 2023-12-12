@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:tutorial/pages/dashboard.dart';
+
 class Notif extends StatefulWidget {
   final String userId;
 
