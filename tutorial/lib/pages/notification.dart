@@ -76,7 +76,7 @@ class _NotifState extends State<Notif> {
   Widget listView(List<dynamic> notifications) {
     return ListView.separated(
       itemBuilder: (context, index) {
-        return listViewItem(notifications[index]);
+        return listViewItem(context, notifications[index]);
       },
       separatorBuilder: (context, index) {
         return Divider(
@@ -88,35 +88,93 @@ class _NotifState extends State<Notif> {
     );
   }
 
-  Widget listViewItem(dynamic notification) {
-    // Extract data from the notification and display accordingly
-    // Modify as per your notification data structure
-
+  Widget listViewItem(BuildContext context, dynamic notification) {
     final DateTime date = DateTime.parse(notification['date']);
     final String formattedDate = '${date.day}-${date.month}-${date.year}';
-
     final String body = notification['body'];
+    final String notificationType = notification['type'];
+    final String userId = notification['userId'];
 
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 11, vertical: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          prefixIcon(),
-          Expanded(
-            child: Container(
-              margin: EdgeInsets.only(left: 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  message(body),
-                  timeAndDate(formattedDate),
-                ],
+    return GestureDetector(
+      onTap: () {
+        if (notificationType == 'confirmation') {
+          // Show accept and reject dialogue for confirmation type
+          showConfirmationDialog(context, body, userId);
+        }
+      },
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 11, vertical: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            prefixIcon(),
+            Expanded(
+              child: Container(
+                margin: EdgeInsets.only(left: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Text(userId),
+                    message(body),
+                    timeAndDate(formattedDate),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
+    );
+  }
+
+  Future<void> updateJudgeConfirmationStatus(String userId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:8080/update-confirmation'),
+        body: {
+          'userId': userId,
+          'isConfirm': true.toString(),
+        },
+      );
+
+      if (response.statusCode == 200) {
+        print('Judge confirmation status updated successfully');
+      } else {
+        print('Failed to update judge confirmation status');
+      }
+    } catch (error) {
+      print('Error updating judge confirmation status: $error');
+    }
+  }
+
+  void showConfirmationDialog(
+      BuildContext context, String notificationBody, String userId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirmation Notification'),
+          content: Text('Do you want to accept or reject this notification?\n'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                // Handle accept logic here
+                updateJudgeConfirmationStatus(userId);
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text('Accept'),
+            ),
+            TextButton(
+              onPressed: () {
+                // Handle reject logic here
+                print('Rejected: $notificationBody');
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text('Reject'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -141,7 +199,7 @@ class _NotifState extends State<Notif> {
     double textSize = 14;
     return Container(
       child: Text(
-        'Message: $body',
+        'Message\n$body',
         style: TextStyle(
           color: Colors.black,
           fontSize: textSize,

@@ -1,3 +1,4 @@
+//../models/judges.model.js
 const mongoose = require('mongoose');
 
 const judgeSchema = new mongoose.Schema({

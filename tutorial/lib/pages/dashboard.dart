@@ -43,6 +43,7 @@ class Event {
     // required this.contestants,
     // required this.criterias,
   });
+
   Map<String, dynamic> toJson() {
     return {
       'eventId': eventId,
@@ -383,30 +384,30 @@ class _SearchEventsState extends State<SearchEvents> {
         iconTheme: const IconThemeData(),
         actions: [
           IconButton(
-              icon: const Icon(
-                Icons.notifications,
-                color: Color.fromARGB(255, 5, 78, 7),
-              ),
-              onPressed: () async {
-                // Retrieve the token from shared preferences
-                String? token = await SharedPreferencesUtils.retrieveToken();
+            icon: const Icon(
+              Icons.notifications,
+              color: Color.fromARGB(255, 5, 78, 7),
+            ),
+            onPressed: () async {
+              // Retrieve the token from shared preferences
+              String? token = await SharedPreferencesUtils.retrieveToken();
 
-                if (token != null && token.isNotEmpty) {
-                  // Decode the token to get the userId
-                  print("Hello");
-                  Map<String, dynamic> jwtDecodedToken =
-                      JwtDecoder.decode(token);
-                  String userId = jwtDecodedToken['userId'];
-                  print("Hello");
-                  // Navigate to the Notif screen with the retrieved userId
-                  Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => Notif(userId: userId),
-                  ));
-                } else {
-                  // Handle the case where the token is not available
-                  print('No token found');
-                }
-              }),
+              if (token != null && token.isNotEmpty) {
+                // Decode the token to get the userId
+                print("Hello");
+                Map<String, dynamic> jwtDecodedToken = JwtDecoder.decode(token);
+                String userId = jwtDecodedToken['userId'];
+                print("Hello");
+                // Navigate to the Notif screen with the retrieved userId
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (context) => Notif(userId: userId),
+                ));
+              } else {
+                // Handle the case where the token is not available
+                print('No token found');
+              }
+            },
+          ),
         ],
       ),
       drawer: Drawer(
@@ -1187,31 +1188,12 @@ class NotificationApi {
 
         if (eventInfoResponse.statusCode == 200) {
           // Parse the response to extract event information
+          final Map<String, dynamic> eventInfo =
+              jsonDecode(eventInfoResponse.body);
 
-          final dynamic decodedResponse = jsonDecode(eventInfoResponse.body);
-
-          final String eventName;
-          final String user;
-          // Check if the list is not empty and extract information from the first element
-          if (decodedResponse is List) {
-            // Handle the case where the response is a list
-            if (decodedResponse.isNotEmpty) {
-              final Map<String, dynamic> eventInfo = decodedResponse[0];
-              eventName = eventInfo['eventName'];
-              user = eventInfo['user'];
-            } else {
-              print('Event list is empty.');
-              throw Exception('No event information available.');
-            }
-          } else if (decodedResponse is Map<String, dynamic>) {
-            // Handle the case where the response is a map
-            eventName = decodedResponse['eventName'];
-            user = decodedResponse['user'];
-          } else {
-            // Handle unexpected JSON format
-            print('Unexpected JSON format: $decodedResponse');
-            throw Exception('Unexpected JSON format');
-          }
+          // Extract eventName and user from the event information
+          final String eventName = eventInfo['eventName'];
+          final String user = eventInfo['user'];
 
           // Compose the notification body
           final String notificationBody =
@@ -1226,6 +1208,7 @@ class NotificationApi {
               'userId': userId,
               'body': notificationBody,
               'receiver': user,
+              'type': "confirmation"
             }),
           );
 
@@ -1315,25 +1298,26 @@ class _JoinEventsPageState extends State<JoinEvents> {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Successfully joined the event as a judge.'),
+          content: Text('Successfully sent request for access'),
           backgroundColor: Colors.green,
         ),
       );
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ScoreCard(
-            eventId: eventId,
-            eventData: widget.events.toJson(),
-            judges: widget.judges,
-          ),
-        ),
-      );
+
+      // Navigator.push(
+      //   context,
+      //   MaterialPageRoute(
+      //     builder: (context) => ScoreCard(
+      //       eventId: eventId,
+      //       eventData: widget.events.toJson(),
+      //       judges: widget.judges,
+      //     ),
+      //   ),
+      // );
     } catch (e) {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('You already join the event.'),
+          content: Text('You already requested for access.'),
           backgroundColor: Colors.red,
         ),
       );

@@ -212,10 +212,12 @@ router.post("/api-join-event", async (req, res) => {
   try {
     let userId = req.body.userId;
     let eventId = req.body.eventId;
+    let isConfirm = req.body.isConfirm;
     // Check if the user is already a judge for this event
     const existingJudge = await Judge.findOne({
       eventId: eventId,
       userId: userId,
+      isConfirm: isConfirm,
     });
 
     if (existingJudge) {
