@@ -256,6 +256,7 @@ class _SearchEventsState extends State<SearchEvents> {
   String event_venue = '';
   List<String> contestants = [];
   List<String> criterias = [];
+  int notificationCount = 0;
 
   void _getInitialInfo() {
     categories = CategoryModel.getCategories();
@@ -271,6 +272,40 @@ class _SearchEventsState extends State<SearchEvents> {
       contestants: [],
       criterias: [],
     );
+  }
+
+  Future<void> fetchAndCountNotifications() async {
+    try {
+      // Retrieve the token from shared preferences
+      String? token = await SharedPreferencesUtils.retrieveToken();
+
+      // Check if the token is not null before decoding
+      if (token != null && token.isNotEmpty) {
+        // Decode the token to extract user information
+        Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+        String userId = decodedToken['userId'];
+
+        // Make the API request with the userId
+        final response = await http
+            .get(Uri.parse('http://localhost:8080/get-notifications/$userId'));
+
+        if (response.statusCode == 200) {
+          List<dynamic> notifications = json.decode(response.body);
+          setState(() {
+            notificationCount = notifications.length;
+          });
+        } else {
+          // Handle server errors (e.g., 404, 500)
+          print('Server error: ${response.statusCode}');
+        }
+      } else {
+        // Handle case where the token is null
+        print('Token is null. Unable to fetch notifications.');
+      }
+    } catch (e) {
+      // Handle any exceptions (e.g., network error)
+      print('Error fetching notifications: $e');
+    }
   }
 
   Future<List<Event>> fetchEvents(String accessCode) async {
@@ -327,6 +362,7 @@ class _SearchEventsState extends State<SearchEvents> {
     super.initState();
     _getInitialInfo();
     _decodeToken();
+    fetchAndCountNotifications();
     authState = Provider.of<AuthState>(context, listen: false);
   }
 
@@ -364,6 +400,17 @@ class _SearchEventsState extends State<SearchEvents> {
   }
 
   TextEditingController searchController = TextEditingController();
+  Future<List<dynamic>> fetchNotifications(String userId) async {
+    final response = await http.get(
+      Uri.parse('http://localhost:8080/get-notifications/$userId'),
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load notifications');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -383,30 +430,53 @@ class _SearchEventsState extends State<SearchEvents> {
         backgroundColor: Colors.white,
         iconTheme: const IconThemeData(),
         actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.notifications,
-              color: Color.fromARGB(255, 5, 78, 7),
-            ),
-            onPressed: () async {
-              // Retrieve the token from shared preferences
-              String? token = await SharedPreferencesUtils.retrieveToken();
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(
+                  Icons.notifications,
+                  color: Color.fromARGB(255, 5, 78, 7),
+                ),
+                onPressed: () async {
+                  // Retrieve the token from shared preferences
+                  String? token = await SharedPreferencesUtils.retrieveToken();
 
-              if (token != null && token.isNotEmpty) {
-                // Decode the token to get the userId
-                print("Hello");
-                Map<String, dynamic> jwtDecodedToken = JwtDecoder.decode(token);
-                String userId = jwtDecodedToken['userId'];
-                print("Hello");
-                // Navigate to the Notif screen with the retrieved userId
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (context) => Notif(userId: userId),
-                ));
-              } else {
-                // Handle the case where the token is not available
-                print('No token found');
-              }
-            },
+                  if (token != null && token.isNotEmpty) {
+                    // Decode the token to get the userId
+                    print("Hello");
+                    Map<String, dynamic> jwtDecodedToken =
+                        JwtDecoder.decode(token);
+                    String userId = jwtDecodedToken['userId'];
+                    print("Hello");
+                    // Navigate to the Notif screen with the retrieved userId
+                    Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => Notif(userId: userId),
+                    ));
+                  } else {
+                    // Handle the case where the token is not available
+                    print('No token found');
+                  }
+                },
+              ),
+              Positioned(
+                right: 1,
+                top: 1,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    notificationCount.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -425,12 +495,7 @@ class _SearchEventsState extends State<SearchEvents> {
               currentAccountPicture: GestureDetector(
                 onTap: () {
                   /* AlertDialog(actions: [Widget],)
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ViewProfile(email: email, username: username,),
-                    ),
-                  );*/
+                 */
                   showDialog(
                     context: context,
                     builder: (BuildContext context) {
@@ -468,7 +533,7 @@ class _SearchEventsState extends State<SearchEvents> {
                                         height: 40,
                                         child: Center(
                                           child: Text(
-                                            'Username', // '${user.username}',
+                                            '${username}', // '${user.username}',
                                             style: const TextStyle(
                                               fontSize: 23,
                                               color: Color.fromARGB(
@@ -481,7 +546,7 @@ class _SearchEventsState extends State<SearchEvents> {
                                       //const SizedBox(height: 10),
                                       Center(
                                         child: Text(
-                                          'Email', // ${user.email}
+                                          '${email}', // ${user.email}
                                           style: TextStyle(
                                               fontSize: 15,
                                               color: Colors.black),
