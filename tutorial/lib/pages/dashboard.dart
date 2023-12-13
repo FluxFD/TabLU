@@ -232,6 +232,7 @@ class Criteria {
 
 class SearchEvents extends StatefulWidget {
   final token;
+
   const SearchEvents({required this.token, Key? key}) : super(key: key);
 
   @override
@@ -246,7 +247,6 @@ class _SearchEventsState extends State<SearchEvents> {
   List<CodeModel.CodeModel> code = [];
   late String email;
   late String username;
-
   String _id = '';
   String event_name = '';
   String event_date = '';

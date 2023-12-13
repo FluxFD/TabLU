@@ -8,7 +8,6 @@ import 'package:tutorial/pages/dashboard.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
 
-
 class Event {
   String eventId;
 //  String accessCode;
@@ -37,18 +36,22 @@ class Event {
     return Event(
       eventId: json['eventId'] != null ? json['eventId'].toString() : '',
       eventName: json['eventName'] != null ? json['eventName'].toString() : '',
-      eventCategory: json['eventCategory'] != null ? json['eventCategory'].toString() : '',
-      eventVenue: json['eventVenue'] != null ? json['eventVenue'].toString() : '',
-      eventOrganizer: json['eventOrganizer'] != null ? json['eventOrganizer'].toString() : '',
+      eventCategory:
+          json['eventCategory'] != null ? json['eventCategory'].toString() : '',
+      eventVenue:
+          json['eventVenue'] != null ? json['eventVenue'].toString() : '',
+      eventOrganizer: json['eventOrganizer'] != null
+          ? json['eventOrganizer'].toString()
+          : '',
       eventDate: json['eventDate'] != null ? json['eventDate'].toString() : '',
       eventTime: json['eventTime'] != null ? json['eventTime'].toString() : '',
       contestants: (json['contestants'] as List<dynamic>?)
-          ?.map((contestant) => Contestant.fromJson(contestant))
-          .toList() ??
+              ?.map((contestant) => Contestant.fromJson(contestant))
+              .toList() ??
           [],
       criterias: (json['criterias'] as List<dynamic>?)
-          ?.map((criteria) => Criteria.fromJson(criteria))
-          .toList() ??
+              ?.map((criteria) => Criteria.fromJson(criteria))
+              .toList() ??
           [],
     );
   }
@@ -137,10 +140,11 @@ class Contestant {
   @override
   int get hashCode => id.hashCode;
 }
+
 class Criteria {
   String criterianame;
   String percentage;
-  String eventId; 
+  String eventId;
   int score;
   Criteria({
     required this.criterianame,
@@ -148,7 +152,6 @@ class Criteria {
     required this.eventId,
     required this.score,
   });
-  
 
   Criteria copyWith({
     String? criterianame,
@@ -194,20 +197,17 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
 
   void fetchEvents() async {
     try {
-      final response =
-          await http.get(Uri.parse('http://10.0.2.2:8080/events'));
+      final response = await http.get(Uri.parse('http://10.0.2.2:8080/events'));
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         print('Fetched Events: $data');
         setState(() {
-          events =
-              data.map((json) => Event.fromJson(json)).toList();
+          events = data.map((json) => Event.fromJson(json)).toList();
           print('Fetched Events: $events');
         });
       } else {
         // Handle error
-        print(
-            'Failed to load events. Status code: ${response.statusCode}');
+        print('Failed to load events. Status code: ${response.statusCode}');
       }
     } catch (e) {
       // Handle other exceptions
@@ -239,15 +239,14 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
   }
 
   DateTime eventDateFromString(String date) {
-  try {
-    // Assuming 'eventDate' is in the format 'yyyy-MM-ddTHH:mm:ss.SSSZ'
-    return DateFormat("yyyy-MM-ddTHH:mm:ss.SSSZ").parse(date);
-  } catch (e) {
-    print('Error parsing date: $e');
-    return DateTime.now();
+    try {
+      // Assuming 'eventDate' is in the format 'yyyy-MM-ddTHH:mm:ss.SSSZ'
+      return DateFormat("yyyy-MM-ddTHH:mm:ss.SSSZ").parse(date);
+    } catch (e) {
+      print('Error parsing date: $e');
+      return DateTime.now();
+    }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -262,19 +261,17 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
             color: Color.fromARGB(255, 5, 78, 7),
           ),
         ),
-        
         backgroundColor: Colors.white,
         iconTheme: const IconThemeData(),
         leading: IconButton(
-  icon: const Icon(
-    Icons.arrow_back,
-    color: Color.fromARGB(255, 5, 78, 7),
-  ),
-  onPressed: () {
-    Navigator.pop(context); // Use pop to navigate back
-  },
-),
-
+          icon: const Icon(
+            Icons.arrow_back,
+            color: Color.fromARGB(255, 5, 78, 7),
+          ),
+          onPressed: () {
+            Navigator.pop(context); // Use pop to navigate back
+          },
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.only(left: 1, right: 1),
@@ -283,7 +280,7 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
             TableCalendar(
               locale: 'en_us',
               rowHeight: 80, // Adjust the row height as needed
-          
+
               headerStyle: const HeaderStyle(
                 formatButtonVisible: false,
                 titleCentered: true,
@@ -305,8 +302,7 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
               lastDay: DateTime.utc(2030, 01, 01),
               calendarBuilders: CalendarBuilders(
                 defaultBuilder: (context, date, events) {
-                  final formattedDate =
-                      DateFormat('yyyy-MM-dd').format(date);
+                  final formattedDate = DateFormat('yyyy-MM-dd').format(date);
                   final dateEvents = getEventsForSelectedDay();
                   print('Formatted Date: $formattedDate');
                   print('Date Events: $dateEvents');
@@ -314,10 +310,10 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
                     margin: const EdgeInsets.all(2.0),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                    
                       color: isSameDay(date, selectedDay)
                           ? dateEvents.isNotEmpty
-                              ? Colors.green // Highlight with green if events are present
+                              ? Colors
+                                  .green // Highlight with green if events are present
                               : Colors.blue // Highlight with blue if no events
                           : null,
                     ),
@@ -362,22 +358,21 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
                 },
               ),
             ),
-           if (getEventsForSelectedDay().isNotEmpty)
-  Flexible(
-    child: Container(
-      color: Colors.grey[200],
-      child: ListView.builder(
-        itemCount: getEventsForSelectedDay().length,
-        itemBuilder: (context, index) {
-          final event = getEventsForSelectedDay()[index];
-          return ListTile(
-            title: Text(event.eventName),
-          );
-        },
-      ),
-    ),
-  ),
-
+            if (getEventsForSelectedDay().isNotEmpty)
+              Flexible(
+                child: Container(
+                  color: Colors.grey[200],
+                  child: ListView.builder(
+                    itemCount: getEventsForSelectedDay().length,
+                    itemBuilder: (context, index) {
+                      final event = getEventsForSelectedDay()[index];
+                      return ListTile(
+                        title: Text(event.eventName),
+                      );
+                    },
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -411,16 +406,14 @@ class CodeModel {
               builder: (context) => CreateEventScreen(),
             ),
           );
-        }
-        else if (name == 'Events Joined') {
+        } else if (name == 'Events Joined') {
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => EventsJoined(),
             ),
           );
-        }
-         else if (name == 'Event calendar') {
+        } else if (name == 'Event calendar') {
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -461,7 +454,6 @@ class CodeModel {
         boxIsSelected: false,
       ),
     );
-
 
     code.add(
       CodeModel(

@@ -3,12 +3,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
-import 'package:tutorial/pages/eventInfo.dart';
+import 'package:tutorial/pages/eventinfo.dart';
 import 'package:tutorial/pages/globals.dart';
 import 'package:tutorial/pages/dashboard.dart';
 import 'package:tutorial/utility/sharedPref.dart';
-
-import '../main.dart';
 
 class EventsManagement extends StatefulWidget {
   const EventsManagement({Key? key}) : super(key: key);
@@ -39,7 +37,7 @@ class Event {
   factory Event.fromJson(Map<String, dynamic> json) {
     return Event(
       eventName: json['event_name'] ?? 'Default Event Name',
-      eventId: json['event_id'] ?? '',
+      eventId: json['_id'] ?? '',
       eventCategory: json['event_category'] ?? 'Default Category',
       eventOrganizer: json['event_organizer'] ?? 'Default Organizer',
       eventVenue: json['event_venue'] ?? 'Default Venue',
@@ -51,6 +49,7 @@ class Event {
 
 class _EventsManagementState extends State<EventsManagement> {
   String? token;
+  List<Event> events = [];
 
   Future<List<Event>> fetchEventData(String eventId) async {
     token = await SharedPreferencesUtils.retrieveToken();
@@ -59,7 +58,7 @@ class _EventsManagementState extends State<EventsManagement> {
           await http.get(Uri.parse('http://localhost:8080/api/events'));
       if (response.statusCode == 200) {
         final dynamic eventData = json.decode(response.body);
-
+        print(eventData);
         if (eventData is List) {
           // If the response is a list, directly return the list of events
           return eventData.map((event) => Event.fromJson(event)).toList();
@@ -150,7 +149,7 @@ class _EventsManagementState extends State<EventsManagement> {
             } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
               return Center(child: Text('No events available'));
             } else {
-              List<Event> events = snapshot.data!;
+              events = snapshot.data!;
 
               return ListView.builder(
                 itemCount: events.length,
@@ -180,10 +179,12 @@ class _EventsManagementState extends State<EventsManagement> {
                                   icon: Icon(Icons.edit),
                                   onPressed: () {
                                     isAdding = false;
-                                    Navigator.of(context).push(
+
+                                    Navigator.push(
+                                      context,
                                       MaterialPageRoute(
-                                        builder: (context) =>
-                                            CreateEventScreen(),
+                                        builder: (context) => EditEventScreen(
+                                            eventId: events[index].eventId),
                                       ),
                                     );
                                   },
@@ -210,8 +211,9 @@ class _EventsManagementState extends State<EventsManagement> {
           backgroundColor: Colors.green,
           child: const Icon(Icons.add, color: Colors.white),
           onPressed: () {
-            Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => CreateEventScreen()));
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (context) =>
+                    EditEventScreen(eventId: events[0].eventId)));
           },
         ));
   }

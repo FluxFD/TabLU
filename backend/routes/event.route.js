@@ -251,6 +251,7 @@ router.get('/events/:accessCode', async (req, res) => {
 router.get('/event/:eventId', async (req, res) => {
   try {
     const eventId = req.params.eventId;
+    console
     if (!eventId || typeof eventId !== 'string') {
       return res.status(httpStatus.BAD_REQUEST).json({ error: 'Invalid event ID' });
     }
@@ -483,6 +484,45 @@ router.get('/events/:accessCode', async (req, res) => {
     console.error('Error fetching event:', error);
     console.error(error.stack);
     return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Define the route for editing an event
+router.put('/events/:eventId', async (req, res) => {
+  try {
+    const eventId = req.params.eventId;
+    
+    // Ensure that the eventId is valid
+    if (!eventId || typeof eventId !== 'string') {
+      return res.status(httpStatus.BAD_REQUEST).json({ error: 'Invalid event ID' });
+    }
+
+    // Find the event by ID
+    const event = await Event.findById(eventId);
+
+    if (!event) {
+      return res.status(httpStatus.NOT_FOUND).json({ error: 'Event not found' });
+    }
+
+    // Update the event with new data
+    event.event_name = req.body.eventName;
+    event.event_category = req.body.eventCategory;
+    event.event_venue = req.body.eventVenue;
+    event.event_organizer = req.body.eventOrganizer;
+    event.event_date = req.body.eventDate;
+    event.event_time = req.body.eventTime;
+
+    // Save the updated event
+    await event.save();
+
+    // Respond with the edited event
+    res.status(httpStatus.OK).json({
+      eventId: event._id,
+      message: 'Event edited successfully',
+    });
+  } catch (error) {
+    console.error('Error editing event:', error);
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Internal server error' });
   }
 });
 
