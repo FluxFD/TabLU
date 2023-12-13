@@ -330,7 +330,8 @@ class _CriteriasState extends State<Criterias> {
                   builder: (BuildContext context) {
                     return AlertDialog(
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.0)),
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
                       title: const Center(
                         child: Text(
                           'Add Criteria Information',
@@ -341,7 +342,9 @@ class _CriteriasState extends State<Criterias> {
                         ),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
-                          vertical: 30, horizontal: 20),
+                        vertical: 30,
+                        horizontal: 20,
+                      ),
                       content: SingleChildScrollView(
                         child: Column(
                           children: [
@@ -351,7 +354,9 @@ class _CriteriasState extends State<Criterias> {
                               decoration: const InputDecoration(
                                 labelText: 'Criteria Name',
                                 labelStyle: TextStyle(
-                                    fontSize: 15, color: Colors.green),
+                                  fontSize: 15,
+                                  color: Colors.green,
+                                ),
                               ),
                             ),
                             TextField(
@@ -363,7 +368,9 @@ class _CriteriasState extends State<Criterias> {
                               decoration: const InputDecoration(
                                 labelText: 'Percentage',
                                 labelStyle: TextStyle(
-                                    fontSize: 15, color: Colors.green),
+                                  fontSize: 15,
+                                  color: Colors.green,
+                                ),
                               ),
                             ),
                           ],
@@ -381,16 +388,33 @@ class _CriteriasState extends State<Criterias> {
                         ),
                         TextButton(
                           onPressed: () async {
-                            Criteria newCriterias = Criteria(
-                              criterianame: _criteriaNameController.text ?? '',
-                              percentage: _percentageController.text ?? '',
-                              eventId: widget.eventId,
-                            );
+                            // Calculate total percentage including the new criteria
+                            double newPercentage =
+                                double.tryParse(_percentageController.text) ??
+                                    0.0;
 
-                            insertItem(newCriterias);
-                            _criteriaNameController.clear();
-                            _percentageController.clear();
-                            Navigator.pop(context);
+                            double updatedTotalPercentage =
+                                totalPercentage + newPercentage;
+
+                            // Check if the new total percentage will exceed 100%
+                            if (updatedTotalPercentage <= 100.0) {
+                              Criteria newCriterias = Criteria(
+                                criterianame:
+                                    _criteriaNameController.text ?? '',
+                                percentage: newPercentage.toString(),
+                                eventId: widget.eventId,
+                              );
+
+                              insertItem(newCriterias);
+                              _criteriaNameController.clear();
+                              _percentageController.clear();
+                              Navigator.pop(context);
+                            } else {
+                              _showErrorSnackBar(
+                                'Error: Total percentage will exceed 100%. Current total: $totalPercentage',
+                                Colors.red,
+                              );
+                            }
                           },
                           child: const Text(
                             'Add',
@@ -430,6 +454,14 @@ class _CriteriasState extends State<Criterias> {
               onPressed: () async {
                 try {
                   final double totalPercentage = calculateTotalPercentage();
+
+                  if (totalPercentage != 100.0) {
+                    _showErrorSnackBar(
+                      'Error: Total percentage must be 100%. Current total: $totalPercentage',
+                      Colors.red,
+                    );
+                    return;
+                  }
 
                   if (totalPercentage == 100.0) {
                     if (criterias.isNotEmpty) {
@@ -472,10 +504,6 @@ class _CriteriasState extends State<Criterias> {
                           'Failed to fetch event data. Status code: ${response.statusCode}',
                         );
                       }
-                    } else {
-                      print(
-                        'Failed to fetch eventId. Defaulting to "default_event_id".',
-                      );
                     }
                   } else {
                     _showErrorSnackBar(
