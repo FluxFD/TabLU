@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'package:tutorial/pages/dashboard.dart';
+import 'package:tutorial/utility/sharedPref.dart';
 
 class Notif extends StatefulWidget {
   final String userId;
@@ -54,8 +55,12 @@ class _NotifState extends State<Notif> {
             Icons.arrow_back,
             color: Color(0xFF054E07),
           ),
-          onPressed: () {
-            Navigator.pop(context);
+          onPressed: () async {
+            String? token = await SharedPreferencesUtils.retrieveToken();
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                  builder: (context) => SearchEvents(token: token)),
+            );
           },
         ),
       ),
@@ -67,8 +72,47 @@ class _NotifState extends State<Notif> {
           } else if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           } else {
-            // Display notifications
-            return listView(snapshot.data!);
+            // Display notifications with swipe-to-delete functionality
+            return ListView.separated(
+              itemBuilder: (context, index) {
+                return Dismissible(
+                  key: Key(index.toString()),
+                  onDismissed: (direction) async {
+                    // Handle delete logic here
+
+                    final String notificationType =
+                        snapshot.data![index]['type'];
+                    final String userId = snapshot.data![index]['userId'];
+                    if (notificationType == "confirmation") {
+                      rejectJudgeRequest(userId);
+                    }
+                    await deleteNotification(snapshot.data![index]['userId']);
+                    await refreshNotifications();
+                  },
+                  background: Container(
+                    color: Colors.red,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Padding(
+                        padding: EdgeInsets.only(right: 16),
+                        child: Icon(
+                          Icons.delete,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  child: listViewItem(context, snapshot.data![index]),
+                );
+              },
+              separatorBuilder: (context, index) {
+                return Divider(
+                  height: 0,
+                  color: Colors.grey.shade400,
+                );
+              },
+              itemCount: snapshot.data!.length,
+            );
           }
         },
       ),
@@ -101,7 +145,7 @@ class _NotifState extends State<Notif> {
       onTap: () {
         if (notificationType == 'confirmation') {
           // Show accept and reject dialogue for confirmation type
-          showConfirmationDialog(context, body, userId);
+          showConfirmationDialog(context, body, userId, notification);
         }
       },
       child: Container(
@@ -191,8 +235,53 @@ class _NotifState extends State<Notif> {
     }
   }
 
-  void showConfirmationDialog(
-      BuildContext context, String notificationBody, String userId) {
+  Future<void> sendNotificationWithoutType(
+      String receiverId, String? username, String status) async {
+    try {
+      // Make an HTTP POST request to send a notification without specifying the type
+      final response = await http.post(
+        Uri.parse('http://localhost:8080/notifications'),
+        body: {
+          'userId': widget.userId,
+          'receiver': receiverId,
+          'body': '${username} has ${status} your request',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        print('Notification sent successfully');
+      } else {
+        print('Failed to send notification');
+      }
+    } catch (error) {
+      print('Error sending notification: $error');
+    }
+  }
+
+  Future<String?> getUsernameById(String userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://localhost:8080/get-username/$userId'),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> userData = json.decode(response.body);
+        return userData['username'];
+      } else {
+        print('Failed to get username');
+        return null;
+      }
+    } catch (error) {
+      print('Error getting username: $error');
+      return null;
+    }
+  }
+
+  void showConfirmationDialog(BuildContext context, String notificationBody,
+      String userId, dynamic notification) async {
+    final receiverId = notification['receiver'];
+    final username = await getUsernameById(receiverId);
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -206,6 +295,11 @@ class _NotifState extends State<Notif> {
                 updateJudgeConfirmationStatus(userId);
                 await deleteNotification(userId);
                 await refreshNotifications();
+                // Get the receiver ID from the current notification
+                final receiverId = notification['userId'];
+
+                await sendNotificationWithoutType(
+                    receiverId, username, "accepted");
                 Navigator.of(context).pop(); // Close the dialog
               },
               child: Text('Accept'),
@@ -216,6 +310,9 @@ class _NotifState extends State<Notif> {
                 rejectJudgeRequest(userId);
                 await deleteNotification(userId);
                 await refreshNotifications();
+                final receiverId = notification['userId'];
+                await sendNotificationWithoutType(
+                    receiverId, username, "rejected");
                 Navigator.of(context).pop(); // Close the dialog
               },
               child: Text('Reject'),

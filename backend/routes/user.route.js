@@ -279,4 +279,23 @@ router.get("/event-judges/:eventId", async (req, res) => {
   }
 });
 
+router.get('/get-username/:userId', async (req, res) => {
+  try {
+    // Assuming userId is the MongoDB ObjectId
+    const userId = req.params.userId;
+
+    // Find the user by userId and retrieve the username
+    const user = await User.findById(userId);
+
+    if (user) {
+      res.status(200).json({ username: user.username });
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 module.exports = router;
