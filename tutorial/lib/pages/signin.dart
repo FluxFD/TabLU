@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:tutorial/pages/dashboard.dart';
+import 'package:tutorial/utility/sharedPref.dart';
 
 class Signin extends StatefulWidget {
   const Signin({Key? key});
@@ -25,27 +26,27 @@ class _LoginPageState extends State<Signin> {
   Color emailBorderColor = Colors.grey.withOpacity(0.5);
 
   Future<void> signIn() async {
-    final Uri url = Uri.parse("http://10.0.2.2:8080/signin");
+    final Uri url = Uri.parse("http://localhost:8080/signin");
 
-      if (username.text.isEmpty || password.text.isEmpty) {
-    if (username.text.isEmpty) {
-      setState(() {
-        usernameBorderColor = Colors.red;
-      });
+    if (username.text.isEmpty || password.text.isEmpty) {
+      if (username.text.isEmpty) {
+        setState(() {
+          usernameBorderColor = Colors.red;
+        });
+      }
+      if (email.text.isEmpty) {
+        setState(() {
+          emailBorderColor = Colors.red;
+        });
+      }
+      if (password.text.isEmpty) {
+        setState(() {
+          passwordBorderColor = Colors.red;
+        });
+      }
+      showLoginErrorToast('Please fill in all fields');
+      return;
     }
-    if (email.text.isEmpty) {
-      setState(() {
-        emailBorderColor = Colors.red;
-      });
-    }
-    if (password.text.isEmpty) {
-      setState(() {
-        passwordBorderColor = Colors.red;
-      });
-    }
-    showLoginErrorToast('Please fill in all fields');
-    return; 
-  }
 
     try {
       final response = await http.post(
@@ -60,28 +61,29 @@ class _LoginPageState extends State<Signin> {
         }),
       );
 
-        if (response.statusCode == 201) {
+      if (response.statusCode == 201) {
         print('Sign-up successful');
-         Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => SearchEvents(token: '')),
-                );
-   
+        var jsonResponse = json.decode(response.body);
+        var myToken = jsonResponse['token'];
+        print(jsonResponse);
+        await SharedPreferencesUtils.saveToken(myToken);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => SearchEvents(token: "myToken")),
+        );
       } else if (response.statusCode == 400) {
         print('Username or Email already exists');
-         showLoginErrorToast('User or Email already exists');
-         setState(() {
-                usernameBorderColor = Colors.red;
-                passwordBorderColor = Colors.red;
-            });
-
+        showLoginErrorToast('User or Email already exists');
+        setState(() {
+          usernameBorderColor = Colors.red;
+          passwordBorderColor = Colors.red;
+        });
       } else {
         print('HTTP Error: ${response.statusCode}');
       }
     } catch (e) {
-    
       print('Error: $e');
-     
     }
   }
 
@@ -92,6 +94,7 @@ class _LoginPageState extends State<Signin> {
       textColor: Colors.white,
     );
   }
+
   @override
   Widget build(BuildContext context) {
     double x = MediaQuery.of(context).size.width;
@@ -283,8 +286,7 @@ class _LoginPageState extends State<Signin> {
                                       icon: Icon(
                                         showPassword
                                             ? Icons.visibility_off
-                                            : Icons
-                                                .visibility, 
+                                            : Icons.visibility,
                                         color: Colors.green,
                                       ),
                                     ))
@@ -329,33 +331,30 @@ class _LoginPageState extends State<Signin> {
                   ),
                 ),
                 GestureDetector(
-                  onTap: (){},
+                  onTap: () {},
                   child: Container(
-    height: y * 0.05,
-    width: x * 0.5,
-    child: ElevatedButton(
-      onPressed: () {
-        
-         signIn();
-      },
-      style: ElevatedButton.styleFrom(
-        primary: isSelected
-            ? Colors.green
-            : Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-      ),
-      child: Text(
-        'Sign Up',
-        style: TextStyle(
-          color: isSelected ? Colors.white : Colors.black,
-          fontSize: 18,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    ),
-  ),
+                    height: y * 0.05,
+                    width: x * 0.5,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        signIn();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        primary: isSelected ? Colors.green : Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      child: Text(
+                        'Sign Up',
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : Colors.black,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 30),
                 const SizedBox(
@@ -387,7 +386,7 @@ class _LoginPageState extends State<Signin> {
                     ],
                   ),
                 ),
-             /*   const SizedBox(
+                /*   const SizedBox(
                   height: 20,
                 ),
                 const Text(
@@ -435,7 +434,7 @@ class _LoginPageState extends State<Signin> {
                     ],
                   ),
                 ),*/
-              
+
                 Center(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -477,5 +476,3 @@ class _LoginPageState extends State<Signin> {
     );
   }
 }
-
-

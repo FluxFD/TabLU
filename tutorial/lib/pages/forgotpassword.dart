@@ -40,7 +40,7 @@ class _ForgotpassState extends State<Forgotpass> {
         );
       } else {
         print(
-            'Failed to send verification code. Status code: ${response.statusCode}');
+            'Failed to send verification code. Status code: ${response.statusCode}, ${response.body}');
         // Show a SnackBar or another UI element to inform the user about the error.
       }
     } catch (e) {
@@ -315,8 +315,10 @@ class _EmailVerificationState extends State<EmailVerification> {
 
 class ResetPass extends StatefulWidget {
   final String resetToken;
+  final String accessCode;
 
-  ResetPass({Key? key, required this.resetToken, required String accessCode})
+  ResetPass(
+      {Key? key, required this.resetToken, required String this.accessCode})
       : super(key: key);
 
   @override
@@ -327,6 +329,39 @@ class _ResetPassState extends State<ResetPass> {
   TextEditingController newPasswordController = TextEditingController();
   TextEditingController confirmPasswordController = TextEditingController();
   Color passwordBorderColor = Colors.grey.withOpacity(0.5);
+
+  Future<void> resetPassword(
+      String resetToken, String newPassword, String accessCode) async {
+    try {
+      final Uri url = Uri.parse("http://localhost:8080/reset-password");
+
+      final Map<String, dynamic> requestBody = {
+        'resetToken': resetToken,
+        'newPassword': newPassword,
+        'accessCode': accessCode,
+      };
+
+      var response = await http.post(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        var jsonResponse = json.decode(response.body);
+        print(jsonResponse); // Handle the response as needed
+      } else {
+        print(
+            'Failed to reset password. Status code: ${response.statusCode}, ${response.body}');
+        // Handle the failure, show a SnackBar, or another UI element to inform the user about the error.
+      }
+    } catch (e) {
+      print('Error resetting password: $e');
+      // Handle the error, show a SnackBar, or another UI element to inform the user about the error.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -471,6 +506,8 @@ class _ResetPassState extends State<ResetPass> {
 
                 if (newPassword == confirmPassword) {
                   // Perform the password reset
+                  await resetPassword(
+                      widget.resetToken, newPassword, widget.accessCode);
                   print(
                       'Password reset successful. New Password: $newPassword');
                   print('Sending resetToken: ${widget.resetToken}');

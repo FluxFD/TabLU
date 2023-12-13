@@ -50,18 +50,21 @@ router.post("/signin", async (req, res) => {
       email: email,
       password: password,
     });
+ // Save the new user to the database
+ await newUser.save();
 
-    // Save the new user to the database
-    await newUser.save();
+    const user = await User.findOne({ username: username });
 
-    // Respond with a success message and JWT token
-    const token = jwt.sign({ userId: newUser.id }, secretKey, {
-      expiresIn: "30d",
-    });
+   
+    const token = jwt.sign(
+      { userId: user._id, email: user.email, username: user.username },
+      secretKey
+    );
+    
 
     res
       .status(201)
-      .json({ message: "User registered successfully", token: token });
+      .json({ message: "User registered successfully", user: user, token: token });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
@@ -119,7 +122,7 @@ router.post("/send-verification-code", async (req, res) => {
   const user = await User.findOne({ email: userEmail });
 
   if (!user) {
-    return res.status(404).json({ error: "User not found" });
+    return res.status(404).json({ error: "Email not found" });
   }
 
   const verificationCode = generateVerificationCode();
@@ -195,8 +198,8 @@ router.post("/reset-password", async (req, res) => {
       return res.status(400).json({ message: "User not found" });
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    user.password = hashedPassword;
+    // const hashedPassword = await bcrypt.hash(newPassword, 10);
+     user.password = newPassword;
 
     await UserVerification.deleteOne({ userId: resetToken });
 
