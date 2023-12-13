@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:tutorial/pages/scorecard.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -180,6 +181,26 @@ class _CriteriasState extends State<Criterias> {
     }
   }
 
+  double totalPercentage = 0.0;
+  double calculateTotalPercentage() {
+    double totalPercentage = 0.0;
+    for (final criteria in criterias) {
+      final percentage = double.tryParse(criteria.percentage) ?? 0.0;
+      totalPercentage += percentage;
+    }
+    return totalPercentage;
+  }
+
+  void _showErrorSnackBar(String message, MaterialColor color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: Duration(seconds: 3),
+        backgroundColor: color,
+      ),
+    );
+  }
+
   Future<void> createCriteria(
       String eventId, Map<String, dynamic> criteriaData) async {
     if (eventId == null) {
@@ -189,14 +210,41 @@ class _CriteriasState extends State<Criterias> {
     if (criteriaData == null ||
         !criteriaData.containsKey('criterianame') ||
         !criteriaData.containsKey('percentage')) {
-      print('Error: Invalid criteria data');
+      _showErrorSnackBar('Error: Invalid criteria data', Colors.orange);
       return;
     }
-    final url = Uri.parse("http://192.168.1.2:8080/criteria");
+
+    final double totalPercentage = calculateTotalPercentage();
+
+    final double newPercentage =
+        double.tryParse(criteriaData['percentage'] ?? '0.0') ?? 0.0;
+
+    if (totalPercentage + newPercentage > 100.0) {
+      _showErrorSnackBar(
+          'Total percentage exceeds 100%. Adjusting percentages.',
+          Colors.orange);
+
+      final double adjustment = 100.0 - totalPercentage;
+
+      final double adjustedPercentage = newPercentage - adjustment;
+
+      criteriaData['percentage'] = adjustedPercentage.toString();
+
+      final int criteriaCount = criterias.length;
+      final double adjustmentPerCriteria = adjustment / criteriaCount;
+
+      for (final criteria in criterias) {
+        final double currentPercentage =
+            double.tryParse(criteria.percentage) ?? 0.0;
+        criteria.percentage =
+            (currentPercentage + adjustmentPerCriteria).toString();
+      }
+    }
+
+    final url = Uri.parse("http://localhost:8080/criteria");
 
     try {
       // Check if criteria with the same name already exists
-
       final response = await http.post(
         url,
         headers: <String, String>{
@@ -209,9 +257,11 @@ class _CriteriasState extends State<Criterias> {
       );
 
       if (response.statusCode == 201) {
-        print('Criteria created successfully');
+        _showErrorSnackBar('Criteria created successfully', Colors.green);
       } else {
-        print('Failed to create criteria. Status code: ${response.statusCode}');
+        _showErrorSnackBar(
+            'Failed to create criteria. Status code: ${response.statusCode}',
+            Colors.red);
 
         // Check for null response body
         final responseBody = response.body;
@@ -228,6 +278,7 @@ class _CriteriasState extends State<Criterias> {
 
   @override
   Widget build(BuildContext context) {
+    totalPercentage = calculateTotalPercentage();
     return Scaffold(
       appBar: AppBar(
         elevation: 0.3,
@@ -264,88 +315,93 @@ class _CriteriasState extends State<Criterias> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.green,
+        backgroundColor: totalPercentage == 100.0 ? Colors.grey : Colors.green,
         child: const Icon(
           Icons.add,
           color: Colors.white,
         ),
-        onPressed: () {
-          _criteriaNameController.clear();
-          _percentageController.clear();
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0)),
-                title: const Center(
-                  child: Text(
-                    'Add Criteria Information',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Color.fromARGB(255, 5, 78, 7),
-                    ),
-                  ),
-                ),
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
-                content: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: _criteriaNameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Criteria Name',
-                          labelStyle:
-                              TextStyle(fontSize: 15, color: Colors.green),
+        onPressed: totalPercentage == 100.0
+            ? null // Set onPressed to null to disable the button
+            : () {
+                _criteriaNameController.clear();
+                _percentageController.clear();
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.0)),
+                      title: const Center(
+                        child: Text(
+                          'Add Criteria Information',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Color.fromARGB(255, 5, 78, 7),
+                          ),
                         ),
                       ),
-                      TextField(
-                        controller: _percentageController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Percentage',
-                          labelStyle:
-                              TextStyle(fontSize: 15, color: Colors.green),
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 30, horizontal: 20),
+                      content: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 10),
+                            TextField(
+                              controller: _criteriaNameController,
+                              decoration: const InputDecoration(
+                                labelText: 'Criteria Name',
+                                labelStyle: TextStyle(
+                                    fontSize: 15, color: Colors.green),
+                              ),
+                            ),
+                            TextField(
+                              controller: _percentageController,
+                              keyboardType: TextInputType.number,
+                              inputFormatters: <TextInputFormatter>[
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              decoration: const InputDecoration(
+                                labelText: 'Percentage',
+                                labelStyle: TextStyle(
+                                    fontSize: 15, color: Colors.green),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(color: Colors.green),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () async {
-                      Criteria newCriterias = Criteria(
-                        criterianame: _criteriaNameController.text ?? '',
-                        percentage: _percentageController.text ?? '',
-                        eventId: widget.eventId,
-                      );
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(color: Colors.green),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            Criteria newCriterias = Criteria(
+                              criterianame: _criteriaNameController.text ?? '',
+                              percentage: _percentageController.text ?? '',
+                              eventId: widget.eventId,
+                            );
 
-                      insertItem(newCriterias);
-                      _criteriaNameController.clear();
-                      _percentageController.clear();
-                      Navigator.pop(context);
-                    },
-                    child: const Text(
-                      'Add',
-                      style: TextStyle(color: Colors.green),
-                    ),
-                  ),
-                ],
-              );
-            },
-          );
-        },
+                            insertItem(newCriterias);
+                            _criteriaNameController.clear();
+                            _percentageController.clear();
+                            Navigator.pop(context);
+                          },
+                          child: const Text(
+                            'Add',
+                            style: TextStyle(color: Colors.green),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.only(left: 16, right: 16, bottom: 10),
@@ -373,67 +429,65 @@ class _CriteriasState extends State<Criterias> {
             ElevatedButton(
               onPressed: () async {
                 try {
-                  if (criterias.isNotEmpty) {
-                    for (final criteria in criterias) {
-                      if (widget.eventId != null) {
-                        await createCriteria(
-                            widget.eventId!, criteria.toJson());
-                      } else {
-                        print('Error: Event ID is null');
+                  final double totalPercentage = calculateTotalPercentage();
+
+                  if (totalPercentage == 100.0) {
+                    if (criterias.isNotEmpty) {
+                      for (final criteria in criterias) {
+                        if (widget.eventId != null) {
+                          await createCriteria(
+                              widget.eventId!, criteria.toJson());
+                        } else {
+                          print('Error: Event ID is null');
+                        }
                       }
                     }
-                  }
 
-                  final String? eventId = await fetchEventId();
-                  if (eventId != null) {
-                    print('Fetching event with ID: $eventId');
-                    final response = await http
-                        .get(Uri.parse('http://10.0.2.2:8080/events/$eventId'));
+                    final String? eventId = await fetchEventId();
+                    if (eventId != null) {
+                      print('Fetching event with ID: $eventId');
+                      final response = await http.get(
+                        Uri.parse('http://localhost:8080/events/$eventId'),
+                      );
 
-                    if (response.statusCode == 200) {
-                      final Event event =
-                          Event.fromJson(jsonDecode(response.body));
+                      if (response.statusCode == 200) {
+                        final Event event =
+                            Event.fromJson(jsonDecode(response.body));
 
-                      final eventData = {
-                        'eventName': event.event_name,
-                        'eventDate': event.event_date,
-                        'eventTime': event.event_time,
-                        'accessCode': event.access_code,
-                        'eventVenue': event.event_venue ??
-                            'n/a', // Uncomment this line if event_venue is not null
-                        'eventOrganizer': event.event_organizer ??
-                            'n/a', // Add other fields as needed
-                        'contestants': event.contestants ??
-                            [], // Assuming contestants is an array
-                        'criteria': event.criteria ??
-                            [], // Assuming criteria is an array
-                        // Add other data as needed
-                      };
+                        final eventData = {
+                          'eventName': event.event_name,
+                          'eventDate': event.event_date,
+                          'eventTime': event.event_time,
+                          'accessCode': event.access_code,
+                          'eventVenue': event.event_venue ?? 'n/a',
+                          'eventOrganizer': event.event_organizer ?? 'n/a',
+                          'contestants': event.contestants ?? [],
+                          'criteria': event.criteria ?? [],
+                        };
 
-                      // Navigator.of(context).push(
-                      //   MaterialPageRoute(
-                      //     builder: (context) => ScoreCard(
-                      //       eventId: widget.eventId,
-                      //       eventData: eventData,
-                      //       //   judges: judges,
-                      //     ),
-                      //   ),
-                      // );
-                      Navigator.of(context).pop();
+                        // Navigate to the next screen or perform any other actions
+                        Navigator.of(context).pop();
+                      } else {
+                        print(
+                          'Failed to fetch event data. Status code: ${response.statusCode}',
+                        );
+                      }
                     } else {
                       print(
-                          'Failed to fetch event data. Status code: ${response.statusCode}');
+                        'Failed to fetch eventId. Defaulting to "default_event_id".',
+                      );
                     }
                   } else {
-                    print(
-                        'Failed to fetch eventId. Defaulting to "default_event_id".');
+                    _showErrorSnackBar(
+                        'Error: Total percentage must be 100%. Current total: $totalPercentage',
+                        Colors.red);
                   }
                 } catch (e) {
                   print('Error fetching event data: $e');
                 }
               },
               style: ElevatedButton.styleFrom(
-                primary: Colors.green,
+                primary: totalPercentage == 100.0 ? Colors.grey : Colors.green,
                 onPrimary: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 50),
                 elevation: 2,
@@ -529,7 +583,7 @@ class ListItemWidget extends StatelessWidget {
 }
 
 Future<String?> fetchEventId() async {
-  final String url = 'http://192.168.1.2:8080/latest-event-id';
+  final String url = 'http://localhost:8080/latest-event-id';
 
   try {
     final response = await http.get(Uri.parse(url));
