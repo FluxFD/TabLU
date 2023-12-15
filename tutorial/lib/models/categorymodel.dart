@@ -74,7 +74,7 @@ class _PageantsScreenState extends State<PageantsScreen> {
         showLoadingIndicator(context);
 
         final response = await http
-            .delete(Uri.parse('http://192.168.1.2:8080/events/$eventId'));
+            .delete(Uri.parse('http://10.0.2.2:8080/event/$eventId'));
 
         Navigator.of(context).pop();
         print('DELETE Request Status Code: ${response.statusCode}');
@@ -325,7 +325,7 @@ class _TalentShowsScreenState extends State<TalentShowsScreen> {
       // Use the token in the Authorization header for your HTTP request
       final response = await http.get(
         Uri.parse(
-            'http://192.168.1.2:8080/talent-events'), // Replace with your API URL
+            'http://10.0.2.2:8080/talent-events'), // Replace with your API URL
         headers: {
           'Authorization': 'Bearer $token', // Using the token in the header
         },
@@ -379,7 +379,7 @@ class _TalentShowsScreenState extends State<TalentShowsScreen> {
         showLoadingIndicator(context);
 
         final response = await http
-            .delete(Uri.parse('http://192.168.1.2:8080/events/$eventId'));
+            .delete(Uri.parse('http://10.0.2.2:8080/event/$eventId'));
 
         Navigator.of(context).pop();
         print('DELETE Request Status Code: ${response.statusCode}');
@@ -669,7 +669,7 @@ class _DebatesScreenState extends State<DebatesScreen> {
         showLoadingIndicator(context);
 
         final response = await http
-            .delete(Uri.parse('http://192.168.1.2:8080/events/$eventId'));
+            .delete(Uri.parse('http://10.0.2.2:8080/event/$eventId'));
 
         Navigator.of(context).pop();
         print('DELETE Request Status Code: ${response.statusCode}');
@@ -958,7 +958,7 @@ class _ArtContestScreenState extends State<ArtContestScreen> {
         showLoadingIndicator(context);
 
         final response = await http
-            .delete(Uri.parse('http://192.168.1.2:8080/events/$eventId'));
+            .delete(Uri.parse('http://10.0.2.2:8080/event/$eventId'));
 
         Navigator.of(context).pop();
         print('DELETE Request Status Code: ${response.statusCode}');

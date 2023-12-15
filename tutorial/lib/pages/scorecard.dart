@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
 import 'package:tutorial/pages/dashboard.dart';
+import 'package:tutorial/utility/sharedPref.dart';
 
 class Event {
   String eventId;
@@ -631,7 +632,7 @@ class _ScoreCardState extends State<ScoreCard> {
   }
 
   Future<String> fetchEventId() async {
-    final String url = 'http://localhost:8080/latest-event-id';
+    final String url = 'http://10.0.2.2:8080/latest-event-id';
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -660,11 +661,11 @@ class _ScoreCardState extends State<ScoreCard> {
 
   Future<void> fetchEventDetails() async {
     try {
-      final String eventId = await fetchEventId();
+      final String eventId = widget.eventId;
       print('Fetched Event ID: $eventId');
       if (eventId.isNotEmpty) {
         final response =
-            await http.get(Uri.parse("http://localhost:8080/event/$eventId"));
+            await http.get(Uri.parse("http://10.0.2.2:8080/event/$eventId"));
         print('Event Details Response Status Code: ${response.statusCode}');
         if (response.statusCode == 200) {
           dynamic eventData = jsonDecode(response.body);
@@ -705,7 +706,7 @@ class _ScoreCardState extends State<ScoreCard> {
   Future<void> fetchContestants(String eventId) async {
     try {
       final response = await http.get(
-        Uri.parse("http://localhost:8080/events/$eventId/contestants"),
+        Uri.parse("http://10.0.2.2:8080/events/$eventId/contestants"),
       );
       if (response.statusCode == 200) {
         final dynamic contestantData = jsonDecode(response.body);
@@ -738,7 +739,7 @@ class _ScoreCardState extends State<ScoreCard> {
       {VoidCallback? onCriteriaFetched}) async {
     try {
       final response = await http
-          .get(Uri.parse("http://localhost:8080/events/$eventId/criteria"));
+          .get(Uri.parse("http://10.0.2.2:8080/events/$eventId/criteria"));
       print('Fetch Criteria - Status Code: ${response.statusCode}');
       print('Fetch Criteria - Response Body: ${response.body}');
 
@@ -798,33 +799,6 @@ class _ScoreCardState extends State<ScoreCard> {
     }
   }
 
-  void main() {
-    runApp(MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: FutureBuilder<String>(
-        future: fetchEventId(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            final String eventId = snapshot.data ?? 'default_event_id';
-            return ScoreCard(
-              eventId: eventId,
-              eventData: eventData,
-              judges: widget.judges,
-            );
-          } else if (snapshot.hasError) {
-            return Center(
-              child: Text('Error: ${snapshot.error}'),
-            );
-          } else {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-        },
-      ),
-    ));
-  }
-
   //----------------------------------------------------------------------
 // i added this line for the categories
 // i have issues here.
@@ -833,7 +807,7 @@ class _ScoreCardState extends State<ScoreCard> {
 
   Future<Map<String, dynamic>> fetchEventData(String eventId) async {
     final response =
-        await http.get(Uri.parse('http://localhost:8080/events/$eventId'));
+        await http.get(Uri.parse('http://10.0.2.2:8080/events/$eventId'));
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> eventData = json.decode(response.body);
@@ -885,15 +859,14 @@ class _ScoreCardState extends State<ScoreCard> {
               Icons.home,
               color: Color(0xFF054E07),
             ),
-            onPressed: () {
+            onPressed: () async {
+              String? token = await SharedPreferencesUtils.retrieveToken();
               // var jsonResponse = json.decode(res.body);
               // var myToken = jsonResponse['token'];
               // prefs.setString('token', myToken);
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => const SearchEvents(
-                      token:
-                          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NTY2N2UzY2EwODcyZGI0NTNjZGFlOGQiLCJlbWFpbCI6ImF1YnJleWRhbm83QGdtYWlsLmNvbSIsInVzZXJuYW1lIjoiYWRtaW4xMjMiLCJpYXQiOjE3MDE1NjMzMDgsImV4cCI6MTcwMTU2NjkwOH0.lTl3R223HHLxj-vO1dJ1ulmGT1kPLOb2El_U-XZB1t4"),
+                  builder: (context) => SearchEvents(token: token),
                 ),
               );
             },

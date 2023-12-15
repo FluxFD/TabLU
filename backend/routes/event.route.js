@@ -226,28 +226,6 @@ router.get('/user-events', verifyToken, async (req, res) => {
   }
 });
 
-//Fetc events by access code
-router.get('/events/:accessCode', async (req, res) => {
-  try {
-    const accessCode = req.params.accessCode;
-    console.log('Searching for events with Access Code:', accessCode);
-
-    const events = await Event.find({ access_code: accessCode });
-    console.log(accessCode);
-    if (events.length > 0) {
-      console.log('Events found:', events);
-      res.status(httpStatus.OK).json(events[0]);
-    } else {
-      console.log('No events found for the given access code');
-      res.status(httpStatus.NOT_FOUND).json({ message: 'No events found' });
-    }
-  } catch (error) {
-    console.error('Error searching for events:', error);
-    res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal server error', error: error.message });
-  }
-});
-
-
 router.get('/event/:eventId', async (req, res) => {
   try {
     const eventId = req.params.eventId;
@@ -304,6 +282,30 @@ router.get('/event/:eventId', async (req, res) => {
   
 });
 
+//Fetc events by access code
+router.get('/events/:accessCode', async (req, res) => {
+  try {
+    const accessCode = req.params.accessCode;
+    console.log('Searching for events with Access Code:', accessCode);
+
+    const events = await Event.find({ access_code: accessCode });
+    console.log(accessCode);
+    if (events.length > 0) {
+      console.log('Events found:', events);
+      res.status(httpStatus.OK).json(events[0]);
+    } else {
+      console.log('No events found for the given access code');
+      res.status(httpStatus.NOT_FOUND).json({ message: 'No events found' });
+    }
+  } catch (error) {
+    console.error('Error searching for events:', error);
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
+
+
+
 router.get('/events/:eventId/contestants', async (req, res) => {
   try {
     const eventId = req.params.eventId;
@@ -346,35 +348,6 @@ router.get('/events/:eventId/criteria', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
-router.get('/latest-event-id', async (req, res) => {
-  try {
-    // Retrieve the latest event by sorting based on creation date
-    const latestEvent = await Event.findOne().sort({ _id: -1 });
-
-    if (latestEvent) {
-      // Log the latest event details for debugging
-      console.log('Latest Event:', latestEvent);
-
-      // Return the latest event ID in the response
-      res.json({ eventData: { eventId: String(latestEvent._id) } });
-
-    } else {
-      // Log a message if no events are found (for debugging)
-      console.log('No events found.');
-
-      // Return null if no events are found
-      res.json({ eventId: null });
-    }
-  } catch (err) {
-    // Log the error for debugging
-    console.error('Error in /latest-event-id:', err);
-
-    // Return a meaningful error response
-    res.status(500).json({ error: 'Failed to retrieve latest event ID', details: err.message });
-  }
-});
-
 
 router.get('/pageant-events', async (req, res) => {
   try {
@@ -442,7 +415,7 @@ router.get('/artcontest-events', async (req, res) => {
   }
 });
 
-router.delete('/events/:eventId', async (req, res) => {
+router.delete('/event/:eventId', async (req, res) => {
   const eventId = req.params.eventId;
   console.log('Received DELETE request for eventId:', eventId);
   try {

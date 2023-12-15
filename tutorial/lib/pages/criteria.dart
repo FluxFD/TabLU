@@ -150,7 +150,6 @@ class _CriteriasState extends State<Criterias> {
 
                 // Notify the list to update the UI
                 _listKey.currentState!.setState(() {});
-
                 Navigator.pop(context);
               },
               child: const Text(
@@ -215,11 +214,11 @@ class _CriteriasState extends State<Criterias> {
     }
 
     final double totalPercentage = calculateTotalPercentage();
-
+    print(totalPercentage);
     final double newPercentage =
         double.tryParse(criteriaData['percentage'] ?? '0.0') ?? 0.0;
-
-    if (totalPercentage + newPercentage > 100.0) {
+    print(newPercentage);
+    if (totalPercentage > 100.0) {
       _showErrorSnackBar(
           'Total percentage exceeds 100%. Adjusting percentages.',
           Colors.orange);
@@ -239,40 +238,40 @@ class _CriteriasState extends State<Criterias> {
         criteria.percentage =
             (currentPercentage + adjustmentPerCriteria).toString();
       }
-    }
+    } else {
+      final url = Uri.parse("http://10.0.2.2:8080/criteria");
 
-    final url = Uri.parse("http://localhost:8080/criteria");
+      try {
+        // Check if criteria with the same name already exists
+        final response = await http.post(
+          url,
+          headers: <String, String>{
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            ...criteriaData,
+            "eventId": eventId,
+          }),
+        );
 
-    try {
-      // Check if criteria with the same name already exists
-      final response = await http.post(
-        url,
-        headers: <String, String>{
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          ...criteriaData,
-          "eventId": eventId,
-        }),
-      );
-
-      if (response.statusCode == 201) {
-        _showErrorSnackBar('Criteria created successfully', Colors.green);
-      } else {
-        _showErrorSnackBar(
-            'Failed to create criteria. Status code: ${response.statusCode}',
-            Colors.red);
-
-        // Check for null response body
-        final responseBody = response.body;
-        if (responseBody != null && responseBody.isNotEmpty) {
-          print('Response body: $responseBody');
+        if (response.statusCode == 201) {
+          _showErrorSnackBar('Criteria created successfully', Colors.green);
         } else {
-          print('Empty or null response body');
+          _showErrorSnackBar(
+              'Failed to create criteria. Status code: ${response.statusCode}',
+              Colors.red);
+
+          // Check for null response body
+          final responseBody = response.body;
+          if (responseBody != null && responseBody.isNotEmpty) {
+            print('Response body: $responseBody');
+          } else {
+            print('Empty or null response body');
+          }
         }
+      } catch (e) {
+        print('Error creating criteria: $e');
       }
-    } catch (e) {
-      print('Error creating criteria: $e');
     }
   }
 
@@ -457,7 +456,7 @@ class _CriteriasState extends State<Criterias> {
 
                   if (totalPercentage != 100.0) {
                     _showErrorSnackBar(
-                      'Error: Total percentage must be 100%. Current total: $totalPercentage',
+                      'Error: Total percentage must be 100%. Current total: $totalPercentage%',
                       Colors.red,
                     );
                     return;
@@ -475,11 +474,11 @@ class _CriteriasState extends State<Criterias> {
                       }
                     }
 
-                    final String? eventId = await fetchEventId();
+                    final String? eventId = widget.eventId;
                     if (eventId != null) {
                       print('Fetching event with ID: $eventId');
                       final response = await http.get(
-                        Uri.parse('http://localhost:8080/events/$eventId'),
+                        Uri.parse('http://10.0.2.2:8080/event/$eventId'),
                       );
 
                       if (response.statusCode == 200) {
@@ -498,7 +497,16 @@ class _CriteriasState extends State<Criterias> {
                         };
 
                         // Navigate to the next screen or perform any other actions
-                        Navigator.of(context).pop();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ScoreCard(
+                              eventId: widget.eventId,
+                              eventData: {},
+                              judges: [],
+                            ),
+                          ),
+                        );
                       } else {
                         print(
                           'Failed to fetch event data. Status code: ${response.statusCode}',
@@ -608,78 +616,4 @@ class ListItemWidget extends StatelessWidget {
       ),
     );
   }
-}
-
-Future<String?> fetchEventId() async {
-  final String url = 'http://localhost:8080/latest-event-id';
-
-  try {
-    final response = await http.get(Uri.parse(url));
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> responseData = jsonDecode(response.body);
-
-      // Check if responseData contains the expected structure
-      if (responseData.containsKey('eventData')) {
-        final eventData = responseData['eventData'];
-        if (eventData.containsKey('eventId')) {
-          return eventData['eventId']?.toString();
-        } else {
-          // Handle unexpected response structure
-          print('Error: Unexpected response structure - missing eventId');
-          return null;
-        }
-      } else {
-        // Handle unexpected response structure
-        print('Error: Unexpected response structure - missing eventData');
-        return null;
-      }
-    } else if (response.statusCode == 404) {
-      // Handle case where no events are found
-      print('No events found.');
-      return null;
-    } else {
-      // Handle other error scenarios
-      print('Failed to fetch event ID. Status code: ${response.statusCode}');
-      return null;
-    }
-  } catch (e) {
-    // Handle network or other errors
-    print('Error fetching event ID: $e');
-    return null;
-  }
-}
-
-void main() {
-  runApp(
-    MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: FutureBuilder<String?>(
-        future: fetchEventId(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            if (snapshot.hasError || snapshot.data == null) {
-              print(
-                  'Error: Unable to fetch valid Event ID. Defaulting to "default_event_id"');
-              final String eventId =
-                  'default_event_id'; // Provide a default value
-              return Scaffold(
-                body: Criterias(eventId: eventId),
-              );
-            }
-
-            final String eventId = snapshot.data!;
-
-            return Scaffold(
-              body: Criterias(eventId: eventId),
-            );
-          } else {
-            return Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-        },
-      ),
-    ),
-  );
 }

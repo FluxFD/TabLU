@@ -142,7 +142,7 @@ class _LoginPageState extends State<Login> {
     }
 
     try {
-      final Uri url = Uri.parse("http://localhost:8080/login");
+      final Uri url = Uri.parse("http://10.0.2.2:8080/login");
       var res = await http.post(
         url,
         headers: <String, String>{

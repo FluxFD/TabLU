@@ -9,7 +9,7 @@ class Contestant {
   String name;
   String course;
   String department;
-  String? profilePic;
+  File? profilePic;
   File? selectedImage;
   String eventId;
   String? id;
@@ -34,7 +34,7 @@ class Contestant {
       'name': name,
       'course': course,
       'department': department,
-      'profilePic': profilePic,
+      'profilePic': selectedImage,
       'eventId': eventId,
       'selectedImagePath': selectedImagePath,
     };
@@ -108,15 +108,15 @@ class _ContestantsState extends State<Contestants> {
   }
 
   Future<void> addProfilePicture(Contestant contestant) async {
-    final XFile? image = await _picker.pickImage(
+    final XFile? image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
-      imageQuality: 50, // You can adjust the quality as needed
+      imageQuality: 50,
     );
 
     if (image != null) {
       print('Selected image path: ${image.path}');
       setState(() {
-        contestant.selectedImagePath = image.path;
+        _selectedImage = File(image.path);
       });
     } else {
       print('Image selection canceled');
@@ -124,10 +124,9 @@ class _ContestantsState extends State<Contestants> {
   }
 
   Future<void> changeProfilePicture(Contestant contestant) async {
-    // final ImagePicker _picker = ImagePicker();
-    final XFile? image = await _picker.pickImage(
+    final XFile? image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
-      imageQuality: 50, // You can adjust the quality as needed
+      imageQuality: 50,
     );
 
     if (image != null) {
@@ -142,27 +141,35 @@ class _ContestantsState extends State<Contestants> {
 
   Future<void> createContestant(
       String eventId, Map<String, dynamic> contestantData) async {
-    final url = Uri.parse("http://192.168.1.2:8080/contestants");
-
+    final url = Uri.parse("http://10.0.2.2:8080/contestants");
     try {
-      final response = await http.post(
-        url,
-        headers: <String, String>{
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          ...contestantData,
-          "eventId": eventId,
-          "profilePic": contestantData["profilePic"],
-        }),
-      );
+      // Read the image file
+      final imageFile = contestantData["profilePic"];
+      if (imageFile.existsSync()) {
+        final imageData = imageFile.readAsBytesSync();
+        final base64ImageData = base64Encode(imageData);
 
-      if (response.statusCode == 201) {
-        print('Contestant created successfully');
+        final response = await http.post(
+          url,
+          headers: <String, String>{
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            ...contestantData,
+            "eventId": eventId,
+            "profilePic": base64ImageData, // Include the base64 data
+          }),
+        );
+
+        if (response.statusCode == 201) {
+          print('Contestant created successfully');
+        } else {
+          print(
+              'Failed to create contestant. Status code: ${response.statusCode}');
+          print('Response body: ${response.body}');
+        }
       } else {
-        print(
-            'Failed to create contestant. Status code: ${response.statusCode}');
-        print('Response body: ${response.body}');
+        print("Image file not found: ${contestantData["profilePic"]}");
       }
     } catch (e) {
       print('Error creating contestant: $e');
@@ -176,6 +183,7 @@ class _ContestantsState extends State<Contestants> {
         _nameController.text = contestant.name;
         _courseController.text = contestant.course;
         _departmentController.text = contestant.department;
+
 
         return AlertDialog(
           shape:
@@ -211,7 +219,7 @@ class _ContestantsState extends State<Contestants> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: const Text('Select Image'),
+                  child: const Text('Select Imag'),
                 ),
                 TextField(
                   controller: _nameController,
@@ -249,10 +257,12 @@ class _ContestantsState extends State<Contestants> {
             ),
             TextButton(
               onPressed: () async {
-                contestant.name = _nameController.text;
-                contestant.course = _courseController.text;
-                contestant.department = _departmentController.text;
-                contestant.profilePic = _selectedImage?.path;
+                setState(() {
+                  contestant.name = _nameController.text;
+                  contestant.course = _courseController.text;
+                  contestant.department = _departmentController.text;
+                  contestant.profilePic = _selectedImage;
+                });
 
                 // Call a function to update the contestant information in the database
                 //       await updateContestant(widget.eventId, contestant);
@@ -269,6 +279,7 @@ class _ContestantsState extends State<Contestants> {
                 style: TextStyle(color: Colors.green),
               ),
             ),
+
           ],
         );
       },
@@ -277,8 +288,7 @@ class _ContestantsState extends State<Contestants> {
 
 // Function to update the contestant information in the database
   Future<void> updateContestant(String eventId, Contestant contestant) async {
-    final url =
-        Uri.parse("http://192.168.1.2:8080/contestants/${contestant.id}");
+    final url = Uri.parse("http://10.0.2.2:8080/contestants/${contestant.id}");
 
     try {
       final response = await http.put(
@@ -368,8 +378,10 @@ class _ContestantsState extends State<Contestants> {
                     children: [
                       CircleAvatar(
                         radius: 64,
-                        backgroundColor: Colors.grey[400],
-                        //  backgroundImage: FileImage(_selectedImage!),
+
+                        backgroundImage: _selectedImage != null
+                            ? FileImage(_selectedImage!)
+                            : null,
                       ),
                       SizedBox(
                         height: 15,
@@ -379,17 +391,17 @@ class _ContestantsState extends State<Contestants> {
                           await addProfilePicture(contestants.isNotEmpty
                               ? contestants[0]
                               : Contestant(
-                                  name: 'DefaultName',
-                                  course: 'DefaultCourse',
-                                  department: 'DefaultDepartment',
-                                  eventId: widget.eventId,
-                                  criterias: []));
+                              name: 'DefaultName',
+                              course: 'DefaultCourse',
+                              department: 'DefaultDepartment',
+                              eventId: widget.eventId,
+                              criterias: []));
 
-                          setState(() {});
                           if (_selectedImage != null) {
                             print(
                                 'Selected Image: ${_selectedImage!.path.split('/').last}');
                           }
+
                         },
                         style: ElevatedButton.styleFrom(
                           primary: Colors.green,
@@ -402,17 +414,7 @@ class _ContestantsState extends State<Contestants> {
                         ),
                         child: const Text('Select Image'),
                       ),
-                      if (_selectedImage != null)
-                        Column(
-                          children: [
-                            const SizedBox(height: 10),
-                            CircleAvatar(
-                              radius: 64,
-                              backgroundColor: Colors.grey[400],
-                              backgroundImage: FileImage(_selectedImage!),
-                            ),
-                          ],
-                        ),
+
                       SizedBox(
                         height: 20,
                       ),
@@ -459,7 +461,7 @@ class _ContestantsState extends State<Contestants> {
                           name: _nameController.text,
                           course: _courseController.text,
                           department: _departmentController.text,
-                          profilePic: _selectedImage?.path,
+                          profilePic: _selectedImage,
                           selectedImage: _selectedImage,
                           eventId: widget.eventId,
                           criterias: []);
@@ -618,46 +620,4 @@ class ListItemWidget extends StatelessWidget {
       ),
     );
   }
-}
-
-Future<String> fetchEventId() async {
-  final String url = '/latest-event-id';
-
-  try {
-    final response = await http.get(Uri.parse(url));
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> eventData = jsonDecode(response.body);
-      final String eventId = eventData['eventId'];
-      return eventId;
-    } else {
-      throw Exception('Failed to load event data');
-    }
-  } catch (e) {
-    throw Exception('Error: $e');
-  }
-}
-
-void main() {
-  runApp(MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: FutureBuilder<String>(
-      future: fetchEventId(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.done) {
-          final String eventId = snapshot.data ?? 'default_event_id';
-          return Scaffold(
-            body: Contestants(eventId: eventId),
-          );
-        } else if (snapshot.hasError) {
-          return Center(
-            child: Text('Error: ${snapshot.error}'),
-          );
-        } else {
-          return Center(
-            child: CircularProgressIndicator(),
-          );
-        }
-      },
-    ),
-  ));
 }

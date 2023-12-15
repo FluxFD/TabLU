@@ -16,7 +16,7 @@ class Notif extends StatefulWidget {
 
 Future<List<dynamic>> fetchNotifications(String userId) async {
   final response = await http.get(
-    Uri.parse('http://localhost:8080/get-notifications/$userId'),
+    Uri.parse('http://10.0.2.2:8080/get-notifications/$userId'),
   );
 
   if (response.statusCode == 200) {
@@ -186,7 +186,7 @@ class _NotifState extends State<Notif> {
   Future<void> updateJudgeConfirmationStatus(String userId) async {
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:8080/update-confirmation'),
+        Uri.parse('http://10.0.2.2:8080/update-confirmation'),
         body: {
           'userId': userId,
           'isConfirm': true.toString(),
@@ -206,7 +206,7 @@ class _NotifState extends State<Notif> {
   Future<void> rejectJudgeRequest(String userId) async {
     try {
       final response = await http.delete(
-        Uri.parse('http://localhost:8080/reject-request/$userId'),
+        Uri.parse('http://10.0.2.2:8080/reject-request/$userId'),
       );
 
       if (response.statusCode == 200) {
@@ -222,7 +222,7 @@ class _NotifState extends State<Notif> {
   Future<void> deleteNotification(String userId) async {
     try {
       final response = await http.delete(
-        Uri.parse('http://localhost:8080/delete-notification/$userId'),
+        Uri.parse('http://10.0.2.2:8080/delete-notification/$userId'),
       );
 
       if (response.statusCode == 200) {
@@ -240,7 +240,7 @@ class _NotifState extends State<Notif> {
     try {
       // Make an HTTP POST request to send a notification without specifying the type
       final response = await http.post(
-        Uri.parse('http://localhost:8080/notifications'),
+        Uri.parse('http://10.0.2.2:8080/notifications'),
         body: {
           'userId': widget.userId,
           'receiver': receiverId,
@@ -261,7 +261,7 @@ class _NotifState extends State<Notif> {
   Future<String?> getUsernameById(String userId) async {
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:8080/get-username/$userId'),
+        Uri.parse('http://10.0.2.2:8080/get-username/$userId'),
       );
 
       if (response.statusCode == 200) {

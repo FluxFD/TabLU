@@ -55,7 +55,7 @@ class _EventsManagementState extends State<EventsManagement> {
     token = await SharedPreferencesUtils.retrieveToken();
     try {
       final response =
-          await http.get(Uri.parse('http://localhost:8080/api/events'));
+          await http.get(Uri.parse('http://10.0.2.2:8080/api/events'));
       if (response.statusCode == 200) {
         final dynamic eventData = json.decode(response.body);
         print(eventData);
@@ -89,7 +89,7 @@ class _EventsManagementState extends State<EventsManagement> {
         throw Exception('Authentication token not found');
       }
 
-      final url = Uri.parse("http://localhost:8080/user-events");
+      final url = Uri.parse("http://10.0.2.2:8080/user-events");
       final response = await http.get(
         url,
         // Include the Authorization header with the token
@@ -155,55 +155,48 @@ class _EventsManagementState extends State<EventsManagement> {
                 itemCount: events.length,
                 itemBuilder: (context, index) {
                   Event event = events[index];
-                  return Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Card(
-                      child: ListTile(
-                        title: Text(event.eventName),
-                        subtitle:
-                            Text(''), // Add actual event details if available
-                        onTap: () {
-                          _navigateToBlankPage();
-                        },
-                        trailing: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(top: 0),
-                              child: Text('Status: Active'),
-                            ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: Icon(Icons.edit),
-                                  onPressed: () {
-                                    isAdding = false;
-
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => EditEventScreen(
-                                            eventId: events[index].eventId),
+                  return Card(
+                    child: ListTile(
+                      title: Text(event.eventName),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text('Status: Active'),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.edit),
+                                onPressed: () {
+                                  isAdding = false;
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => EditEventScreen(
+                                        eventId: events[index].eventId,
                                       ),
-                                    );
-                                  },
-                                ),
-                                IconButton(
-                                  onPressed: () {
-                                    _navigateToBlankPage();
-                                  },
-                                  icon: Icon(Icons.remove_red_eye),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  _navigateToBlankPage();
+                                },
+                                icon: Icon(Icons.remove_red_eye),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
+                      onTap: () {
+                        _navigateToBlankPage();
+                      },
                     ),
                   );
                 },
               );
+
             }
           },
         ),

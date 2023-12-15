@@ -5,7 +5,7 @@ const contestantSchema = new mongoose.Schema({
   name: String,
   course: String,
   department: String,
-  profilePic: String,
+  profilePic: Buffer || Blob,
   eventId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Event',
