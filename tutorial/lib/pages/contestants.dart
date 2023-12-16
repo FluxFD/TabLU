@@ -144,29 +144,35 @@ class _ContestantsState extends State<Contestants> {
     final url = Uri.parse("http://10.0.2.2:8080/contestants");
     try {
       // Read the image file
-      final imageFile = contestantData["profilePic"];
-      if (imageFile.existsSync()) {
-        final imageData = imageFile.readAsBytesSync();
-        final base64ImageData = base64Encode(imageData);
 
-        final response = await http.post(
-          url,
-          headers: <String, String>{
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode({
-            ...contestantData,
-            "eventId": eventId,
-            "profilePic": base64ImageData, // Include the base64 data
-          }),
+      final imageFile = contestantData["profilePic"];
+      print("File Image: ${imageFile}");
+      if (imageFile.existsSync()) {
+        // Create a multipart request
+        var request = http.MultipartRequest('POST', url);
+        request.headers['Content-Type'] = 'multipart/form-data';
+        // Add other fields to the request
+        request.fields['eventId'] = eventId;
+        request.fields['name'] = contestantData['name'];
+        request.fields['course'] = contestantData['course'];
+        request.fields['department'] = contestantData['department'];
+
+        // Add the image file to the request
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'profilePic', // This should match the field name in your multer configuration
+            imageFile.path,
+          ),
         );
+
+        // Send the request
+        var response = await request.send();
 
         if (response.statusCode == 201) {
           print('Contestant created successfully');
         } else {
-          print(
-              'Failed to create contestant. Status code: ${response.statusCode}');
-          print('Response body: ${response.body}');
+          print('Failed to create contestant. Status code: ${response.statusCode}');
+          print('Response body: ${await response.stream.bytesToString()}');
         }
       } else {
         print("Image file not found: ${contestantData["profilePic"]}");

@@ -4,7 +4,7 @@ const router = express.Router();
 const mongoose = require('mongoose'); 
 const { someFunction, Event } = require('../models/event.model');
 const Contestant = require('../models/contestant.model');
-const imageSize = require('image-size');
+const Upload = require('../models/upload.model');
 const multer = require('multer');
 
 // const contestantSchema = new mongoose.Schema({
@@ -23,14 +23,18 @@ const multer = require('multer');
 
 
 //Responsible for saving images to  the database
+const path = require('path');
+
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/');
+    const uploadPath = path.join(__dirname, 'uploads/');
+    cb(null, uploadPath);
   },
   filename: function (req, file, cb) {
     cb(null, Date.now() + '-' + file.originalname);
   },
 });
+
 
 var uploads = multer({
   storage: storage,
@@ -39,7 +43,8 @@ var uploads = multer({
     if (
       file.mimetype == "image/png" ||
       file.mimetype == "image/jpg" ||
-      file.mimetype == "image/jpeg"
+      file.mimetype == "image/jpeg" ||
+      file.mimetype == "application/octet-stream"
     
     ) {
       callback(null, true);
@@ -53,26 +58,6 @@ var uploads = multer({
   }*/
 });
 
-function isValidBase64Image(base64String) {
-  try {
-    // Remove the data URI prefix (e.g., 'data:image/png;base64,')
-    const base64Data = base64String.replace(/^data:image\/\w+;base64,/, '');
-
-    // Decode base64 string to a buffer
-    const buffer = Buffer.from(base64Data, 'base64');
-
-    // Get the image size information
-    const dimensions = imageSize(buffer);
-
-    // Check if dimensions are available (indicating a valid image)
-    return dimensions.width && dimensions.height;
-  } catch (error) {
-    // Handle decoding errors
-    console.error('Error decoding base64 image:', error);
-    return false;
-  }
-}
-
 // Middleware for "/upload" path
 router.post('/uploads', uploads.single('profilePic'), (req, res) => {
   console.log('Uploaded file:', req.file);
@@ -83,28 +68,64 @@ router.post('/uploads', uploads.single('profilePic'), (req, res) => {
   res.json({ filePath, fileName });
 });
 
+router.get('/uploads/:contestantId', async (req, res) => {
+  console.log("Ree");
+  try {
+    const contestantId = req.params.contestantId;
+    // Find the document in the uploads collection based on contestantId
+    const upload = await Upload.findOne({ contestantId });
+
+    if (!upload) {
+      return res.status(404).json({ error: 'Image not found' });
+    }
+    const filePaths = upload.path
+    const filePath = filePaths.match(/[^\/\\]+$/)[0];
+    const fileName = upload.filename;
+
+    res.json({ filePath, fileName });
+  } catch (error) {
+    console.error('Error fetching image path:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
 router.post('/contestants', uploads.single('profilePic'), async (req, res) => {
   try {
-    const { name, course, department, eventId, profilePic } = req.body;
+    const { name, course, department, eventId} = req.body;
     // Ensure that eventId is a valid ObjectId
     if (!mongoose.Types.ObjectId.isValid(eventId)) {
       return res.status(400).json({ error: 'Invalid eventId' });
     }
 
-    if (!isValidBase64Image(profilePic)) {
-      return res.status(400).json({ error: 'Invalid image format for profilePic' });
+    if(req.file || req.file.path){
+      console.log("dsd");
     }
+  
+    const profilePicPath = req.file ? req.file.path : undefined;
 
-    const profilePicPath = req.file ? req.body.profilePic : undefined;
+    const upload = new Upload({
+      filename: req.file.filename,
+      path: req.file.path,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      contestantId: null,
+    });
+
+    const savedUpload = await upload.save();
+
     const contestant = new Contestant({
       name,
       course,
       department,
-      profilePic: profilePic,
+      profilePic: savedUpload._id,
       eventId,
     });
 
     const savedContestant = await contestant.save();
+    upload.contestantId = savedContestant._id;
+    await upload.save();
 
     const event = await Event.findById(eventId);
     if (event) {

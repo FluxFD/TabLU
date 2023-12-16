@@ -1,5 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:tutorial/pages/scorecard.dart';
+import 'package:tutorial/utility/sharedPref.dart';
+import 'package:http/http.dart' as http;
 
 class Event {
   final String eventName;
@@ -18,9 +22,81 @@ class EventsJoined extends StatefulWidget {
 }
 
 class _EventsJoinedState extends State<EventsJoined> {
+  List<Event> eventsList = []; // Updated to store the fetched events
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch data when the widget is initialized
+    fetchData();
+  }
+
+  Future<String> fetchData() async {
+    // Retrieve token using your method
+    String? token = await SharedPreferencesUtils.retrieveToken();
+
+    try {
+      if (token == null || token.isEmpty) {
+        throw Exception('Token is missing or empty');
+      }
+
+      Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+      String userId = decodedToken['userId'];
+      // Construct the URL with the userId as a query parameter
+      String url = 'http://10.0.2.2:8080/get-all-judges-events?userId=$userId';
+
+      // Make the HTTP request
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      // Check the response status
+      if (response.statusCode == 200) {
+        // Parse the JSON response
+        dynamic responseData = jsonDecode(response.body);
+
+        // Check if the data is a map with the "events" key
+        if (responseData is Map<String, dynamic> && responseData.containsKey('events')) {
+          List<dynamic> eventsData = responseData['events'];
+          // Convert the eventsData to a list of Event objects
+          print(eventsData);
+          List<Event> events = eventsData.map((json) => Event(
+            json['eventId']['event_name'] ?? '',      // Use empty string if 'event_name' is null
+            json['eventId']['event_date'] ?? '',      // Use empty string if 'event_date' is null
+            json['eventId']['event_time'] ?? '',      // Use empty string if 'event_time' is null
+            json['eventId']['_id'] ?? '',             // Use empty string if '_id' is null
+          )).toList();
+          // Set the eventsList to the fetched events
+          setState(() {
+            eventsList = events;
+          });
+
+          // Return a success message or any other result
+          return 'Data fetched successfully';
+        } else {
+          print('Invalid data format. Expected a map with "events" key.');
+          return 'Invalid data format';
+        }
+      } else {
+        // Handle errors
+        print('Failed to fetch data. Error code: ${response.statusCode}');
+        return 'Failed to fetch data';
+      }
+    } catch (e) {
+      // Handle exceptions
+      print('Error: $e');
+      return 'An error occurred';
+    }
+  }
+
+
+
   List<Event> generateEventsList() {
     List<Event> events = [];
-    for (int i = 1; i <= 9; i++) {
+    for (int i = 1; i <= eventsList.length; i++) {
       events.add(
         Event(
           'Event $i',
@@ -35,7 +111,7 @@ class _EventsJoinedState extends State<EventsJoined> {
 
   @override
   Widget build(BuildContext context) {
-    List<Event> eventsList = generateEventsList();
+
 
     return Scaffold(
       appBar: AppBar(
@@ -93,7 +169,7 @@ class _EventsJoinedState extends State<EventsJoined> {
                           ),
                         ),
                         Text(
-                          'Status: '
+                          'Status: Active'
                         ),
                         
                         Text(

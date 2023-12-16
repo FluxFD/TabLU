@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const { someFunction, findEventByAccessCode, Event } = require('../models/event.model');
 const Contestant = require('../models/contestant.model');
-const Criteria = require('../models/criteria.model'); 
+const Judge = require('../models/judges.model'); 
 const httpStatus = require('http-status-codes');
 const mongoose = require('mongoose');
 const passport = require('../passport-config').passport; 
@@ -496,6 +496,27 @@ router.put('/events/:eventId', async (req, res) => {
   } catch (error) {
     console.error('Error editing event:', error);
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Internal server error' });
+  }
+});
+
+// GET all events based on user ID with populated judges
+router.get('/calendar-events/:userId', async (req, res) => {
+  const userId = req.params.userId;
+  try {
+    // Find events for the specified user
+    const event = await Event.find({ user: userId });
+
+    // Find judges that match the user ID and populate the events field
+    const judges = await Judge.find({ userId: userId, isConfirm: true }).populate('eventId');
+    const mergedEvents = [];
+    mergedEvents.push(event,judges);
+   
+    // Onlu send the judges event not including other judges data
+
+    res.status(200).json(mergedEvents.flat());
+  } catch (error) {
+    console.error('Error fetching events:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 

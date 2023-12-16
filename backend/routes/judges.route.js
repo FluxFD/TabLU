@@ -1,6 +1,9 @@
 const express = require('express');
+const User = require('../models/user.model');
 const Judge = require('../models/judges.model'); // Import the Judge model
 const router = express.Router();
+const mongoose = require('mongoose');
+
 
 // POST route for adding a judge
 router.post('/judges', async (req, res) => {
@@ -67,6 +70,41 @@ router.delete('/reject-request/:userId', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
+router.get('/judges/:eventId/confirmed', async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const isConfirm = true; // Assuming you want to fetch only those judges who have confirmed
+
+    // Find judges by eventId and isConfirm status
+    const judges = await Judge.find({ 
+      eventId: eventId, 
+      isConfirm: isConfirm ,
+    }).populate('userId');
+
+    res.status(200).json(judges);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+router.get('/get-all-judges-events', async (req, res) => {
+  try {
+    const userId = req.query.userId;
+
+    // Assuming you want to find judges based on the userId
+    const events = await Judge.find({ userId: userId }).populate('eventId');
+
+    // Send the response with the list of judges
+    res.status(200).json({ events: events });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
 
 
 module.exports = router;

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tutorial/pages/scorecard.dart';
@@ -16,6 +18,14 @@ class Criteria {
     required this.eventId,
     //required this.contestantId,
   });
+
+  factory Criteria.fromJson(Map<String, dynamic> json) {
+    return Criteria(
+      criterianame: json['criterianame'] ?? '',
+      percentage: json['percentage'] ?? '',
+      eventId: json['eventId'] ?? '',
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -80,8 +90,68 @@ class _CriteriasState extends State<Criterias> {
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   List<Criteria> criterias = [];
 
+
   TextEditingController _criteriaNameController = TextEditingController();
   TextEditingController _percentageController = TextEditingController();
+
+  Future<void> _fetchCriterias(String eventId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://10.0.2.2:8080/criteria/$eventId'),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> criteriaList = jsonDecode(response.body);
+
+        final List<Criteria> fetchedCriterias = criteriaList
+            .map((criteriaJson) => Criteria.fromJson(criteriaJson))
+            .toList();
+        setState(() {
+          criterias = fetchedCriterias;
+        });
+      } else {
+        print('Failed to fetch criteria. Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching criteria: $e');
+    }
+  }
+
+  Future<void> deleteCriteria(String eventId, String criteriaName) async {
+    final url = Uri.parse("http://10.0.2.2:8080/criteria?eventId=$eventId&criteriaName=$criteriaName");
+
+    try {
+      final response = await http.delete(url);
+      print('Response headers: ${response.headers}');
+      if (response.statusCode == 200) {
+
+        _showErrorSnackBar('Criteria deleted successfully', Colors.green);
+      } else {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final String errorMessage = responseData['error'];
+        _showErrorSnackBar(
+          'Failed to delete criteria: ${errorMessage}',
+          Colors.red,
+        );
+      }
+    } catch (e) {
+      print('Error deleting criteria: $e');
+    }
+  }
+
+  bool isLoading = true;
+  void initState() {
+    super.initState();
+    _fetchCriterias(widget.eventId);
+    Timer(Duration(seconds: 3), () {
+      if (mounted && isLoading) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    });
+    }
+
 
   void insertItem(Criteria criteria) {
     final newIndex = 0;
@@ -177,6 +247,7 @@ class _CriteriasState extends State<Criterias> {
         ),
         duration: const Duration(milliseconds: 300),
       );
+      deleteCriteria(removedItem.eventId, removedItem.criterianame);
     }
   }
 
@@ -254,11 +325,15 @@ class _CriteriasState extends State<Criterias> {
           }),
         );
 
+
+
         if (response.statusCode == 201) {
           _showErrorSnackBar('Criteria created successfully', Colors.green);
         } else {
+          final Map<String, dynamic> responseData = jsonDecode(response.body);
+          final String errorMessage = responseData['error'];
           _showErrorSnackBar(
-              'Failed to create criteria. Status code: ${response.statusCode}',
+              'Failed to create criteria: ${errorMessage}',
               Colors.red);
 
           // Check for null response body
@@ -277,6 +352,19 @@ class _CriteriasState extends State<Criterias> {
 
   @override
   Widget build(BuildContext context) {
+    if(criterias.isNotEmpty){
+      setState(() {
+        isLoading= false;
+      });
+    }
+    if (isLoading) {
+      // Data is still loading, display a loading indicator
+      return Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
     totalPercentage = calculateTotalPercentage();
     return Scaffold(
       appBar: AppBar(
