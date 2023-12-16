@@ -16,16 +16,29 @@ const { someFunction, Event } = require('../models/event.model');
         return res.status(409).json({ error: 'Criteria with the same name already exists' });
       }
   
-      const newCriteria = new Criteria({ 
-        criterianame, 
-        percentage, 
-        eventId
-      });
-  
       const associatedEvent = await Event.findById(eventId);
+  
       if (!associatedEvent) {
         return res.status(404).json({ error: 'Event not found' });
       }
+  
+      // Check if the total percentage is already 100
+      const totalPercentage = associatedEvent.criteria.reduce((total, criteria) => {
+        return total + parseFloat(criteria.percentage);
+      }, 0);
+  
+      const newPercentage = parseFloat(percentage);
+  
+      if (totalPercentage + newPercentage > 100) {
+        console.log("eew");
+        return res.status(400).json({ error: 'Total percentage exceeds 100%' });
+      }
+  
+      const newCriteria = new Criteria({
+        criterianame,
+        percentage,
+        eventId,
+      });
   
       const savedCriteria = await newCriteria.save();
   
@@ -47,26 +60,54 @@ const { someFunction, Event } = require('../models/event.model');
   });
   
   
+  router.get('/criteria/:eventId', async (req, res) => {
+    const eventId = req.params.eventId;
   
-  router.get('/criteria', async (req, res) => {
     try {
-      const criteria = await Criteria.find();
-      res.json(criteria);
+      const filteredCriterias = await Criteria.find({ eventId });
+      res.json(filteredCriterias);
     } catch (error) {
       res.status(500).json({ error: 'Internal Server Error' });
     }
   });
   
-  // API for deleting criteria
-  /*router.delete('/criteria/:id', async (req, res) => {
-    try {
-      const { id } = req.params;
-      await Criteria.findByIdAndDelete(id);
-      res.json({ message: 'Criteria deleted successfully' });
-    } catch (error) {
-      res.status(500).json({ error: 'Internal Server Error' });
+  
+  // router.get('/criteria', async (req, res) => {
+  //   try {
+  //     const criteria = await Criteria.find();
+  //     res.json(criteria);
+  //   } catch (error) {
+  //     res.status(500).json({ error: 'Internal Server Error' });
+  //   }
+  // });
+  
+ // API for deleting criteria
+router.delete('/criteria', async (req, res) => {
+  try {
+    const eventId = req.query.eventId;
+    const criteriaName = req.query.criteriaName;
+
+    // Find the criteria to delete
+    const criteriaToDelete = await Criteria.findOne({
+      eventId: eventId,
+      criterianame: criteriaName,
+    });
+
+    if (!criteriaToDelete) {
+      return res.status(404).json({ error: 'Criteria not found' });
     }
-  });*/
+
+    // Delete the criteria from the database
+    await Criteria.findByIdAndDelete(criteriaToDelete._id);
+
+    res.json({ message: 'Criteria deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting criteria:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
 
   
 

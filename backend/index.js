@@ -9,6 +9,7 @@ const mongoose = require('mongoose');
 const passport = require('passport');
 const session = require('express-session'); // Add this line
 const passportConfig = require('./passport-config');
+const path = require('path');
 
 //const verifyToken = require('event.route');
 mongoose.set('strictPopulate', false);
@@ -28,7 +29,7 @@ app.use(cors());
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, '/routes/uploads')));
 
 // const corsOptions = {
 //   origin: 'http://127.0.0.1:8080',

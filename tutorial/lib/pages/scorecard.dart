@@ -119,7 +119,7 @@ class Contestant {
           json['profilePic'] != null ? json['profilePic'].toString() : '',
       selectedImage:
           json['selectedImage'] != null ? json['selectedImage'].toString() : '',
-      id: json['id'] != null ? json['id'].toString() : '',
+      id: json['_id'] != null ? json['_id'].toString() : '',
       totalScore: json['totalScore'] != null ? json['totalScore'] : 0,
       criteriaScores: criteriaList != null && criteriaList.isNotEmpty
           ? List<int?>.from(
@@ -174,6 +174,29 @@ class Criteria {
   }
 }
 
+class Judge {
+  final String id; // Assuming each judge has an ID
+  final String name; // And a name
+
+  Judge({required this.id, required this.name});
+
+  factory Judge.fromJson(Map<String, dynamic> json) {
+    // Debug: Print the raw JSON to see what data is received.
+    print("Judge JSON: $json");
+
+    var judge = Judge(
+      id: json['_id'] ?? 'No ID', // Fallback to 'No ID' if null
+      name: json['userId']?['username'] ?? 'No Name', // Fallback to 'No Name' if null
+    );
+
+    // Debug: Print the created Judge object.
+    print("Created Judge: id=${judge.id}, name=${judge.name}");
+
+    return judge;
+  }
+}
+
+
 class ScoreCard extends StatefulWidget {
   String eventId;
   final Map<String, dynamic> eventData;
@@ -199,6 +222,8 @@ class _ScoreCardState extends State<ScoreCard> {
   late List<Contestant> contestants;
   late List<Criteria> criteria;
   late Map<String, dynamic> eventData;
+  late List<Judge> judges = [];
+
   VoidCallback? onCriteriaFetched;
 
   //----------------------------------------------------------------------
@@ -221,6 +246,24 @@ class _ScoreCardState extends State<ScoreCard> {
     );
     calculateInitialTotalScores();
     criterianame = "InitialValue";
+    fetchJudges(widget.eventId).then((loadedJudges) {
+      setState(() {
+        judges = loadedJudges;
+      });
+    });
+  }
+
+  Future<List<Judge>> fetchJudges(String eventId) async {
+    final url = Uri.parse('http://10.0.2.2:8080/judges/$eventId/confirmed');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      List<dynamic> judgesJson = json.decode(response.body);
+      print("Judges: ${judgesJson[0]['userId']['username']}");
+      return judgesJson.map((json) => Judge.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load judges');
+    }
   }
 
   Future<void> initializeData() async {
@@ -364,6 +407,28 @@ class _ScoreCardState extends State<ScoreCard> {
     print('Updated Contestants List: $_contestants');
   }
 
+  Future<String?> fetchImagePath(Contestant contestant) async {
+    final contestantId = contestant.id;
+    final url = Uri.parse('http://10.0.2.2:8080/uploads/${contestantId}'); // Replace with your server URL
+    try {
+      final response = await http.get(url, headers: {
+        'Content-Type': 'application/json',
+      });
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final path = "http://10.0.2.2:8080/uploads/";
+        // Find the document that matches the contestant.id
+        return path + data['filePath'];
+      } else {
+        print('Failed to fetch image path. Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching image path: $e');
+    }
+  }
+
+
   void showContestantDetailsDialog(
     BuildContext context,
     Contestant contestant,
@@ -391,9 +456,21 @@ class _ScoreCardState extends State<ScoreCard> {
                 Container(
                   height: 200,
                   width: 300,
-                  child: Image.asset(
-                    'assets/icons/aubrey.jpg',
-                    fit: BoxFit.cover,
+                  child: FutureBuilder<String?>(
+                    future: fetchImagePath(contestant), // Assuming fetchImagePath returns a String
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.done) {
+                        return Image.network(
+                          snapshot.data ?? '', // Replace with your server URL and actual filename
+                          width: 200, // Set the desired width
+                          height: 200, // Set the desired height
+                          fit: BoxFit.cover, // Adjust the BoxFit according to your needs
+                        );
+                      } else {
+                        // You can return a placeholder or loading indicator here
+                        return CircularProgressIndicator();
+                      }
+                    },
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -510,81 +587,29 @@ class _ScoreCardState extends State<ScoreCard> {
     );
   }
 
-  Widget buildContestantList(
-      List<Contestant> contestants, List<Criteria>? criterias) {
+  Widget buildContestantList(List<Contestant> contestants, List<Criteria>? criterias) {
     return Expanded(
       child: ListView.builder(
         itemCount: contestants.length,
         itemBuilder: (BuildContext context, int index) {
           Contestant contestant = contestants[index];
 
-          List<Widget> inputFields = [];
+          List<Widget> scoreFields = [];
           if (criterias != null && criterias.isNotEmpty) {
-            if (contestant.criteriaScores == null) {
-              contestant.criteriaScores =
-                  List<double>.filled(criterias.length, 0.0).cast<int?>();
-            } else if (contestant.criteriaScores.length != criterias.length) {
-              contestant.criteriaScores.length = criterias.length;
-            }
-
             for (int i = 0; i < criterias.length; i++) {
-              Criteria criteria = criterias[i];
-              double percentage = double.tryParse(criteria.percentage) ?? 0.0;
-              assert(i < contestant.criteriaScores.length);
-              num criteriaScore = contestant.criteriaScores[i] ?? 0;
-
-              TextEditingController textController =
-                  TextEditingController(text: "0");
-
-              inputFields.add(
+              scoreFields.add(
                 Expanded(
                   child: Container(
                     height: 30,
-                    padding: const EdgeInsets.only(top: 5),
                     alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.green),
-                      borderRadius: BorderRadius.circular(5.0),
-                    ),
-                    margin: EdgeInsets.all(10),
-                    child: Container(
-                      margin: EdgeInsets.only(
-                        bottom: 8.0,
-                        right: 0.0,
-                      ),
-                      child: Center(
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                initialValue: criteriaScore.toString(),
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                decoration: InputDecoration(
-                                  border: InputBorder.none,
-                                ),
-                                onChanged: (value) {
-                                  setState(() {
-                                    contestant.criteriaScores[i] =
-                                        double.tryParse(value)?.toInt() ?? 0;
-                                  });
-                                },
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(right: 8.0),
-                              child: Text(
-                                '%',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
+                    child: TextFormField(
+                      // Add appropriate TextEditingController and other properties
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Colors.green, // Set the border color here
+                          ),
                         ),
                       ),
                     ),
@@ -594,36 +619,25 @@ class _ScoreCardState extends State<ScoreCard> {
             }
           }
 
-          return Container(
-            height: 80,
-            child: Card(
-              elevation: 5.0,
-              margin:
-                  const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-              child: Row(
-                children: [
-                  const SizedBox(width: 75),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        contestant.name,
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                    ),
+          return Card(
+            elevation: 5.0,
+            margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(contestant.name, style: const TextStyle(fontSize: 16)),
                   ),
-                  ...inputFields,
-                  IconButton(
-                    icon: const Icon(
-                      Icons.remove_red_eye,
-                      color: Colors.green,
-                    ),
-                    onPressed: () {
-                      showContestantDetailsDialog(context, contestant);
-                    },
-                  ),
-                ],
-              ),
+                ),
+                ...scoreFields,
+                IconButton(
+                  icon: const Icon(Icons.remove_red_eye, color: Colors.green),
+                  onPressed: () {
+                    showContestantDetailsDialog(context, contestant);
+                  },
+                ),
+              ],
             ),
           );
         },
@@ -913,80 +927,80 @@ class _ScoreCardState extends State<ScoreCard> {
             ),
           ),
         ),
-        SizedBox(
-          height: 500,
-          width: 500,
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.only(left: 8.0),
-              child: SizedBox(
-                width: 500,
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            height: 33,
-                            padding: const EdgeInsets.only(top: 5),
-                            color: Colors.green,
-                            alignment: Alignment.topCenter,
-                            child: const Text(
-                              'Name',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
-                        ...criterias.map((criteria) {
-                          double percentage =
-                              double.tryParse(criteria.percentage) ?? 0.0;
-                          return Expanded(
-                            child: Container(
-                              height: 33,
-                              padding: const EdgeInsets.only(top: 5),
-                              color: Colors.green,
-                              alignment: Alignment.topCenter,
-                              child: buildCriteriaRow(
-                                criteria.criterianame,
-                                percentage,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w500,
+                SizedBox(
+                  height: 500,
+                  width: 1000,
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 8.0),
+                      child: SizedBox(
+                        width: 500,
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Container(
+                                    height: 50,
+                                    padding: const EdgeInsets.only(top: 5),
+                                    color: Colors.green,
+                                    alignment: Alignment.topCenter,
+                                    child: const Text(
+                                      'Name',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                ...criterias.map((criteria) {
+                                  double percentage =
+                                      double.tryParse(criteria.percentage) ?? 0.0;
+                                  return Expanded(
+                                    child: Container(
+                                      height: 50,
+                                      padding: const EdgeInsets.only(top: 5),
+                                      color: Colors.green,
+                                      alignment: Alignment.topCenter,
+                                      child: buildCriteriaRow(
+                                        criteria.criterianame,
+                                        percentage,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                                Expanded(
+                                  child: Container(
+                                    height: 50,
+                                    padding: const EdgeInsets.only(top: 5),
+                                    color: Colors.green,
+                                    alignment: Alignment.topCenter,
+                                    child: const Text(
+                                      'Edit',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          );
-                        }),
-                        Expanded(
-                          child: Container(
-                            height: 33,
-                            padding: const EdgeInsets.only(top: 5),
-                            color: Colors.green,
-                            alignment: Alignment.topCenter,
-                            child: const Text(
-                              'Edit',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
+                            buildContestantList(_contestants, criterias),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                    buildContestantList(_contestants, criterias),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          ),
-        ),
         Padding(
           padding: const EdgeInsets.only(top: 8.0, left: 5.0, right: 5.0),
           child: Container(
@@ -1011,10 +1025,10 @@ class _ScoreCardState extends State<ScoreCard> {
                   ),
                   Expanded(
                     child: ListView.builder(
-                      itemCount: widget.judges.length,
+                      itemCount: judges.length,
                       itemBuilder: (context, index) {
                         return ListTile(
-                          title: Text(widget.judges[index].username),
+                          title: Text(judges[index].name),
                           // Customize appearance as needed
                         );
                       },
