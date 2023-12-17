@@ -349,10 +349,17 @@ router.get('/events/:eventId/criteria', async (req, res) => {
   }
 });
 
-router.get('/pageant-events', async (req, res) => {
+router.get('/pageant-events',verifyToken, async (req, res) => {
   try {
-    const pageantEvents = await Event.find({ event_category: "Pageants" });
+    const userId = req.user._id; 
+    const pageantEvents = await Event.find({
+      event_category: "Pageant Shows",
+      user: userId, // Filter by the user ID
+    });
 
+    if (!pageantEvents){
+      res.status(404).json({ message: 'No events found'});
+    }
     console.log('Pageant Events:', pageantEvents);
 
     res.status(200).json(pageantEvents);
@@ -371,6 +378,10 @@ router.get('/talent-events', verifyToken, async (req, res) => {
       user: userId, // Filter by the user ID
     });
 
+    if (!talentShowEvents){
+      res.status(404).json({ message: 'No events found'});
+    }
+
     console.log('Talent Shows:', talentShowEvents);
 
     res.status(200).json(talentShowEvents);
@@ -385,9 +396,13 @@ router.get('/talent-events', verifyToken, async (req, res) => {
 
 
 
-router.get('debate-events', async (req, res) => {
+router.get('debate-events', verifyToken, async (req, res) => {
   try {
-    const debateEvents = await Event.find({ event_category: "Debates" });
+    const userId = req.user._id; 
+    const debateEvents = await Event.find({
+      event_category: "Debate Shows",
+      user: userId, // Filter by the user ID
+    });
 
     console.log('Debates:', debateEvents);
 
@@ -402,9 +417,13 @@ router.get('debate-events', async (req, res) => {
 
 
 
-router.get('/artcontest-events', async (req, res) => {
+router.get('/artcontest-events', verifyToken, async (req, res) => {
   try {
-    const artcontestEvents = await Event.find({ event_category: "Art Contests" })
+    const userId = req.user._id; 
+    const artcontestEvents = await Event.find({
+      event_category: "Art Contest",
+      user: userId, // Filter by the user ID
+    })
 
     console.log('Art Contests:', artcontestEvents);
 

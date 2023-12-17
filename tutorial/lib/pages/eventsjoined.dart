@@ -185,6 +185,11 @@ class _EventsJoinedState extends State<EventsJoined> {
                             ElevatedButton(
                               onPressed: () {
                                 // Handle join event logic
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>  ScoreCard(eventId: eventsList[index].eventId , eventData: {}, judges: []),
+                                  ),
+                                );
                                 // You can implement the logic to join the event here
                               },
                               style: ElevatedButton.styleFrom(

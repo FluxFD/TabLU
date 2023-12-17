@@ -75,13 +75,11 @@ router.get('/judges/:eventId/confirmed', async (req, res) => {
   try {
     const { eventId } = req.params;
     const isConfirm = true; // Assuming you want to fetch only those judges who have confirmed
-
     // Find judges by eventId and isConfirm status
     const judges = await Judge.find({ 
       eventId: eventId, 
-      isConfirm: isConfirm ,
+      isConfirm: isConfirm,
     }).populate('userId');
-
     res.status(200).json(judges);
   } catch (error) {
     console.error(error);
@@ -103,6 +101,7 @@ router.get('/get-all-judges-events', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 
 

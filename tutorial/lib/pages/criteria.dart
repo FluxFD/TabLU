@@ -93,6 +93,11 @@ class _CriteriasState extends State<Criterias> {
 
   TextEditingController _criteriaNameController = TextEditingController();
   TextEditingController _percentageController = TextEditingController();
+  void updateTotalPercentage() {
+    setState(() {
+      totalPercentage = calculateTotalPercentage();
+    });
+  }
 
   Future<void> _fetchCriterias(String eventId) async {
     try {
@@ -119,12 +124,11 @@ class _CriteriasState extends State<Criterias> {
 
   Future<void> deleteCriteria(String eventId, String criteriaName) async {
     final url = Uri.parse("http://10.0.2.2:8080/criteria?eventId=$eventId&criteriaName=$criteriaName");
-
+    updateTotalPercentage();
     try {
       final response = await http.delete(url);
       print('Response headers: ${response.headers}');
       if (response.statusCode == 200) {
-
         _showErrorSnackBar('Criteria deleted successfully', Colors.green);
       } else {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
@@ -217,7 +221,7 @@ class _CriteriasState extends State<Criterias> {
                 // Update the criteria
                 criteria.criterianame = _criteriaNameController.text;
                 criteria.percentage = _percentageController.text;
-
+                calculateTotalPercentage();
                 // Notify the list to update the UI
                 _listKey.currentState!.setState(() {});
                 Navigator.pop(context);
@@ -495,6 +499,8 @@ class _CriteriasState extends State<Criterias> {
                               insertItem(newCriterias);
                               _criteriaNameController.clear();
                               _percentageController.clear();
+
+                              updateTotalPercentage();
                               Navigator.pop(context);
                             } else {
                               _showErrorSnackBar(
@@ -516,9 +522,23 @@ class _CriteriasState extends State<Criterias> {
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.only(left: 16, right: 16, bottom: 10),
-        child: Row(
+        child:Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+          Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            Text(
+              'Total: ${totalPercentage.toStringAsFixed(2)}%',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+
             OutlinedButton(
               onPressed: () {
                 // Add your cancel button action here
@@ -611,7 +631,7 @@ class _CriteriasState extends State<Criterias> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                primary: totalPercentage == 100.0 ? Colors.grey : Colors.green,
+                primary: Colors.green,
                 onPrimary: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 50),
                 elevation: 2,
@@ -626,8 +646,11 @@ class _CriteriasState extends State<Criterias> {
               ),
               child: const Text('SAVE'),
             ),
+
           ],
         ),
+        ]
+      ),
       ),
     );
   }
