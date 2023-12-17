@@ -16,9 +16,6 @@ const path = require("path");
 mongoose.set("strictPopulate", false);
 
 mongoose
-  .connect(
-    "mongodb+srv://fluxfusiondevs:IarmvoocK5pnptRy@cluster0.wze203o.mongodb.net/TabLU"
-  )
   .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
