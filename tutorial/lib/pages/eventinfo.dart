@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:tutorial/main.dart';
 import 'dart:math';
@@ -25,6 +26,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   String? accessCode;
   String? eventId;
   String? token;
+  bool isCopied = false;
 
   @override
   void initState() {
@@ -411,9 +413,66 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                   final event = createEventFromControllers();
                   final createdEventId = await createEvent(event, authToken);
                   if (createdEventId != null) {
-                    Navigator.of(context).push(MaterialPageRoute(
-                        builder: (context) =>
-                            contestants.Contestants(eventId: createdEventId)));
+                    showDialog(
+                      barrierDismissible: false,
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: Center(
+                            child: Text(
+                              'Event Created',
+                              style: TextStyle(
+                                fontSize: 24, // Adjust the font size as needed
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('ACCESS CODE: ${accessCode}'),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Clipboard.setData(ClipboardData(text: '$accessCode'));// Close the dialog after copying
+                                  setState(() {
+                                    isCopied = true;
+                                  });
+
+                                  // Optionally, you can reset the button after a certain duration
+                                  Future.delayed(Duration(seconds: 2), () {
+                                    setState(() {
+                                      isCopied = false;
+                                    });
+                                  });
+                                },
+
+                                style: ElevatedButton.styleFrom(
+                                  primary: isCopied ? Colors.grey : Colors.green,
+                                ),
+                                child: Text(
+                                  isCopied ? 'Copied to Clipboard' : 'Copy to Clipboard',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  Navigator.of(context).push(MaterialPageRoute(
+                                      builder: (context) =>
+                                          contestants.Contestants(eventId: createdEventId)));
+
+                                },
+
+                                child: Text('Close'),
+                              ),
+                            ],
+                          ),
+
+                        );
+                      },
+                    );
                   }
                 } else {
                   // Handle the case where login fails

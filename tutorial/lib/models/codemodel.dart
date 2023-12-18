@@ -36,17 +36,17 @@ class Event {
 
   factory Event.fromJson(Map<String, dynamic> json) {
     return Event(
-      eventId: json['eventId'] != null ? json['eventId'].toString() : '',
-      eventName: json['eventName'] != null ? json['eventName'].toString() : '',
+      eventId: json['_id'] != null ? json['_id'].toString() : '',
+      eventName: json['event_name'] != null ? json['event_name'].toString() : '',
       eventCategory:
-          json['eventCategory'] != null ? json['eventCategory'].toString() : '',
+          json['event_category'] != null ? json['event_category'].toString() : '',
       eventVenue:
-          json['eventVenue'] != null ? json['eventVenue'].toString() : '',
-      eventOrganizer: json['eventOrganizer'] != null
-          ? json['eventOrganizer'].toString()
+          json['event_venue'] != null ? json['event_venue'].toString() : '',
+      eventOrganizer: json['event_organizer'] != null
+          ? json['event_organizer'].toString()
           : '',
-      eventDate: json['eventDate'] != null ? json['eventDate'].toString() : '',
-      eventTime: json['eventTime'] != null ? json['eventTime'].toString() : '',
+      eventDate: json['event_date'] != null ? json['event_date'].toString() : '',
+      eventTime: json['event_time'] != null ? json['event_time'].toString() : '',
       contestants: (json['contestants'] as List<dynamic>?)
               ?.map((contestant) => Contestant.fromJson(contestant))
               .toList() ??
@@ -197,6 +197,18 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
     super.initState();
     fetchEvents(); // Fetch events when the screen is initialized
   }
+  void eventLoader(List<Event> events) {
+    eventsByDate.clear();
+
+    for (Event event in events) {
+      DateTime eventDateTime = eventDateFromString(event.eventDate);
+      print("String ${eventDateTime}");
+      if (!eventsByDate.containsKey(eventDateTime)) {
+        eventsByDate[eventDateTime] = [];
+      }
+      eventsByDate[eventDateTime]!.add(event);
+    }
+  }
 
   void fetchEvents() async {
     try {
@@ -212,9 +224,11 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
         print(response);
         final List<dynamic> data = json.decode(response.body);
         print('Fetched Events: $data');
+        // Update the events list
         setState(() {
           events = data.map((json) => Event.fromJson(json)).toList();
           print('Fetched Events: $events');
+          eventLoader(events);
         });
       } else {
         // Handle error
@@ -232,6 +246,9 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
       print('Selected Day: $selectedDay');
       print('Events for Selected Day: ${getEventsForSelectedDay()}');
     });
+
+    // Fetch events for the selected day
+    fetchEvents();
   }
 
   List<Event> getEventsForSelectedDay() {
@@ -244,7 +261,7 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
             isSameDay(eventDateFromString(event.eventDate), selectedDate))
         .toList();
 
-    print('Selected Events: $selectedEvents');
+    print('Selected Events: ${selectedEvents.length}');
 
     return selectedEvents;
   }
@@ -252,7 +269,7 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
   DateTime eventDateFromString(String date) {
     try {
       // Assuming 'eventDate' is in the format 'yyyy-MM-ddTHH:mm:ss.SSSZ'
-      return DateFormat("yyyy-MM-ddTHH:mm:ss.SSSZ").parse(date);
+      return DateFormat("yyyy-MM-ddTHH:mm:ss.SSSZ").parseUTC(date);
     } catch (e) {
       print('Error parsing date: $e');
       return DateTime.now();
@@ -314,19 +331,13 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
               calendarBuilders: CalendarBuilders(
                 defaultBuilder: (context, date, events) {
                   final formattedDate = DateFormat('yyyy-MM-dd').format(date);
-                  final dateEvents = getEventsForSelectedDay();
+                  final dateEvents = eventsByDate[date] ?? [];
                   print('Formatted Date: $formattedDate');
                   print('Date Events: $dateEvents');
                   return Container(
                     margin: const EdgeInsets.all(2.0),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: isSameDay(date, selectedDay)
-                          ? dateEvents.isNotEmpty
-                              ? Colors
-                                  .green // Highlight with green if events are present
-                              : Colors.blue // Highlight with blue if no events
-                          : null,
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -340,27 +351,18 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
                                 : null,
                           ),
                         ),
+
                         if (dateEvents.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 4.0),
                             child: Container(
+                              width: 7,
+                              height: 7,
                               decoration: BoxDecoration(
-                                color: Colors.transparent,
+                                color: Colors.red,
                                 borderRadius: BorderRadius.circular(8.0),
                               ),
                               padding: const EdgeInsets.all(4.0),
-                              child: Column(
-                                children: dateEvents
-                                    .map(
-                                      (event) => Text(
-                                        event.eventName,
-                                        style: TextStyle(
-                                            fontSize: 12.0,
-                                            color: Colors.white),
-                                      ),
-                                    )
-                                    .toList(),
-                              ),
                             ),
                           ),
                       ],
@@ -378,7 +380,7 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
                     itemBuilder: (context, index) {
                       final event = getEventsForSelectedDay()[index];
                       return ListTile(
-                        title: Text(event.eventName),
+                        title: Text("${event.eventName} ${event.eventTime}"),
                       );
                     },
                   ),

@@ -14,23 +14,33 @@ class Contestant {
   String eventId;
   String? id;
   String? selectedImagePath;
-
-  final List<Criterias> criterias;
+  // final List<Criterias> criterias;
 
   Contestant(
       {required this.name,
       required this.course,
       required this.department,
       required this.eventId,
-      required this.criterias,
+      // required this.criterias,
       this.profilePic,
       this.selectedImage,
       this.id});
 
   // map
+  factory Contestant.fromJson(Map<String, dynamic> json) {
+    return Contestant(
+      name: json['name'] ?? '',
+      course: json['course'] ?? '',
+      department: json['department'] ?? '',
+      profilePic: json['profilePic'] != null ? File(json['profilePic']) : null,
+      eventId: json['eventId'] ?? '',
+      id: json['_id'],
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'name': name,
       'course': course,
       'department': department,
@@ -73,7 +83,10 @@ class _ContestantsState extends State<Contestants> {
   void initState() {
     super.initState();
     _picker = ImagePicker();
+    contestantsFuture = fetchContestants();
   }
+
+  late Future<List<Contestant>> contestantsFuture;
 
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   List<Contestant> contestants = [];
@@ -82,11 +95,64 @@ class _ContestantsState extends State<Contestants> {
   TextEditingController _courseController = TextEditingController();
   TextEditingController _departmentController = TextEditingController();
   File? _selectedImage;
-
   void insertItem(Contestant contestant) {
     final newIndex = 0;
+    contestants ??= []; // Ensure contestants is not null
     contestants.insert(newIndex, contestant);
     _listKey.currentState!.insertItem(newIndex);
+  }
+
+  Future<List<Contestant>> fetchContestants() async {
+    try {
+      String eventId = widget.eventId;
+      final url = Uri.parse("http://10.0.2.2:8080/get-contestants/$eventId");
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        List<Contestant> fetchedContestants = data.map((item) {
+          Contestant contestant = Contestant.fromJson(item);
+          contestant.profilePic = contestant.profilePic != null
+              ? File(contestant.profilePic!.path)
+              : null; // Load profilePic as File
+          return contestant;
+        }).toList();
+
+        setState(() {
+          contestants = fetchedContestants;
+        });
+
+        return fetchedContestants;
+      } else {
+        print(
+            'Failed to fetch contestants. Status code: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        return [];
+        // throw Exception('Failed to fetch contestants');
+      }
+    } catch (e) {
+      print('Error fetching contestants: $e');
+      throw Exception('Error fetching contestants');
+    }
+  }
+
+  Future<void> deleteContestant(String? contestantId) async {
+    final url =
+        Uri.parse("http://10.0.2.2:8080/delete-contestant/$contestantId");
+
+    try {
+      final response = await http.delete(url);
+
+      if (response.statusCode == 200) {
+        print('Contestant deleted successfully');
+      } else {
+        print(
+            'Failed to delete contestant. Status code: ${response.statusCode}');
+        print('Response body: ${response.body}');
+      }
+    } catch (e) {
+      print('Error deleting contestant: $e');
+    }
   }
 
   void removeItem(int index) {
@@ -99,7 +165,9 @@ class _ContestantsState extends State<Contestants> {
           contestant: removedItem,
           animation: animation,
           changeProfilePicture: () => changeProfilePicture(removedItem),
-          onClicked: () => removeItem(index),
+          onClicked: () {
+            removeItem(index);
+          },
           onEdit: () => _editContestant(removedItem),
         ),
         duration: const Duration(milliseconds: 300),
@@ -147,7 +215,7 @@ class _ContestantsState extends State<Contestants> {
 
       final imageFile = contestantData["profilePic"];
       print("File Image: ${imageFile}");
-      if (imageFile.existsSync()) {
+      if (imageFile != null) {
         // Create a multipart request
         var request = http.MultipartRequest('POST', url);
         request.headers['Content-Type'] = 'multipart/form-data';
@@ -176,6 +244,29 @@ class _ContestantsState extends State<Contestants> {
           print('Response body: ${await response.stream.bytesToString()}');
         }
       } else {
+        // Create a request
+        var request = http.Request('POST', url);
+        request.headers['Content-Type'] = 'application/json';
+
+        // Add JSON fields to the request
+        request.body = jsonEncode({
+          'contestantId': contestantData['_id'],
+          'eventId': eventId,
+          'name': contestantData['name'],
+          'course': contestantData['course'],
+          'department': contestantData['department'],
+        });
+        // Send the request
+        var response = await request.send();
+
+        if (response.statusCode == 201) {
+          print('Contestant created successfully');
+        } else {
+          print(
+              'Failed to create contestant. Status code: ${response.statusCode}');
+          print('Response body: ${await response.stream.bytesToString()}');
+        }
+
         print("Image file not found: ${contestantData["profilePic"]}");
       }
     } catch (e) {
@@ -344,18 +435,57 @@ class _ContestantsState extends State<Contestants> {
           },
         ),
       ),
-      body: AnimatedList(
-        key: _listKey,
-        initialItemCount: contestants.length,
-        itemBuilder: (context, index, animation) {
-          return ListItemWidget(
-            contestant: contestants[index],
-            animation: animation,
-            changeProfilePicture: () =>
-                changeProfilePicture(contestants[index]),
-            onClicked: () => removeItem(index),
-            onEdit: () => _editContestant(contestants[index]),
-          );
+      body: FutureBuilder<List<Contestant>>(
+        future: contestantsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          } else if (snapshot.hasError || snapshot.data == null) {
+            // Display a message when there's an error or no contestants available
+            return Center(child: Text('Error or No contestants available.'));
+          } else if (snapshot.data!.isEmpty) {
+            contestants = snapshot.data!;
+            return AnimatedList(
+              key: _listKey,
+              initialItemCount: contestants.length,
+              itemBuilder: (context, index, animation) {
+                final contestant = contestants[index];
+                return ListItemWidget(
+                  contestant: contestant,
+                  animation: animation,
+                  changeProfilePicture: () =>
+                      changeProfilePicture(contestants[index]),
+                  onClicked: () {
+                    removeItem(index);
+                  },
+                  onEdit: () => _editContestant(contestants[index]),
+                );
+              },
+            );
+            return Center(child: Text('No contestants available.'));
+          } else {
+            contestants = snapshot.data!;
+            return AnimatedList(
+              key: _listKey,
+              initialItemCount: contestants.length,
+              itemBuilder: (context, index, animation) {
+                final contestant = contestants[index];
+                return ListItemWidget(
+                  contestant: contestant,
+                  animation: animation,
+                  changeProfilePicture: () =>
+                      changeProfilePicture(contestants[index]),
+                  onClicked: () async {
+                    await deleteContestant(contestants[index].id);
+                    removeItem(index);
+                  },
+                  onEdit: () => _editContestant(contestants[index]),
+                );
+              },
+            );
+          }
         },
       ),
       floatingActionButton: FloatingActionButton(
@@ -400,7 +530,8 @@ class _ContestantsState extends State<Contestants> {
                                   course: 'DefaultCourse',
                                   department: 'DefaultDepartment',
                                   eventId: widget.eventId,
-                                  criterias: []));
+                                  // criterias: []
+                                ));
 
                           if (_selectedImage != null) {
                             print(
@@ -461,13 +592,14 @@ class _ContestantsState extends State<Contestants> {
                   TextButton(
                     onPressed: () async {
                       Contestant newContestant = Contestant(
-                          name: _nameController.text,
-                          course: _courseController.text,
-                          department: _departmentController.text,
-                          profilePic: _selectedImage,
-                          selectedImage: _selectedImage,
-                          eventId: widget.eventId,
-                          criterias: []);
+                        name: _nameController.text,
+                        course: _courseController.text,
+                        department: _departmentController.text,
+                        profilePic: _selectedImage,
+                        selectedImage: _selectedImage,
+                        eventId: widget.eventId,
+                        // criterias: []);
+                      );
 
                       insertItem(newContestant);
 
@@ -575,6 +707,25 @@ class ListItemWidget extends StatelessWidget {
     );
   }
 
+  Future<void> deleteContestant(String contestantId) async {
+    final url =
+        Uri.parse("http://10.0.2.2:8080/delete-contestant/$contestantId");
+
+    try {
+      final response = await http.delete(url);
+
+      if (response.statusCode == 200) {
+        print('Contestant deleted successfully');
+      } else {
+        print(
+            'Failed to delete contestant. Status code: ${response.statusCode}');
+        print('Response body: ${response.body}');
+      }
+    } catch (e) {
+      print('Error deleting contestant: $e');
+    }
+  }
+
   Widget buildItem(BuildContext context) {
     return SizeTransition(
       sizeFactor: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
@@ -593,7 +744,10 @@ class ListItemWidget extends StatelessWidget {
               backgroundColor: Colors.grey[400],
               backgroundImage: contestant.selectedImage != null
                   ? FileImage(contestant.selectedImage!)
-                  : null,
+                  : contestant.profilePic != null
+                      ? NetworkImage(
+                          "http://10.0.2.2:8080/uploads/${contestant.profilePic?.path}")
+                      : null as ImageProvider<Object>?,
             ),
           ),
           title: Text(

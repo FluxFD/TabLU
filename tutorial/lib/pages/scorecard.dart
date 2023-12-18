@@ -552,6 +552,7 @@ class _ScoreCardState extends State<ScoreCard> {
       } else {
         print(
             'Failed to fetch image path. Status code: ${response.statusCode}');
+        return "";
       }
     } catch (e) {
       print('Error fetching image path: $e');

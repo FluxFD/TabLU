@@ -23,6 +23,8 @@ const contestantSchema = new mongoose.Schema({
 
 
 
+
+
 const Contestant = mongoose.model('Contestant', contestantSchema);
 
 module.exports = Contestant;

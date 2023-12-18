@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:tutorial/pages/eventinfo.dart';
 import 'package:tutorial/pages/globals.dart';
 import 'package:tutorial/pages/dashboard.dart';
+import 'package:tutorial/pages/scorecard.dart';
 import 'package:tutorial/utility/sharedPref.dart';
 
 class EventsManagement extends StatefulWidget {
@@ -111,6 +112,26 @@ class _EventsManagementState extends State<EventsManagement> {
     }
   }
 
+  Future<void> deleteEvent(String eventId) async {
+    try {
+
+      final url = Uri.parse("http://10.0.2.2:8080/api/event/$eventId");
+      final response = await http.delete(url);
+
+      if (response.statusCode == 200) {
+        print('Event deleted successfully');
+        // Reload the events after deletion
+        setState(() {});
+      } else {
+        print('Error deleting event: ${response.body}');
+        throw Exception('Failed to delete event. Error: ${response.body}');
+      }
+    } catch (e) {
+      print('Error deleting event: $e');
+      throw Exception('Failed to delete event. Error: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -181,7 +202,23 @@ class _EventsManagementState extends State<EventsManagement> {
                               ),
                               IconButton(
                                 onPressed: () {
-                                  _navigateToBlankPage();
+                                  // Call the delete function when the delete button is pressed
+                                  deleteEvent(events[index].eventId);
+                                },
+                                icon: Icon(Icons.delete),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ScoreCard(
+                                        eventId: events[index].eventId,
+                                        eventData: {},
+                                        judges: [],
+                                      ),
+                                    ),
+                                  );
                                 },
                                 icon: Icon(Icons.remove_red_eye),
                               ),
@@ -190,7 +227,16 @@ class _EventsManagementState extends State<EventsManagement> {
                         ],
                       ),
                       onTap: () {
-                        _navigateToBlankPage();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ScoreCard(
+                              eventId: events[index].eventId,
+                              eventData: {},
+                              judges: [],
+                            ),
+                          ),
+                        );
                       },
                     ),
                   );
@@ -205,7 +251,7 @@ class _EventsManagementState extends State<EventsManagement> {
           onPressed: () {
             Navigator.of(context).push(MaterialPageRoute(
                 builder: (context) =>
-                    EditEventScreen(eventId: events[0].eventId)));
+                    CreateEventScreen()));
           },
         ));
   }

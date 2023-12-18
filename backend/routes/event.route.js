@@ -438,13 +438,14 @@ router.delete('/event/:eventId', async (req, res) => {
   const eventId = req.params.eventId;
   console.log('Received DELETE request for eventId:', eventId);
   try {
-    const deletedEvent = await Event.findByIdAndDelete(eventId);
+    const deletedEvent = await Event.findById(eventId);
 
     if (!deletedEvent) {
       console.log('Event not found');
       return res.status(404).json({ error: 'Event not found' });
     }
-
+       // Delete associated contestants and criteria using the pre hook
+       await deletedEvent.deleteOne();
     console.log('Event deleted:', deletedEvent);
     res.status(200).json({ message: 'Event deleted successfully' });
   } catch (error) {
