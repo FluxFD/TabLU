@@ -523,21 +523,32 @@ router.get('/calendar-events/:userId', async (req, res) => {
   const userId = req.params.userId;
   try {
     // Find events for the specified user
-    const event = await Event.find({ user: userId });
+    const events = await Event.find({ user: userId }).populate({
+      path: 'criteria contestants',
+    });
 
     // Find judges that match the user ID and populate the events field
-    const judges = await Judge.find({ userId: userId, isConfirm: true }).populate('eventId');
-    const mergedEvents = [];
-    mergedEvents.push(event,judges);
-   
-    // Onlu send the judges event not including other judges data
+    const judges = await Judge.find({ userId: userId }).populate({
+      path: 'eventId',
+      populate: {
+        path: 'contestants criteria',
+      },
+    });
 
-    res.status(200).json(mergedEvents.flat());
+    // Flatten the arrays and remove duplicates
+    const mergedEvents = [...events, ...judges.map(judge => judge.eventId)];
+    const uniqueEvents = Array.from(new Set(mergedEvents.map(event => event._id)))
+      .map(id => mergedEvents.find(event => event._id === id));
+
+    // Only send the judges' events not including other judges' data
+    res.status(200).json(uniqueEvents);
   } catch (error) {
     console.error('Error fetching events:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
+
 
 module.exports = 
 router, 

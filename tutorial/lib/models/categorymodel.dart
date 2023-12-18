@@ -170,13 +170,13 @@ class _PageantsScreenState extends State<PageantsScreen> {
             return ListView.builder(
               itemCount: snapshot.data!.length,
               itemBuilder: (BuildContext context, int index) {
-                print('Event data: ${snapshot.data![index]}');
+                //print('Event data: ${snapshot.data![index]}');
                 return PageantItem(
                   event: snapshot.data![index],
                   onDelete: () {
                     print('Deleting event at index $index');
                     dynamic eventData = snapshot.data![index];
-                    print('Event data: $eventData');
+                   // print('Event data: $eventData');
                     String? eventId = eventData['_id'] as String?;
                     print('Event ID: $eventId');
                     deleteEvent(eventId, context);
@@ -475,13 +475,13 @@ class _TalentShowsScreenState extends State<TalentShowsScreen> {
             return ListView.builder(
               itemCount: snapshot.data!.length,
               itemBuilder: (BuildContext context, int index) {
-                print('Event data: ${snapshot.data![index]}');
+               // print('Event data: ${snapshot.data![index]}');
                 return PageantItem(
                   event: snapshot.data![index],
                   onDelete: () {
                     print('Deleting event at index $index');
                     dynamic eventData = snapshot.data![index];
-                    print('Event data: $eventData');
+                    //print('Event data: $eventData');
                     String? eventId = eventData['_id'] as String?;
                     print('Event ID: $eventId');
                     deleteEvent(eventId, context);
@@ -780,13 +780,13 @@ class _DebatesScreenState extends State<DebatesScreen> {
             return ListView.builder(
               itemCount: snapshot.data!.length,
               itemBuilder: (BuildContext context, int index) {
-                print('Event data: ${snapshot.data![index]}');
+                //print('Event data: ${snapshot.data![index]}');
                 return PageantItem(
                   event: snapshot.data![index],
                   onDelete: () {
                     print('Deleting event at index $index');
                     dynamic eventData = snapshot.data![index];
-                    print('Event data: $eventData');
+                    //print('Event data: $eventData');
                     String? eventId = eventData['_id'] as String?;
                     print('Event ID: $eventId');
                     deleteEvent(eventId, context);
@@ -1084,13 +1084,13 @@ class _ArtContestScreenState extends State<ArtContestScreen> {
             return ListView.builder(
               itemCount: snapshot.data!.length,
               itemBuilder: (BuildContext context, int index) {
-                print('Event data: ${snapshot.data![index]}');
+                //print('Event data: ${snapshot.data![index]}');
                 return PageantItem(
                   event: snapshot.data![index],
                   onDelete: () {
                     print('Deleting event at index $index');
                     dynamic eventData = snapshot.data![index];
-                    print('Event data: $eventData');
+                   // print('Event data: $eventData');
                     String? eventId = eventData['_id'] as String?;
                     print('Event ID: $eventId');
                     deleteEvent(eventId, context);

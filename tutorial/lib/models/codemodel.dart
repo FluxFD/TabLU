@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:http/http.dart' as http;
 import 'package:tutorial/pages/eventinfo.dart';
@@ -7,6 +8,7 @@ import 'package:tutorial/pages/eventsjoined.dart';
 import 'package:tutorial/pages/dashboard.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import 'package:tutorial/utility/sharedPref.dart';
 
 class Event {
   String eventId;
@@ -46,12 +48,12 @@ class Event {
       eventDate: json['eventDate'] != null ? json['eventDate'].toString() : '',
       eventTime: json['eventTime'] != null ? json['eventTime'].toString() : '',
       contestants: (json['contestants'] as List<dynamic>?)
-              ?.map((contestant) => Contestant.fromJson(contestant))
-              .toList() ??
+          ?.map((contestant) => Contestant.fromJson(contestant))
+          .toList() ??
           [],
       criterias: (json['criterias'] as List<dynamic>?)
-              ?.map((criteria) => Criteria.fromJson(criteria))
-              .toList() ??
+          ?.map((criteria) => Criteria.fromJson(criteria))
+          .toList() ??
           [],
     );
   }
@@ -188,6 +190,7 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
   DateTime today = DateTime.now();
   DateTime selectedDay = DateTime.now();
   List<Event> events = [];
+  Map<DateTime, List<Event>> eventsByDate = {};
 
   @override
   void initState() {
@@ -197,8 +200,15 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
 
   void fetchEvents() async {
     try {
-      final response = await http.get(Uri.parse('http://10.0.2.2:8080/events'));
+      String? token = await SharedPreferencesUtils.retrieveToken();
+      String? userId;
+      if (token != null && token.isNotEmpty) {
+        Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+        userId = decodedToken['userId'];
+      }
+      final response = await http.get(Uri.parse('http://10.0.2.2:8080/calendar-events/$userId'));
       if (response.statusCode == 200) {
+        print(response);
         final List<dynamic> data = json.decode(response.body);
         print('Fetched Events: $data');
         setState(() {

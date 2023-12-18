@@ -1,7 +1,8 @@
+//scorecard.model.js
 const mongoose = require('mongoose');
 
 const scoreCardSchema = new mongoose.Schema({
-    // judgesId: { type: mongoose.Schema.Types.ObjectId, ref: 'Judge', required: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Event', required: true },
     criteria: { 
         criteriaId : {type: mongoose.Schema.Types.ObjectId, ref: 'Criteria', required: true} ,
