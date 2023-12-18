@@ -1,46 +1,196 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose'); 
+const { Event } = require('../models/event.model');
 const Contestant = require('../models/contestant.model');
+const ScoreCard = require('../models/scorecard.model');
 const Criteria = require('../models/criteria.model');
+const Judge = require('../models/judges.model');
+const User = require('../models/user.model');
 
 router.post('/scorecards', async (req, res) => {
-    try {
-      const { eventId, criteriaId, contestantId, criteriascore } = req.body;
-  
-      // Validate ObjectId for eventId, criteriaId, and contestantId
+  try {
+    const scoreCardEntries = [];
+    let judge;
+    // Iterate over each object in the array
+    for (const scoreData of req.body) {
+      
+      const { eventId, contestantId, criterias, userId } = scoreData;
+      // console.log(criterias.length);
+      // console.log(eventId, contestantId, criterias);
+
+      // Validate ObjectId for eventId and contestantId
       if (
+        !mongoose.Types.ObjectId.isValid(userId) ||
         !mongoose.Types.ObjectId.isValid(eventId) ||
-        !mongoose.Types.ObjectId.isValid(criteriaId) ||
         !mongoose.Types.ObjectId.isValid(contestantId)
       ) {
         return res.status(400).json({ error: 'Invalid ObjectId(s) provided' });
       }
-  
-      // Check if the event, criteria, and contestant exist
+
+      // Check if the event and contestant exist
       const event = await Event.findById(eventId);
-      const criteria = await Criteria.findById(criteriaId);
       const contestant = await Contestant.findById(contestantId);
-  
-      if (!event || !criteria || !contestant) {
-        return res.status(404).json({ error: 'Event, Criteria, or Contestant not found' });
+      const user = await User.findById(userId);
+      
+      if (!event || !contestant) {
+        return res.status(404).json({ error: 'Event or Contestant not found' });
       }
-  
-      // Create the score card entry
-      const scoreCardEntry = new ScoreCard({
-        eventId: event._id,
-        criteriaId: criteria._id,
-        contestantId: contestant._id,
-        criteriascore,
-      });
-  
-      // Save the score card entry
-      const savedScoreCardEntry = await scoreCardEntry.save();
-  
-      res.status(201).json({ message: 'Score card entry created successfully', savedScoreCardEntry });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Internal Server Error' });
+
+     
+
+      judge = await Judge.findOne({ eventId: event._id, userId: user._id });
+      if (judge && judge.scoreSubmitted) {
+        return res.status(403).json({ error: 'Scores already submitted' });
+      } 
+      
+      const criteriaEntries = [];
+      for (const criteria of criterias) {
+        console.log(criteria['criteriaId']);
+        // // Ensure that criteria is an object and has a property named 'criteriaId'
+        // if (typeof criteria !== 'object' || !criteria.hasOwnProperty('criteriaId')) {
+        //   return res.status(400).json({ error: 'Invalid criteria format' });
+        // }
+      
+        // // Validate ObjectId for criteriaId
+        // if (!mongoose.Types.ObjectId.isValid(criteria.criteriaId)) {
+        //   return res.status(400).json({ error: 'Invalid ObjectId(s) provided for criteria' });
+        // }
+        // Check if the criteria exists
+        const criteriaObj = await Criteria.findById(criteria['criteriaId']);
+        if (!criteriaObj) {
+          return res.status(404).json({ error: 'Criteria not found' });
+        }
+
+        // Create the score card entry
+        const scoreCardEntry = new ScoreCard({
+          userId: user._id,
+          eventId: event._id,
+          criteria: {
+            criteriaId: criteriaObj._id,
+            criteriascore: criteria['scores']
+          },
+          contestantId: contestant._id,
+        });
+
+        // Save the score card entry
+        const savedScoreCardEntry = await scoreCardEntry.save();
+
+        // Add the saved entry to the array
+        criteriaEntries.push(savedScoreCardEntry);
+      }
+
+    
+
+      // Add the criteria entries to the main array
+      scoreCardEntries.push({ eventId: event._id, contestantId: contestant._id, criteriaEntries });
     }
-  });
+
+    if (judge) {
+      judge.scoreSubmitted = true;
+      await judge.save();
+    }
+    else{
+      return res.status(403).json({ error: 'Cannot submit scores as you are the creator' });
+    }
+   
+    res.status(201).json({ message: 'Score card entries created successfully', scoreCardEntries });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
   
+router.get('/scorecards', async (req, res) => {
+  try {
+    const contestantId = req.query.contestantId;
+    const eventId = req.query.eventId;
+    const userId = req.query.userId;
+      console.log(contestantId, eventId, userId);
+    // Validate ObjectId for contestantId and eventId
+    if (!mongoose.Types.ObjectId.isValid(contestantId) || !mongoose.Types.ObjectId.isValid(eventId)) {
+      return res.status(400).json({ error: 'Invalid ObjectId provided for contestantId or eventId' });
+    }
+
+    // Fetch the contestant's scores for the specified event from the database
+    const contestantScores = await ScoreCard.find({
+      contestantId: new mongoose.Types.ObjectId(contestantId),
+      eventId:new mongoose.Types.ObjectId(eventId),
+    }).populate('criteria.criteriaId', 'criterianame'); // Assuming you want to populate criteria details
+
+    // Check if the contestant scores exist
+    if (!contestantScores || contestantScores.length === 0) {
+      return res.status(404).json({ error: 'Scorecard not found' });
+    }
+
+    // Check if the userId is associated with the current event in the events collection
+    const event = await Event.findOne({ _id: new mongoose.Types.ObjectId(eventId), user: new mongoose.Types.ObjectId(userId) });
+
+    if (!event) {
+      return res.status(401).json({ error: 'Unauthorized: User does not have permission to access these scores' });
+    }
+
+    // Respond with the contestant's scores
+    res.status(200).json({ scores: contestantScores });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Add a new route to get the top three winners for a specific event
+router.get('/winners/:eventId', async (req, res) => {
+  try {
+    const eventId = req.params.eventId;
+
+    // Aggregate to calculate average score for each contestant
+    const contestants = await ScoreCard.aggregate([
+      {
+        $match: { eventId: new mongoose.Types.ObjectId(eventId) },
+      },
+      {
+        $group: {
+          _id: '$contestantId',
+          averageScore: { $avg: '$criteria.criteriascore' },
+        },
+      },
+      {
+        $sort: { averageScore: -1 }, // Sort by average score in descending order
+      },
+      {
+        $limit: 3, // Take only the top three
+      },
+      {
+        $lookup: {
+          from: 'contestants', // Assuming the contestants collection
+          localField: '_id',
+          foreignField: '_id',
+          as: 'contestantDetails',
+        },
+      },
+      {
+        $unwind: '$contestantDetails',
+      },
+      {
+        $project: {
+          _id: '$contestantDetails._id',
+          name: '$contestantDetails.name',
+          averageScore: 1,
+        },
+      },
+    ]);
+
+    // Respond with the top three winners and their average scores
+    res.status(200).json({ contestants });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+
+
+  module.exports = router;

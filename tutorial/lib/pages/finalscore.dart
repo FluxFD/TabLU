@@ -1,13 +1,91 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+class ScoreCard {
+  final String eventId;
+  final String contestantName;
+  final double score;
+
+  ScoreCard({
+    required this.eventId,
+    required this.contestantName,
+    required this.score,
+  });
+
+  factory ScoreCard.fromJson(Map<String, dynamic> json) {
+    return ScoreCard(
+      eventId: json['eventId'],
+      contestantName: json['contestantName'],
+      score: json['score'].toDouble(), // Assuming score is a double in JSON
+    );
+  }
+}
+
 
 class Winner extends StatefulWidget {
-  const Winner({super.key});
+  final String eventId;
+
+  const Winner({required this.eventId, Key? key}) : super(key: key);
 
   @override
   State<Winner> createState() => _WinnerState();
 }
 
 class _WinnerState extends State<Winner> {
+
+  List<ScoreCard> scoreCards = [];
+  void initState() {
+    super.initState();
+    scoreCards = List.generate(
+      3,
+          (index) => ScoreCard(
+        eventId: widget.eventId,
+        contestantName: 'Default Name ${index + 1}',
+        score: 50.0, // Replace with your default score
+      ),
+    );
+    // Fetch scorecards when the widget is initialized
+    fetchScoreCards();
+  }
+
+  Future<void> fetchScoreCards() async {
+    final eventId = widget.eventId;
+    print(eventId);
+    final url = Uri.parse('http://10.0.2.2:8080/winners/$eventId');
+
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+
+        setState(() {
+          // Clear existing scoreCards and add new ones
+          scoreCards = List<ScoreCard>.from(data['contestants'].map((item) {
+            return ScoreCard(
+              eventId: eventId,
+              contestantName: item['name'],
+              score: item['averageScore'].toDouble(), // Assuming score is a double
+            );
+          }));
+
+          // Sort scoreCards by score in descending order
+          scoreCards.sort((a, b) => b.score.compareTo(a.score));
+
+          for (var scorecard in scoreCards){
+            print(scorecard.contestantName);
+          }
+        });
+      } else {
+        print('Failed to fetch scorecards. Status code: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error fetching scorecards: $error');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -69,11 +147,11 @@ class _WinnerState extends State<Winner> {
                           const SizedBox(
                             width: 25,
                           ),
-                          const Text('Juan Dela Cruz'),
+                           Text(scoreCards[0].contestantName),
                           const SizedBox(
                             width: 25,
                           ),
-                          const Text('99%')
+                           Text("${scoreCards[0].score.toString()} %"),
                         ],
                       ),
                     ),
@@ -93,11 +171,11 @@ class _WinnerState extends State<Winner> {
                           const SizedBox(
                             width: 25,
                           ),
-                          const Text('Juan Dela Cruz'),
+                          Text(scoreCards[1].contestantName),
                           const SizedBox(
                             width: 25,
                           ),
-                          const Text('98%')
+                          Text("${scoreCards[1].score.toString()} %"),
                         ],
                       ),
                     ),
@@ -117,11 +195,11 @@ class _WinnerState extends State<Winner> {
                           const SizedBox(
                             width: 25,
                           ),
-                          const Text('Juan Dela Cruz'),
+                          Text(scoreCards[2].contestantName),
                           const SizedBox(
                             width: 25,
                           ),
-                          const Text('97%')
+                          Text("${scoreCards[2].score.toString()} %"),
                         ],
                       ),
                     ),
@@ -157,37 +235,15 @@ class _WinnerState extends State<Winner> {
             Padding(
               padding: const EdgeInsets.only(left: 120, top: 16, bottom: 30 ),
               child: Container(child: Column(children: [
-            
-                Row(
-                  children: [
-                    Text('Juan Dela Cruz'),
-                      SizedBox(height: 20, width: 25,),
-                Text('80%'),
-                  ],
-                ),
-                const SizedBox(
-                    height: 20,
+                // Display additional contestants dynamically starting from index 2
+                for (var i = 3; i < scoreCards.length; i++)
+                  Row(
+                    children: [
+                      Text(scoreCards[i].contestantName),
+                      SizedBox(height: 20, width: 25),
+                      Text("${scoreCards[i].score.toString()}%"),
+                    ],
                   ),
-              
-            Row(
-                  children: [
-                    Text('Juan Dela Cruz'),
-                      SizedBox(height: 20, width: 25,),
-                Text('80%'),
-                  ],
-                ),
-                const SizedBox(
-                    height: 20,
-                  ),
-
-                 Row(
-                  children: [
-                    Text('Juan Dela Cruz'),
-                      SizedBox(height: 20, width: 25,),
-                Text('80%'),
-                  ],
-                ),
-            
               ])),
             )
           ],

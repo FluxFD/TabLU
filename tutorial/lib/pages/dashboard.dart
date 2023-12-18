@@ -245,8 +245,8 @@ class _SearchEventsState extends State<SearchEvents> {
   late CodeModel.Event eventInstance;
   List<CategoryModel> categories = [];
   List<CodeModel.CodeModel> code = [];
-  late String email;
-  late String username;
+  late String email ="";
+  late String username = "";
   String _id = '';
   String event_name = '';
   String event_date = '';

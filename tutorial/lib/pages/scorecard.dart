@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:tutorial/pages/finalscore.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -32,21 +33,21 @@ class Event {
       eventId: json['eventId'] != null ? json['eventId'].toString() : '',
       eventName: json['eventName'] != null ? json['eventName'].toString() : '',
       eventCategory:
-          json['eventCategory'] != null ? json['eventCategory'].toString() : '',
+      json['eventCategory'] != null ? json['eventCategory'].toString() : '',
       eventVenue:
-          json['eventVenue'] != null ? json['eventVenue'].toString() : '',
+      json['eventVenue'] != null ? json['eventVenue'].toString() : '',
       eventOrganizer: json['eventOrganizer'] != null
           ? json['eventOrganizer'].toString()
           : '',
       eventDate: json['eventDate'] != null ? json['eventDate'].toString() : '',
       eventTime: json['eventTime'] != null ? json['eventTime'].toString() : '',
       contestants: (json['contestants'] as List<dynamic>?)
-              ?.map((contestant) => Contestant.fromJson(contestant))
-              .toList() ??
+          ?.map((contestant) => Contestant.fromJson(contestant))
+          .toList() ??
           [],
       criterias: (json['criterias'] as List<dynamic>?)
-              ?.map((criteria) => Criteria.fromJson(criteria))
-              .toList() ??
+          ?.map((criteria) => Criteria.fromJson(criteria))
+          .toList() ??
           [],
     );
   }
@@ -109,39 +110,41 @@ class Contestant {
       name: json['name'] != null ? json['name'].toString() : '',
       course: json['course'] != null ? json['course'].toString() : '',
       department:
-          json['department'] != null ? json['department'].toString() : '',
+      json['department'] != null ? json['department'].toString() : '',
       eventId: json['eventId'] != null ? json['eventId'].toString() : '',
       criterias: criteriaList != null
           ? List.unmodifiable(
-              criteriaList.map((criteria) => Criteria.fromJson(criteria)))
+          criteriaList.map((criteria) => Criteria.fromJson(criteria)))
           : [],
       profilePic:
-          json['profilePic'] != null ? json['profilePic'].toString() : '',
+      json['profilePic'] != null ? json['profilePic'].toString() : '',
       selectedImage:
-          json['selectedImage'] != null ? json['selectedImage'].toString() : '',
+      json['selectedImage'] != null ? json['selectedImage'].toString() : '',
       id: json['_id'] != null ? json['_id'].toString() : '',
       totalScore: json['totalScore'] != null ? json['totalScore'] : 0,
       criteriaScores: criteriaList != null && criteriaList.isNotEmpty
           ? List<int?>.from(
-              criteriaList.map((criteria) => criteria['score'] as int? ?? 0))
+          criteriaList.map((criteria) => criteria['score'] as int? ?? 0))
           : List<int?>.filled(criteriaList?.length ?? 0, null, growable: true),
     );
   }
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is Contestant && runtimeType == other.runtimeType && id == other.id;
+          other is Contestant && runtimeType == other.runtimeType && id == other.id;
 
   @override
   int get hashCode => id.hashCode;
 }
 
 class Criteria {
+  String criteriaId;
   String criterianame;
   String percentage;
   String eventId;
   int score;
   Criteria({
+    required this.criteriaId,
     required this.criterianame,
     required this.percentage,
     required this.eventId,
@@ -149,12 +152,14 @@ class Criteria {
   });
 
   Criteria copyWith({
+    String? criteriaId,
     String? criterianame,
     String? percentage,
     String? eventId,
     int? score,
   }) {
     return Criteria(
+      criteriaId: criteriaId ?? this.criteriaId,
       criterianame: criterianame ?? this.criterianame,
       percentage: percentage ?? this.percentage,
       eventId: eventId ?? this.eventId,
@@ -164,10 +169,9 @@ class Criteria {
 
   factory Criteria.fromJson(Map<String, dynamic> json) {
     return Criteria(
-      criterianame:
-          json['criterianame'] != null ? json['criterianame'].toString() : '',
-      percentage:
-          json['percentage'] != null ? json['percentage'].toString() : '',
+      criteriaId: json['_id'] != null ? json['_id'].toString() : '',
+      criterianame: json['criterianame'] != null ? json['criterianame'].toString() : '',
+      percentage: json['percentage'] != null ? json['percentage'].toString() : '',
       eventId: json['eventId'] != null ? json['eventId'].toString() : '',
       score: json['score'] != null ? int.parse(json['score'].toString()) : 0,
     );
@@ -212,17 +216,19 @@ class ScoreCard extends StatefulWidget {
   @override
   State<ScoreCard> createState() => _ScoreCardState();
   static final GlobalKey<_ScoreCardState> _scoreCardState =
-      GlobalKey<_ScoreCardState>();
+  GlobalKey<_ScoreCardState>();
 }
 
 String criterianame = "default_value";
 
 class _ScoreCardState extends State<ScoreCard> {
   //----------------------------------------------------------------------
-  late List<Contestant> contestants;
+  late List<Contestant> contestants = [];
+
   late List<Criteria> criteria;
   late Map<String, dynamic> eventData;
   late List<Judge> judges = [];
+  Map<String?, TextEditingController> controllers = {};
 
   VoidCallback? onCriteriaFetched;
 
@@ -235,15 +241,15 @@ class _ScoreCardState extends State<ScoreCard> {
     eventData = {};
     initializeData();
     fetchEventDetails();
-    contestant = Contestant(
-      name: '',
-      course: 'DefaultCourse',
-      department: 'DefaultDepartment',
-      eventId: '',
-      totalScore: 0,
-      criterias: [],
-      criteriaScores: [],
-    );
+    // contestant = Contestant(
+    //   name: '',
+    //   course: 'DefaultCourse',
+    //   department: 'DefaultDepartment',
+    //   eventId: '',
+    //   totalScore: 0,
+    //   criterias: [],
+    //   criteriaScores: [],
+    // );
     calculateInitialTotalScores();
     criterianame = "InitialValue";
     fetchJudges(widget.eventId).then((loadedJudges) {
@@ -251,7 +257,130 @@ class _ScoreCardState extends State<ScoreCard> {
         judges = loadedJudges;
       });
     });
+
   }
+  void dispose() {
+    // Dispose of each controller in the 'controllers' map.
+    for (var controller in controllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> handleSubmit() async {
+    try {
+      // Step 1: Collect Scores
+      String? token = await SharedPreferencesUtils.retrieveToken();
+      String? userId;
+      if (token != null && token.isNotEmpty) {
+        // Decode the token to extract user information
+        Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+        userId = decodedToken['userId'];
+      }
+      Map<String, Map<String, double>> contestantScores = {};
+      print(controllers.length);
+      controllers.forEach((key, controller) {
+        if (key != null && controller.text.isNotEmpty) {
+          var ids = key.split('_');
+          var contestantId = ids[0];
+          var criteriaId = ids[1];
+          double score = 0;
+
+          if (criteriaId != null && controller.text.isNotEmpty) {
+            var parsedValue = double.tryParse(controller.text);
+
+            // Find the Criteria object in the criterias list based on criteriaId
+            var criteria = criterias.firstWhere(
+                    (criteria) => criteria.criteriaId == criteriaId
+            );
+
+            if (parsedValue != null && criteria != null && double.tryParse(criteria.percentage) != 0) {
+              // Access the percentage directly from the found criteria
+              double percentage = double.parse(criteria.percentage) / 100;
+
+              // Calculate the score based on the percentage
+              score = (parsedValue * percentage);
+            }
+          }
+
+
+          if (!contestantScores.containsKey(contestantId)) {
+            contestantScores[contestantId] = {};
+          }
+          contestantScores[contestantId]![criteriaId] = score;
+        }
+      });
+
+      List<Map<String, dynamic>> submissionData = contestantScores.entries.map((entry) {
+        var contestantId = entry.key;
+        var scores = entry.value;
+        var criteriaIds = scores.keys.toList();
+
+        // Create a list of maps for criteriaScores
+        List <dynamic> criteriaScores = criteriaIds.map((criteriaId) {
+          return {
+            "criteriaId": criteriaId,
+            "scores": scores[criteriaId],
+          };
+        }).toList();
+
+        return {
+          "userId": userId,
+          "eventId": widget.eventId,
+          "contestantId": contestantId,
+          "criterias": criteriaScores,
+        };
+      }).toList();
+
+      print("Datas: ${submissionData}");
+      // Step 3: Send Data to Server or Process Locally
+      // Replace this URL with your actual endpoint
+      var url = Uri.parse('http://10.0.2.2:8080/scorecards');
+      var response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(submissionData),
+      );
+
+      if (response.statusCode == 201) {
+        // Handle successful submission
+        print('Scores submitted successfully');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Score successfully submitted'),
+          ),
+        );
+      }
+
+      if (response.statusCode == 403) {
+        final Map<String, dynamic> responseBody = jsonDecode(response.body);
+
+        if (responseBody.containsKey('error')) {
+          final errorMessage = responseBody['error'] as String;
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+
+
+
+    } catch (error) {
+      // Handle exceptions here
+      print('Error: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('An error occurred while submitting scores'),
+        ),
+      );
+    }
+  }
+
+
 
   Future<List<Judge>> fetchJudges(String eventId) async {
     final url = Uri.parse('http://10.0.2.2:8080/judges/$eventId/confirmed');
@@ -259,7 +388,6 @@ class _ScoreCardState extends State<ScoreCard> {
 
     if (response.statusCode == 200) {
       List<dynamic> judgesJson = json.decode(response.body);
-      print("Judges: ${judgesJson[0]['userId']['username']}");
       return judgesJson.map((json) => Judge.fromJson(json)).toList();
     } else {
       throw Exception('Failed to load judges');
@@ -342,14 +470,15 @@ class _ScoreCardState extends State<ScoreCard> {
 
     try {
       Criteria matchingCriteria = contestant.criterias.firstWhere(
-        (criteria) =>
-            criteria.criterianame.trim().toLowerCase() ==
+            (criteria) =>
+        criteria.criterianame.trim().toLowerCase() ==
             criteriaName.trim().toLowerCase(),
         orElse: () {
           print('Matching criteria not found for: $criteriaName');
           // Handle the case when no matching criteria is found
           // You can return a default criteria or throw an exception if needed
           return Criteria(
+            criteriaId: 'Default Criteria ID',
             criterianame: 'Default Criteria',
             percentage: 'Default Percentage',
             eventId: 'Default Event ID',
@@ -430,9 +559,9 @@ class _ScoreCardState extends State<ScoreCard> {
 
 
   void showContestantDetailsDialog(
-    BuildContext context,
-    Contestant contestant,
-  ) {
+      BuildContext context,
+      Contestant contestant,
+      ) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -593,30 +722,28 @@ class _ScoreCardState extends State<ScoreCard> {
         itemCount: contestants.length,
         itemBuilder: (BuildContext context, int index) {
           Contestant contestant = contestants[index];
-
-          List<Widget> scoreFields = [];
+          List<Widget> scoreFields= [];
           if (criterias != null && criterias.isNotEmpty) {
-            for (int i = 0; i < criterias.length; i++) {
-              scoreFields.add(
-                Expanded(
-                  child: Container(
-                    height: 30,
-                    alignment: Alignment.center,
-                    child: TextFormField(
-                      // Add appropriate TextEditingController and other properties
-                      textAlign: TextAlign.center,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: Colors.green, // Set the border color here
-                          ),
-                        ),
+            scoreFields = criterias.map((criteria) {
+              String uniqueKey = "${contestant.id}_${criteria.criteriaId ?? ''}";
+              return Expanded(
+                child: Container(
+                  height: 30,
+                  alignment: Alignment.center,
+                  child: TextFormField(
+                    controller: controllers[uniqueKey] ,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    decoration: InputDecoration(
+                      labelText: 'Score for ${criteria.criterianame}',
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.green),
                       ),
                     ),
                   ),
                 ),
               );
-            }
+            }).toList();
           }
 
           return Card(
@@ -679,7 +806,7 @@ class _ScoreCardState extends State<ScoreCard> {
       print('Fetched Event ID: $eventId');
       if (eventId.isNotEmpty) {
         final response =
-            await http.get(Uri.parse("http://10.0.2.2:8080/event/$eventId"));
+        await http.get(Uri.parse("http://10.0.2.2:8080/event/$eventId"));
         print('Event Details Response Status Code: ${response.statusCode}');
         if (response.statusCode == 200) {
           dynamic eventData = jsonDecode(response.body);
@@ -726,6 +853,42 @@ class _ScoreCardState extends State<ScoreCard> {
         final dynamic contestantData = jsonDecode(response.body);
         print('Fetched Contestant Data: $contestantData');
         if (contestantData != null && contestantData is List) {
+          List<Contestant> fetchedContestants =
+          contestantData.map((data) => Contestant.fromJson(data)).toList();
+
+          // Fetch existing scores for each contestant and criteria
+          for (var contestant in fetchedContestants) {
+            try {
+              List<double> existingScores =
+              await fetchExistingScoresForContestant(contestant.id, eventId);
+
+              // Check if the fetch is successful
+              if (existingScores.isNotEmpty) {
+                for (var criteria in criterias) {
+                  String uniqueKey = "${contestant.id}_${criteria.criteriaId}";
+                  controllers[uniqueKey] = TextEditingController(
+                    text: existingScores[criterias.indexOf(criteria)].toString(),
+                  );
+                }
+              } else {
+                for (var contestant in fetchedContestants) {
+                  for (var criteria in criterias) {
+                    String uniqueKey = "${contestant.id}_${criteria.criteriaId}"; // Assuming each criteria has a unique id
+                    controllers[uniqueKey] = TextEditingController();
+                  }
+                }
+                // Handle the case where fetch is not successful
+
+                print('Failed to fetch scores for contestant ${contestant.id}');
+              }
+            } catch (error) {
+
+              // Handle any errors that occurred during the fetch operation
+              print('Error fetching scores: $error');
+            }
+          }
+
+
           setState(() {
             updateContestants(
               contestantData.map((data) => Contestant.fromJson(data)).toList(),
@@ -749,6 +912,69 @@ class _ScoreCardState extends State<ScoreCard> {
     }
   }
 
+  Future<List<double>> fetchExistingScoresForContestant(String? contestantId, String eventId) async {
+    try {
+      String? token = await SharedPreferencesUtils.retrieveToken();
+      String? userId;
+      if (token != null && token.isNotEmpty) {
+        // Decode the token to extract user information
+        Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+        userId = decodedToken['userId'];
+      }
+      // Make a GET request to your server endpoint with contestantId and eventId as query parameters
+      final Uri uri = Uri.parse('http://10.0.2.2:8080/scorecards'); // Update the URL accordingly
+      final response = await http.get(
+        uri.replace(queryParameters: {
+          'contestantId': contestantId ?? '',
+          'eventId': eventId,
+          'userId': userId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        // Parse the response body as JSON
+        final Map<String, dynamic> responseBody = jsonDecode(response.body);
+        print(responseBody);
+        // Extract the scores from the response
+        final List<dynamic> scoresData = responseBody['scores'];
+        final List<double> scores = scoresData.map<double>((score) {
+          // Assuming the criteriascore is the value you want to extract
+          return score['criteria']['criteriascore'].toDouble();
+        }).toList();
+
+        print("Contestant scores: $scores");
+
+        // Optionally, you might want to update the UI or perform other actions here
+        return scores;
+      } else {
+        // Handle error responses
+        print('Failed to fetch scores. Status code: ${response.statusCode}');
+        if (response.statusCode == 401) {
+          final Map<String, dynamic> responseBody = jsonDecode(response.body);
+
+          if (responseBody.containsKey('error')) {
+            final errorMessage = responseBody['error'] as String;
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMessage),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+        print('Response body: ${response.body}');
+        // You might want to throw an exception or handle the error accordingly
+        return [];
+      }
+    } catch (e) {
+      // Handle exceptions
+      print('Error fetching scores: $e');
+      // You might want to throw an exception or handle the error accordingly
+      return [];
+    }
+  }
+
   Future<List<Criteria>> fetchCriteria(String eventId,
       {VoidCallback? onCriteriaFetched}) async {
     try {
@@ -767,7 +993,10 @@ class _ScoreCardState extends State<ScoreCard> {
               print('Criteria data is empty');
             } else {
               final List<Criteria> criteriaList =
-                  criteriaData.map((data) => Criteria.fromJson(data)).toList();
+              criteriaData.map((data) => Criteria.fromJson(data)).toList();
+              // Initialize controllers here after contestants are fetched
+              // Clear old controllers if any, and create new ones
+
               setState(() {
                 updateCriterias(criteriaList);
               });
@@ -821,7 +1050,7 @@ class _ScoreCardState extends State<ScoreCard> {
 
   Future<Map<String, dynamic>> fetchEventData(String eventId) async {
     final response =
-        await http.get(Uri.parse('http://10.0.2.2:8080/events/$eventId'));
+    await http.get(Uri.parse('http://10.0.2.2:8080/events/$eventId'));
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> eventData = json.decode(response.body);
@@ -898,35 +1127,35 @@ class _ScoreCardState extends State<ScoreCard> {
       body: SingleChildScrollView(
           child: Container(
               child: Column(children: [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Container(
-            height: 80,
-            width: 500,
-            child: Card(
-              elevation: 1,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Text(
-                        ' ${events.isNotEmpty ? events[0]?.eventName.toUpperCase() ?? '' : ''} live at ${events.isNotEmpty ? events[0]?.eventVenue.toUpperCase() ?? '' : ''} ',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w400,
-                          color: Color.fromARGB(255, 5, 70, 20),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Container(
+                    height: 80,
+                    width: 500,
+                    child: Card(
+                      elevation: 1,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Center(
+                              child: Text(
+                                ' ${events.isNotEmpty ? events[0]?.eventName.toUpperCase() ?? '' : ''} live at ${events.isNotEmpty ? events[0]?.eventVenue.toUpperCase() ?? '' : ''} ',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w400,
+                                  color: Color.fromARGB(255, 5, 70, 20),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          ),
-        ),
                 SizedBox(
                   height: 500,
                   width: 1000,
@@ -1001,45 +1230,45 @@ class _ScoreCardState extends State<ScoreCard> {
                     ),
                   ),
                 ),
-        Padding(
-          padding: const EdgeInsets.only(top: 8.0, left: 5.0, right: 5.0),
-          child: Container(
-            height: 600,
-            width: 500,
-            child: Card(
-              child: Column(
-                children: [
-                  Container(
-                    height: 35,
-                    padding: const EdgeInsets.only(top: 5, left: 5, right: 5),
-                    color: Colors.green,
-                    alignment: Alignment.topCenter,
-                    child: const Text(
-                      'Judges',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0, left: 5.0, right: 5.0),
+                  child: Container(
+                    height: 600,
+                    width: 500,
+                    child: Card(
+                      child: Column(
+                        children: [
+                          Container(
+                            height: 35,
+                            padding: const EdgeInsets.only(top: 5, left: 5, right: 5),
+                            color: Colors.green,
+                            alignment: Alignment.topCenter,
+                            child: const Text(
+                              'Judges',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: ListView.builder(
+                              itemCount: judges.length,
+                              itemBuilder: (context, index) {
+                                return ListTile(
+                                  title: Text(judges[index].name),
+                                  // Customize appearance as needed
+                                );
+                              },
+                            ),
+                          )
+                        ],
                       ),
                     ),
                   ),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: judges.length,
-                      itemBuilder: (context, index) {
-                        return ListTile(
-                          title: Text(judges[index].name),
-                          // Customize appearance as needed
-                        );
-                      },
-                    ),
-                  )
-                ],
-              ),
-            ),
-          ),
-        ),
-      ]))),
+                ),
+              ]))),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.only(left: 16, right: 16, bottom: 10),
         child: Row(
@@ -1058,21 +1287,21 @@ class _ScoreCardState extends State<ScoreCard> {
                         child: AlertDialog(
                           title: const Center(
                               child: Text(
-                            'Event Information',
-                            style: TextStyle(fontSize: 18),
-                          )),
+                                'Event Information',
+                                style: TextStyle(fontSize: 18),
+                              )),
                           content: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Center(
                                   child: Text(
-                                '${events.isNotEmpty ? events[0]?.eventName ?? '' : ''}'
-                                    .toUpperCase(),
-                                style: const TextStyle(fontSize: 20),
-                              )),
+                                    '${events.isNotEmpty ? events[0]?.eventName ?? '' : ''}'
+                                        .toUpperCase(),
+                                    style: const TextStyle(fontSize: 20),
+                                  )),
                               Row(
                                 mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     'Event ID: ${events.isNotEmpty ? events[0]?.eventId ?? '' : ''}',
@@ -1084,9 +1313,10 @@ class _ScoreCardState extends State<ScoreCard> {
                                       size: 22,
                                     ),
                                     onPressed: () {
+
                                       Clipboard.setData(new ClipboardData(
                                           text:
-                                              '${events.isNotEmpty ? events[0]?.eventId ?? '' : ''}'));
+                                          '${events.isNotEmpty ? events[0]?.eventId ?? '' : ''}'));
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         const SnackBar(
@@ -1121,6 +1351,7 @@ class _ScoreCardState extends State<ScoreCard> {
                           actions: [
                             TextButton(
                               onPressed: () {
+
                                 Navigator.of(context).pop();
                               },
                               child: const Text('Close'),
@@ -1148,11 +1379,19 @@ class _ScoreCardState extends State<ScoreCard> {
             const SizedBox(width: 10),
             ElevatedButton(
               onPressed: () async {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const Winner(),
-                  ),
-                );
+                try {
+                  await handleSubmit();
+                  // The rest of your code goes here
+                  final String? token = await SharedPreferencesUtils.retrieveToken();
+                  // Navigator.of(context).push(
+                  //   MaterialPageRoute(
+                  //     builder: (context) =>  SearchEvents(token: token),
+                  //   ),
+                  // );
+                } catch (error) {
+                  // Handle the error here, you can log it or show a user-friendly message
+                  print('An error occurred: $error');
+                }
               },
               style: ElevatedButton.styleFrom(
                 primary: Colors.green,
@@ -1183,7 +1422,7 @@ class _ScoreCardState extends State<ScoreCard> {
       child: ListTile(
         title: Text('Number: $number'),
         subtitle:
-            Text('Name: ${contestant.name}\nCourse: ${contestant.course}'),
+        Text('Name: ${contestant.name}\nCourse: ${contestant.course}'),
         trailing: IconButton(
           icon: const Icon(Icons.edit),
           onPressed: () {},
@@ -1220,110 +1459,110 @@ class _ScoreCardState extends State<ScoreCard> {
       style: finalStyle,
     );
   }
-  // Widget buildCriteriaRow(String criterianame, String percentage) {
-  //   TextEditingController _scoreController = TextEditingController();
-  //   return Row(
-  //     children: [
-  //       Padding(
-  //         padding: const EdgeInsets.only(left: 20),
-  //         child: Text(
-  //           criterianame,
-  //           style: const TextStyle(
-  //             fontWeight: FontWeight.w500,
-  //             color: Colors.green,
-  //           ),
-  //         ),
-  //       ),
-  //       const SizedBox(width: 10), // Adjust the spacing as needed
-  //       Container(
-  //         width: 50, // Adjust the width as needed
-  //         child: Padding(
-  //           padding: const EdgeInsets.only(left: 20),
-  //           child: Text(
-  //             percentage, // Display the actual percentage value
-  //             style: const TextStyle(
-  //               color: Colors.green,
-  //             ),
-  //           ),
-  //         ),
-  //       ),
+// Widget buildCriteriaRow(String criterianame, String percentage) {
+//   TextEditingController _scoreController = TextEditingController();
+//   return Row(
+//     children: [
+//       Padding(
+//         padding: const EdgeInsets.only(left: 20),
+//         child: Text(
+//           criterianame,
+//           style: const TextStyle(
+//             fontWeight: FontWeight.w500,
+//             color: Colors.green,
+//           ),
+//         ),
+//       ),
+//       const SizedBox(width: 10), // Adjust the spacing as needed
+//       Container(
+//         width: 50, // Adjust the width as needed
+//         child: Padding(
+//           padding: const EdgeInsets.only(left: 20),
+//           child: Text(
+//             percentage, // Display the actual percentage value
+//             style: const TextStyle(
+//               color: Colors.green,
+//             ),
+//           ),
+//         ),
+//       ),
 
-  //       const SizedBox(width: 30),
-  //       Expanded(
-  //         child: Container(
-  //           height: 50,
-  //           width: 90,
-  //           child: TextField(
-  //             controller: _scoreController,
-  //             keyboardType: TextInputType.number,
-  //             onChanged: (score) {
-  //               print('onChanged - criteriaName: $criterianame');
-  //               setState(() {
-  //                 criteriaScore = int.tryParse(score) ?? 9;
+//       const SizedBox(width: 30),
+//       Expanded(
+//         child: Container(
+//           height: 50,
+//           width: 90,
+//           child: TextField(
+//             controller: _scoreController,
+//             keyboardType: TextInputType.number,
+//             onChanged: (score) {
+//               print('onChanged - criteriaName: $criterianame');
+//               setState(() {
+//                 criteriaScore = int.tryParse(score) ?? 9;
 
-  //                 if (contestant != null) {
-  //                   if (criterianame != null) {
-  //                     getCriteriaScore(
-  //                       contestant!,
-  //                       criterianame,
-  //                       criteriaScore!,
-  //                     );
-  //                     int index = contestant.criterias.indexWhere(
-  //                       (criteria) =>
-  //                           criteria.criterianame.trim().toLowerCase() ==
-  //                           criterianame.trim().toLowerCase(),
-  //                     );
+//                 if (contestant != null) {
+//                   if (criterianame != null) {
+//                     getCriteriaScore(
+//                       contestant!,
+//                       criterianame,
+//                       criteriaScore!,
+//                     );
+//                     int index = contestant.criterias.indexWhere(
+//                       (criteria) =>
+//                           criteria.criterianame.trim().toLowerCase() ==
+//                           criterianame.trim().toLowerCase(),
+//                     );
 
-  //                     if (index != -1) {
-  //                       contestant.criterias[index].score = criteriaScore!;
-  //                     } else {
-  //                       print(
-  //                         'Warning: No matching criteria found in the contestant\'s list.',
-  //                       );
-  //                       print(
-  //                         'List of criteria names in the contestant: ${contestant.criterias.map((c) => c.criterianame).toList()}',
-  //                       );
-  //                     }
-  //                     updateTotalScore(contestant!);
-  //                   } else {
-  //                     print(
-  //                       'Warning: criteriaName is null. Set a default value or handle this case.',
-  //                     );
-  //                   }
-  //                 } else {
-  //                   print('Warning: Contestant is null.');
-  //                 }
-  //               });
-  //             },
-  //             decoration: InputDecoration(
-  //               hintStyle: const TextStyle(
-  //                 color: Colors.grey,
-  //               ),
-  //               contentPadding: const EdgeInsets.symmetric(
-  //                 vertical: 10.0,
-  //                 horizontal: 15.0,
-  //               ),
-  //               focusedBorder: OutlineInputBorder(
-  //                 borderRadius: BorderRadius.circular(30),
-  //                 borderSide: const BorderSide(
-  //                   color: Color.fromARGB(255, 5, 70, 20),
-  //                   width: 2.0,
-  //                 ),
-  //               ),
-  //               enabledBorder: OutlineInputBorder(
-  //                 borderRadius: BorderRadius.circular(10),
-  //                 borderSide: BorderSide(
-  //                   color: Colors.grey.withOpacity(0.5),
-  //                   width: 1.0,
-  //                 ),
-  //               ),
-  //             ),
-  //           ),
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
+//                     if (index != -1) {
+//                       contestant.criterias[index].score = criteriaScore!;
+//                     } else {
+//                       print(
+//                         'Warning: No matching criteria found in the contestant\'s list.',
+//                       );
+//                       print(
+//                         'List of criteria names in the contestant: ${contestant.criterias.map((c) => c.criterianame).toList()}',
+//                       );
+//                     }
+//                     updateTotalScore(contestant!);
+//                   } else {
+//                     print(
+//                       'Warning: criteriaName is null. Set a default value or handle this case.',
+//                     );
+//                   }
+//                 } else {
+//                   print('Warning: Contestant is null.');
+//                 }
+//               });
+//             },
+//             decoration: InputDecoration(
+//               hintStyle: const TextStyle(
+//                 color: Colors.grey,
+//               ),
+//               contentPadding: const EdgeInsets.symmetric(
+//                 vertical: 10.0,
+//                 horizontal: 15.0,
+//               ),
+//               focusedBorder: OutlineInputBorder(
+//                 borderRadius: BorderRadius.circular(30),
+//                 borderSide: const BorderSide(
+//                   color: Color.fromARGB(255, 5, 70, 20),
+//                   width: 2.0,
+//                 ),
+//               ),
+//               enabledBorder: OutlineInputBorder(
+//                 borderRadius: BorderRadius.circular(10),
+//                 borderSide: BorderSide(
+//                   color: Colors.grey.withOpacity(0.5),
+//                   width: 1.0,
+//                 ),
+//               ),
+//             ),
+//           ),
+//         ),
+//       ),
+//     ],
+//   );
+// }
 }
 
 extension IndexedIterable<E> on Iterable<E> {

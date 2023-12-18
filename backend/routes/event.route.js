@@ -349,10 +349,17 @@ router.get('/events/:eventId/criteria', async (req, res) => {
   }
 });
 
-router.get('/pageant-events', async (req, res) => {
+router.get('/pageant-events',verifyToken, async (req, res) => {
   try {
-    const pageantEvents = await Event.find({ event_category: "Pageants" });
+    const userId = req.user._id; 
+    const pageantEvents = await Event.find({
+      event_category: "Pageant Shows",
+      user: userId, // Filter by the user ID
+    });
 
+    if (!pageantEvents){
+      res.status(404).json({ message: 'No events found'});
+    }
     console.log('Pageant Events:', pageantEvents);
 
     res.status(200).json(pageantEvents);
@@ -371,6 +378,10 @@ router.get('/talent-events', verifyToken, async (req, res) => {
       user: userId, // Filter by the user ID
     });
 
+    if (!talentShowEvents){
+      res.status(404).json({ message: 'No events found'});
+    }
+
     console.log('Talent Shows:', talentShowEvents);
 
     res.status(200).json(talentShowEvents);
@@ -385,9 +396,13 @@ router.get('/talent-events', verifyToken, async (req, res) => {
 
 
 
-router.get('debate-events', async (req, res) => {
+router.get('debate-events', verifyToken, async (req, res) => {
   try {
-    const debateEvents = await Event.find({ event_category: "Debates" });
+    const userId = req.user._id; 
+    const debateEvents = await Event.find({
+      event_category: "Debate Shows",
+      user: userId, // Filter by the user ID
+    });
 
     console.log('Debates:', debateEvents);
 
@@ -402,9 +417,13 @@ router.get('debate-events', async (req, res) => {
 
 
 
-router.get('/artcontest-events', async (req, res) => {
+router.get('/artcontest-events', verifyToken, async (req, res) => {
   try {
-    const artcontestEvents = await Event.find({ event_category: "Art Contests" })
+    const userId = req.user._id; 
+    const artcontestEvents = await Event.find({
+      event_category: "Art Contest",
+      user: userId, // Filter by the user ID
+    })
 
     console.log('Art Contests:', artcontestEvents);
 
@@ -504,21 +523,32 @@ router.get('/calendar-events/:userId', async (req, res) => {
   const userId = req.params.userId;
   try {
     // Find events for the specified user
-    const event = await Event.find({ user: userId });
+    const events = await Event.find({ user: userId }).populate({
+      path: 'criteria contestants',
+    });
 
     // Find judges that match the user ID and populate the events field
-    const judges = await Judge.find({ userId: userId, isConfirm: true }).populate('eventId');
-    const mergedEvents = [];
-    mergedEvents.push(event,judges);
-   
-    // Onlu send the judges event not including other judges data
+    const judges = await Judge.find({ userId: userId }).populate({
+      path: 'eventId',
+      populate: {
+        path: 'contestants criteria',
+      },
+    });
 
-    res.status(200).json(mergedEvents.flat());
+    // Flatten the arrays and remove duplicates
+    const mergedEvents = [...events, ...judges.map(judge => judge.eventId)];
+    const uniqueEvents = Array.from(new Set(mergedEvents.map(event => event._id)))
+      .map(id => mergedEvents.find(event => event._id === id));
+
+    // Only send the judges' events not including other judges' data
+    res.status(200).json(uniqueEvents);
   } catch (error) {
     console.error('Error fetching events:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
+
 
 module.exports = 
 router, 

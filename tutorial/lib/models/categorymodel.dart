@@ -24,22 +24,37 @@ class _PageantsScreenState extends State<PageantsScreen> {
   }
 
   Future<List<dynamic>> fetchPageantEvents() async {
-    final response =
-        await http.get(Uri.parse('http://10.0.2.2:8080/pageant-events'));
+    try {
+      // Retrieve the token from shared preferences
+      String? token = await SharedPreferencesUtils.retrieveToken();
+      if (token == null) {
+        print('No token found in shared preferences');
+        return []; // Return an empty list if there is no token
+      }
 
-    if (response.statusCode == 200) {
-      final List<dynamic> events = json.decode(response.body);
-      events.sort((a, b) {
-        DateTime dateA = DateTime.parse(a['event_date']);
-        DateTime dateB = DateTime.parse(b['event_date']);
-        return dateA.compareTo(dateB);
-      });
-      print('Pageant Events in Flutter: $events');
-      return events;
-    } else {
-      print('Error: ${response.statusCode}');
-      print('Response Body: ${response.body}');
-      throw Exception('Failed to load pageant events');
+      // Use the token in the Authorization header for your HTTP request
+      final response = await http.get(
+        Uri.parse(
+            'http://10.0.2.2:8080/pageant-events'), // Replace with your API URL
+        headers: {
+          'Authorization': 'Bearer $token', // Using the token in the header
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Process and return the response data
+        List<dynamic> events = json.decode(
+            response.body); // Assuming the response body is a JSON array
+        return events;
+      } else {
+        // Handle HTTP request errors
+        print('Failed to load events. Status code: ${response.statusCode}');
+        return []; // Return an empty list in case of failure
+      }
+    } catch (e) {
+      // Handle other errors like network errors
+      print('Error fetching events: $e');
+      return []; // Return an empty list in case of error
     }
   }
 
@@ -155,13 +170,13 @@ class _PageantsScreenState extends State<PageantsScreen> {
             return ListView.builder(
               itemCount: snapshot.data!.length,
               itemBuilder: (BuildContext context, int index) {
-                print('Event data: ${snapshot.data![index]}');
+                //print('Event data: ${snapshot.data![index]}');
                 return PageantItem(
                   event: snapshot.data![index],
                   onDelete: () {
                     print('Deleting event at index $index');
                     dynamic eventData = snapshot.data![index];
-                    print('Event data: $eventData');
+                   // print('Event data: $eventData');
                     String? eventId = eventData['_id'] as String?;
                     print('Event ID: $eventId');
                     deleteEvent(eventId, context);
@@ -460,13 +475,13 @@ class _TalentShowsScreenState extends State<TalentShowsScreen> {
             return ListView.builder(
               itemCount: snapshot.data!.length,
               itemBuilder: (BuildContext context, int index) {
-                print('Event data: ${snapshot.data![index]}');
+               // print('Event data: ${snapshot.data![index]}');
                 return PageantItem(
                   event: snapshot.data![index],
                   onDelete: () {
                     print('Deleting event at index $index');
                     dynamic eventData = snapshot.data![index];
-                    print('Event data: $eventData');
+                    //print('Event data: $eventData');
                     String? eventId = eventData['_id'] as String?;
                     print('Event ID: $eventId');
                     deleteEvent(eventId, context);
@@ -619,22 +634,37 @@ class _DebatesScreenState extends State<DebatesScreen> {
   }
 
   Future<List<dynamic>> fetchDebateEvents() async {
-    final response =
-        await http.get(Uri.parse('http://10.0.2.2:8080/debate-events'));
+    try {
+      // Retrieve the token from shared preferences
+      String? token = await SharedPreferencesUtils.retrieveToken();
+      if (token == null) {
+        print('No token found in shared preferences');
+        return []; // Return an empty list if there is no token
+      }
 
-    if (response.statusCode == 200) {
-      final List<dynamic> events = json.decode(response.body);
-      events.sort((a, b) {
-        DateTime dateA = DateTime.parse(a['event_date']);
-        DateTime dateB = DateTime.parse(b['event_date']);
-        return dateA.compareTo(dateB);
-      });
-      print('Pageant Events in Flutter: $events');
-      return events;
-    } else {
-      print('Error: ${response.statusCode}');
-      print('Response Body: ${response.body}');
-      throw Exception('Failed to load pageant events');
+      // Use the token in the Authorization header for your HTTP request
+      final response = await http.get(
+        Uri.parse(
+            'http://10.0.2.2:8080/debate-events'), // Replace with your API URL
+        headers: {
+          'Authorization': 'Bearer $token', // Using the token in the header
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Process and return the response data
+        List<dynamic> events = json.decode(
+            response.body); // Assuming the response body is a JSON array
+        return events;
+      } else {
+        // Handle HTTP request errors
+        print('Failed to load events. Status code: ${response.statusCode}');
+        return []; // Return an empty list in case of failure
+      }
+    } catch (e) {
+      // Handle other errors like network errors
+      print('Error fetching events: $e');
+      return []; // Return an empty list in case of error
     }
   }
 
@@ -750,13 +780,13 @@ class _DebatesScreenState extends State<DebatesScreen> {
             return ListView.builder(
               itemCount: snapshot.data!.length,
               itemBuilder: (BuildContext context, int index) {
-                print('Event data: ${snapshot.data![index]}');
+                //print('Event data: ${snapshot.data![index]}');
                 return PageantItem(
                   event: snapshot.data![index],
                   onDelete: () {
                     print('Deleting event at index $index');
                     dynamic eventData = snapshot.data![index];
-                    print('Event data: $eventData');
+                    //print('Event data: $eventData');
                     String? eventId = eventData['_id'] as String?;
                     print('Event ID: $eventId');
                     deleteEvent(eventId, context);
@@ -908,22 +938,37 @@ class _ArtContestScreenState extends State<ArtContestScreen> {
   }
 
   Future<List<dynamic>> fetchArtContestEvents() async {
-    final response =
-        await http.get(Uri.parse('http://10.0.2.2:8080/artcontest-events'));
+    try {
+      // Retrieve the token from shared preferences
+      String? token = await SharedPreferencesUtils.retrieveToken();
+      if (token == null) {
+        print('No token found in shared preferences');
+        return []; // Return an empty list if there is no token
+      }
 
-    if (response.statusCode == 200) {
-      final List<dynamic> events = json.decode(response.body);
-      events.sort((a, b) {
-        DateTime dateA = DateTime.parse(a['event_date']);
-        DateTime dateB = DateTime.parse(b['event_date']);
-        return dateA.compareTo(dateB);
-      });
-      print('Pageant Events in Flutter: $events');
-      return events;
-    } else {
-      print('Error: ${response.statusCode}');
-      print('Response Body: ${response.body}');
-      throw Exception('Failed to load pageant events');
+      // Use the token in the Authorization header for your HTTP request
+      final response = await http.get(
+        Uri.parse(
+            'http://10.0.2.2:8080/artcontest-events'), // Replace with your API URL
+        headers: {
+          'Authorization': 'Bearer $token', // Using the token in the header
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Process and return the response data
+        List<dynamic> events = json.decode(
+            response.body); // Assuming the response body is a JSON array
+        return events;
+      } else {
+        // Handle HTTP request errors
+        print('Failed to load events. Status code: ${response.statusCode}');
+        return []; // Return an empty list in case of failure
+      }
+    } catch (e) {
+      // Handle other errors like network errors
+      print('Error fetching events: $e');
+      return []; // Return an empty list in case of error
     }
   }
 
@@ -1039,13 +1084,13 @@ class _ArtContestScreenState extends State<ArtContestScreen> {
             return ListView.builder(
               itemCount: snapshot.data!.length,
               itemBuilder: (BuildContext context, int index) {
-                print('Event data: ${snapshot.data![index]}');
+                //print('Event data: ${snapshot.data![index]}');
                 return PageantItem(
                   event: snapshot.data![index],
                   onDelete: () {
                     print('Deleting event at index $index');
                     dynamic eventData = snapshot.data![index];
-                    print('Event data: $eventData');
+                   // print('Event data: $eventData');
                     String? eventId = eventData['_id'] as String?;
                     print('Event ID: $eventId');
                     deleteEvent(eventId, context);
