@@ -141,7 +141,7 @@ class _ContestantsState extends State<Contestants> {
 
   Future<void> createContestant(
       String eventId, Map<String, dynamic> contestantData) async {
-    final url = Uri.parse("http://10.0.2.2:8080/contestants");
+    final url = Uri.parse("https://tab-lu.vercel.app/contestants");
     try {
       // Read the image file
 
@@ -171,7 +171,8 @@ class _ContestantsState extends State<Contestants> {
         if (response.statusCode == 201) {
           print('Contestant created successfully');
         } else {
-          print('Failed to create contestant. Status code: ${response.statusCode}');
+          print(
+              'Failed to create contestant. Status code: ${response.statusCode}');
           print('Response body: ${await response.stream.bytesToString()}');
         }
       } else {
@@ -189,7 +190,6 @@ class _ContestantsState extends State<Contestants> {
         _nameController.text = contestant.name;
         _courseController.text = contestant.course;
         _departmentController.text = contestant.department;
-
 
         return AlertDialog(
           shape:
@@ -285,7 +285,6 @@ class _ContestantsState extends State<Contestants> {
                 style: TextStyle(color: Colors.green),
               ),
             ),
-
           ],
         );
       },
@@ -294,7 +293,8 @@ class _ContestantsState extends State<Contestants> {
 
 // Function to update the contestant information in the database
   Future<void> updateContestant(String eventId, Contestant contestant) async {
-    final url = Uri.parse("http://10.0.2.2:8080/contestants/${contestant.id}");
+    final url =
+        Uri.parse("https://tab-lu.vercel.app/contestants/${contestant.id}");
 
     try {
       final response = await http.put(
@@ -384,7 +384,6 @@ class _ContestantsState extends State<Contestants> {
                     children: [
                       CircleAvatar(
                         radius: 64,
-
                         backgroundImage: _selectedImage != null
                             ? FileImage(_selectedImage!)
                             : null,
@@ -397,17 +396,16 @@ class _ContestantsState extends State<Contestants> {
                           await addProfilePicture(contestants.isNotEmpty
                               ? contestants[0]
                               : Contestant(
-                              name: 'DefaultName',
-                              course: 'DefaultCourse',
-                              department: 'DefaultDepartment',
-                              eventId: widget.eventId,
-                              criterias: []));
+                                  name: 'DefaultName',
+                                  course: 'DefaultCourse',
+                                  department: 'DefaultDepartment',
+                                  eventId: widget.eventId,
+                                  criterias: []));
 
                           if (_selectedImage != null) {
                             print(
                                 'Selected Image: ${_selectedImage!.path.split('/').last}');
                           }
-
                         },
                         style: ElevatedButton.styleFrom(
                           primary: Colors.green,
@@ -420,7 +418,6 @@ class _ContestantsState extends State<Contestants> {
                         ),
                         child: const Text('Select Image'),
                       ),
-
                       SizedBox(
                         height: 20,
                       ),

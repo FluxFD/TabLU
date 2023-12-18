@@ -90,7 +90,6 @@ class _CriteriasState extends State<Criterias> {
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   List<Criteria> criterias = [];
 
-
   TextEditingController _criteriaNameController = TextEditingController();
   TextEditingController _percentageController = TextEditingController();
   void updateTotalPercentage() {
@@ -102,7 +101,7 @@ class _CriteriasState extends State<Criterias> {
   Future<void> _fetchCriterias(String eventId) async {
     try {
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:8080/criteria/$eventId'),
+        Uri.parse('https://tab-lu.vercel.app/criteria/$eventId'),
       );
 
       if (response.statusCode == 200) {
@@ -123,7 +122,8 @@ class _CriteriasState extends State<Criterias> {
   }
 
   Future<void> deleteCriteria(String eventId, String criteriaName) async {
-    final url = Uri.parse("http://10.0.2.2:8080/criteria?eventId=$eventId&criteriaName=$criteriaName");
+    final url = Uri.parse(
+        "https://tab-lu.vercel.app/criteria?eventId=$eventId&criteriaName=$criteriaName");
     updateTotalPercentage();
     try {
       final response = await http.delete(url);
@@ -154,8 +154,7 @@ class _CriteriasState extends State<Criterias> {
         });
       }
     });
-    }
-
+  }
 
   void insertItem(Criteria criteria) {
     final newIndex = 0;
@@ -314,7 +313,7 @@ class _CriteriasState extends State<Criterias> {
             (currentPercentage + adjustmentPerCriteria).toString();
       }
     } else {
-      final url = Uri.parse("http://10.0.2.2:8080/criteria");
+      final url = Uri.parse("https://tab-lu.vercel.app/criteria");
 
       try {
         // Check if criteria with the same name already exists
@@ -329,16 +328,13 @@ class _CriteriasState extends State<Criterias> {
           }),
         );
 
-
-
         if (response.statusCode == 201) {
           _showErrorSnackBar('Criteria created successfully', Colors.green);
         } else {
           final Map<String, dynamic> responseData = jsonDecode(response.body);
           final String errorMessage = responseData['error'];
           _showErrorSnackBar(
-              'Failed to create criteria: ${errorMessage}',
-              Colors.red);
+              'Failed to create criteria: ${errorMessage}', Colors.red);
 
           // Check for null response body
           final responseBody = response.body;
@@ -356,9 +352,9 @@ class _CriteriasState extends State<Criterias> {
 
   @override
   Widget build(BuildContext context) {
-    if(criterias.isNotEmpty){
+    if (criterias.isNotEmpty) {
       setState(() {
-        isLoading= false;
+        isLoading = false;
       });
     }
     if (isLoading) {
@@ -522,135 +518,132 @@ class _CriteriasState extends State<Criterias> {
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.only(left: 16, right: 16, bottom: 10),
-        child:Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
           Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Total: ${totalPercentage.toStringAsFixed(2)}%',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-
-            OutlinedButton(
-              onPressed: () {
-                // Add your cancel button action here
-              },
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                textStyle: const TextStyle(
-                  fontSize: 14,
-                  letterSpacing: 2.2,
-                  color: Colors.black,
-                ),
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Total: ${totalPercentage.toStringAsFixed(2)}%',
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              child: const Text('CLEAR', style: TextStyle(color: Colors.green)),
-            ),
-            const SizedBox(width: 10),
-            ElevatedButton(
-              onPressed: () async {
-                try {
-                  final double totalPercentage = calculateTotalPercentage();
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              OutlinedButton(
+                onPressed: () {
+                  // Add your cancel button action here
+                },
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 14,
+                    letterSpacing: 2.2,
+                    color: Colors.black,
+                  ),
+                ),
+                child:
+                    const Text('CLEAR', style: TextStyle(color: Colors.green)),
+              ),
+              const SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: () async {
+                  try {
+                    final double totalPercentage = calculateTotalPercentage();
 
-                  if (totalPercentage != 100.0) {
-                    _showErrorSnackBar(
-                      'Error: Total percentage must be 100%. Current total: $totalPercentage%',
-                      Colors.red,
-                    );
-                    return;
-                  }
+                    if (totalPercentage != 100.0) {
+                      _showErrorSnackBar(
+                        'Error: Total percentage must be 100%. Current total: $totalPercentage%',
+                        Colors.red,
+                      );
+                      return;
+                    }
 
-                  if (totalPercentage == 100.0) {
-                    if (criterias.isNotEmpty) {
-                      for (final criteria in criterias) {
-                        if (widget.eventId != null) {
-                          await createCriteria(
-                              widget.eventId!, criteria.toJson());
-                        } else {
-                          print('Error: Event ID is null');
+                    if (totalPercentage == 100.0) {
+                      if (criterias.isNotEmpty) {
+                        for (final criteria in criterias) {
+                          if (widget.eventId != null) {
+                            await createCriteria(
+                                widget.eventId!, criteria.toJson());
+                          } else {
+                            print('Error: Event ID is null');
+                          }
                         }
                       }
-                    }
 
-                    final String? eventId = widget.eventId;
-                    if (eventId != null) {
-                      print('Fetching event with ID: $eventId');
-                      final response = await http.get(
-                        Uri.parse('http://10.0.2.2:8080/event/$eventId'),
-                      );
+                      final String? eventId = widget.eventId;
+                      if (eventId != null) {
+                        print('Fetching event with ID: $eventId');
+                        final response = await http.get(
+                          Uri.parse('https://tab-lu.vercel.app/event/$eventId'),
+                        );
 
-                      if (response.statusCode == 200) {
-                        final Event event =
-                            Event.fromJson(jsonDecode(response.body));
+                        if (response.statusCode == 200) {
+                          final Event event =
+                              Event.fromJson(jsonDecode(response.body));
 
-                        final eventData = {
-                          'eventName': event.event_name,
-                          'eventDate': event.event_date,
-                          'eventTime': event.event_time,
-                          'accessCode': event.access_code,
-                          'eventVenue': event.event_venue ?? 'n/a',
-                          'eventOrganizer': event.event_organizer ?? 'n/a',
-                          'contestants': event.contestants ?? [],
-                          'criteria': event.criteria ?? [],
-                        };
+                          final eventData = {
+                            'eventName': event.event_name,
+                            'eventDate': event.event_date,
+                            'eventTime': event.event_time,
+                            'accessCode': event.access_code,
+                            'eventVenue': event.event_venue ?? 'n/a',
+                            'eventOrganizer': event.event_organizer ?? 'n/a',
+                            'contestants': event.contestants ?? [],
+                            'criteria': event.criteria ?? [],
+                          };
 
-                        // Navigate to the next screen or perform any other actions
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ScoreCard(
-                              eventId: widget.eventId,
-                              eventData: {},
-                              judges: [],
+                          // Navigate to the next screen or perform any other actions
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ScoreCard(
+                                eventId: widget.eventId,
+                                eventData: {},
+                                judges: [],
+                              ),
                             ),
-                          ),
-                        );
-                      } else {
-                        print(
-                          'Failed to fetch event data. Status code: ${response.statusCode}',
-                        );
+                          );
+                        } else {
+                          print(
+                            'Failed to fetch event data. Status code: ${response.statusCode}',
+                          );
+                        }
                       }
+                    } else {
+                      _showErrorSnackBar(
+                          'Error: Total percentage must be 100%. Current total: $totalPercentage',
+                          Colors.red);
                     }
-                  } else {
-                    _showErrorSnackBar(
-                        'Error: Total percentage must be 100%. Current total: $totalPercentage',
-                        Colors.red);
+                  } catch (e) {
+                    print('Error fetching event data: $e');
                   }
-                } catch (e) {
-                  print('Error fetching event data: $e');
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                primary: Colors.green,
-                onPrimary: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 50),
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                },
+                style: ElevatedButton.styleFrom(
+                  primary: Colors.green,
+                  onPrimary: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 50),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 14,
+                    letterSpacing: 2.2,
+                    color: Colors.white,
+                  ),
                 ),
-                textStyle: const TextStyle(
-                  fontSize: 14,
-                  letterSpacing: 2.2,
-                  color: Colors.white,
-                ),
+                child: const Text('SAVE'),
               ),
-              child: const Text('SAVE'),
-            ),
-
-          ],
-        ),
-        ]
-      ),
+            ],
+          ),
+        ]),
       ),
     );
   }

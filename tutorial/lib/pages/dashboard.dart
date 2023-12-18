@@ -245,7 +245,7 @@ class _SearchEventsState extends State<SearchEvents> {
   late CodeModel.Event eventInstance;
   List<CategoryModel> categories = [];
   List<CodeModel.CodeModel> code = [];
-  late String email ="";
+  late String email = "";
   late String username = "";
   String _id = '';
   String event_name = '';
@@ -286,8 +286,8 @@ class _SearchEventsState extends State<SearchEvents> {
         String userId = decodedToken['userId'];
 
         // Make the API request with the userId
-        final response = await http
-            .get(Uri.parse('http://10.0.2.2:8080/get-notifications/$userId'));
+        final response = await http.get(
+            Uri.parse('https://tab-lu.vercel.app/get-notifications/$userId'));
 
         if (response.statusCode == 200) {
           List<dynamic> notifications = json.decode(response.body);
@@ -316,7 +316,7 @@ class _SearchEventsState extends State<SearchEvents> {
         return [];
       }
 
-      final url = Uri.parse("http://10.0.2.2:8080/events/$accessCode");
+      final url = Uri.parse("https://tab-lu.vercel.app/events/$accessCode");
       final response = await http.get(
         url,
         headers: {
@@ -402,7 +402,7 @@ class _SearchEventsState extends State<SearchEvents> {
   TextEditingController searchController = TextEditingController();
   Future<List<dynamic>> fetchNotifications(String userId) async {
     final response = await http.get(
-      Uri.parse('http://10.0.2.2:8080/get-notifications/$userId'),
+      Uri.parse('https://tab-lu.vercel.app/get-notifications/$userId'),
     );
 
     if (response.statusCode == 200) {
@@ -1197,7 +1197,7 @@ class EventApi {
       String userId = decodedToken['userId'];
 
       final response = await http.post(
-        Uri.parse("http://10.0.2.2:8080/api-join-event"),
+        Uri.parse("https://tab-lu.vercel.app/api-join-event"),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -1245,7 +1245,7 @@ class NotificationApi {
         final String username = decodedToken['username'];
         // Fetch event information before sending the notification
         final eventInfoResponse = await http.get(
-          Uri.parse("http://10.0.2.2:8080/notifications/$eventId"),
+          Uri.parse("https://tab-lu.vercel.app/notifications/$eventId"),
           headers: {
             'Content-Type': 'application/json',
           },
@@ -1265,7 +1265,7 @@ class NotificationApi {
               'User $username has requested access to event $eventName';
           // Send the join notification
           final response = await http.post(
-            Uri.parse("http://10.0.2.2:8080/notifications"),
+            Uri.parse("https://tab-lu.vercel.app/notifications"),
             headers: {
               'Content-Type': 'application/json',
             },

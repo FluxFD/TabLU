@@ -23,7 +23,6 @@ class ScoreCard {
   }
 }
 
-
 class Winner extends StatefulWidget {
   final String eventId;
 
@@ -34,13 +33,12 @@ class Winner extends StatefulWidget {
 }
 
 class _WinnerState extends State<Winner> {
-
   List<ScoreCard> scoreCards = [];
   void initState() {
     super.initState();
     scoreCards = List.generate(
       3,
-          (index) => ScoreCard(
+      (index) => ScoreCard(
         eventId: widget.eventId,
         contestantName: 'Default Name ${index + 1}',
         score: 50.0, // Replace with your default score
@@ -53,7 +51,7 @@ class _WinnerState extends State<Winner> {
   Future<void> fetchScoreCards() async {
     final eventId = widget.eventId;
     print(eventId);
-    final url = Uri.parse('http://10.0.2.2:8080/winners/$eventId');
+    final url = Uri.parse('https://tab-lu.vercel.app/winners/$eventId');
 
     try {
       final response = await http.get(url);
@@ -67,19 +65,21 @@ class _WinnerState extends State<Winner> {
             return ScoreCard(
               eventId: eventId,
               contestantName: item['name'],
-              score: item['averageScore'].toDouble(), // Assuming score is a double
+              score:
+                  item['averageScore'].toDouble(), // Assuming score is a double
             );
           }));
 
           // Sort scoreCards by score in descending order
           scoreCards.sort((a, b) => b.score.compareTo(a.score));
 
-          for (var scorecard in scoreCards){
+          for (var scorecard in scoreCards) {
             print(scorecard.contestantName);
           }
         });
       } else {
-        print('Failed to fetch scorecards. Status code: ${response.statusCode}');
+        print(
+            'Failed to fetch scorecards. Status code: ${response.statusCode}');
       }
     } catch (error) {
       print('Error fetching scorecards: $error');
@@ -147,11 +147,11 @@ class _WinnerState extends State<Winner> {
                           const SizedBox(
                             width: 25,
                           ),
-                           Text(scoreCards[0].contestantName),
+                          Text(scoreCards[0].contestantName),
                           const SizedBox(
                             width: 25,
                           ),
-                           Text("${scoreCards[0].score.toString()} %"),
+                          Text("${scoreCards[0].score.toString()} %"),
                         ],
                       ),
                     ),
@@ -230,11 +230,12 @@ class _WinnerState extends State<Winner> {
               ),
             ),
             const SizedBox(
-                    height: 10,
-                  ),
+              height: 10,
+            ),
             Padding(
-              padding: const EdgeInsets.only(left: 120, top: 16, bottom: 30 ),
-              child: Container(child: Column(children: [
+              padding: const EdgeInsets.only(left: 120, top: 16, bottom: 30),
+              child: Container(
+                  child: Column(children: [
                 // Display additional contestants dynamically starting from index 2
                 for (var i = 3; i < scoreCards.length; i++)
                   Row(

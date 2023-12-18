@@ -48,12 +48,12 @@ class Event {
       eventDate: json['eventDate'] != null ? json['eventDate'].toString() : '',
       eventTime: json['eventTime'] != null ? json['eventTime'].toString() : '',
       contestants: (json['contestants'] as List<dynamic>?)
-          ?.map((contestant) => Contestant.fromJson(contestant))
-          .toList() ??
+              ?.map((contestant) => Contestant.fromJson(contestant))
+              .toList() ??
           [],
       criterias: (json['criterias'] as List<dynamic>?)
-          ?.map((criteria) => Criteria.fromJson(criteria))
-          .toList() ??
+              ?.map((criteria) => Criteria.fromJson(criteria))
+              .toList() ??
           [],
     );
   }
@@ -206,7 +206,8 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
         Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
         userId = decodedToken['userId'];
       }
-      final response = await http.get(Uri.parse('http://10.0.2.2:8080/calendar-events/$userId'));
+      final response = await http
+          .get(Uri.parse('https://tab-lu.vercel.app/calendar-events/$userId'));
       if (response.statusCode == 200) {
         print(response);
         final List<dynamic> data = json.decode(response.body);

@@ -62,7 +62,7 @@ class _LoginPageState extends State<Login> {
   }
 
   try {
-    final Uri url = Uri.parse("http://10.0.2.2:8080/login");
+    final Uri url = Uri.parse("https://tab-lu.vercel.app/login");
     var res = await http.post(
       url,
       headers: <String, String>{
@@ -142,7 +142,7 @@ class _LoginPageState extends State<Login> {
     }
 
     try {
-      final Uri url = Uri.parse("http://10.0.2.2:8080/login");
+      final Uri url = Uri.parse("https://tab-lu.vercel.app/login");
       var res = await http.post(
         url,
         headers: <String, String>{

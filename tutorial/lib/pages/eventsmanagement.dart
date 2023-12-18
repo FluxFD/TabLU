@@ -55,7 +55,7 @@ class _EventsManagementState extends State<EventsManagement> {
     token = await SharedPreferencesUtils.retrieveToken();
     try {
       final response =
-          await http.get(Uri.parse('http://10.0.2.2:8080/api/events'));
+          await http.get(Uri.parse('https://tab-lu.vercel.app/api/events'));
       if (response.statusCode == 200) {
         final dynamic eventData = json.decode(response.body);
         print(eventData);
@@ -89,7 +89,7 @@ class _EventsManagementState extends State<EventsManagement> {
         throw Exception('Authentication token not found');
       }
 
-      final url = Uri.parse("http://10.0.2.2:8080/user-events");
+      final url = Uri.parse("https://tab-lu.vercel.app/user-events");
       final response = await http.get(
         url,
         // Include the Authorization header with the token
@@ -196,7 +196,6 @@ class _EventsManagementState extends State<EventsManagement> {
                   );
                 },
               );
-
             }
           },
         ),

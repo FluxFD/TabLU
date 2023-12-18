@@ -43,7 +43,8 @@ class _EventsJoinedState extends State<EventsJoined> {
       Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
       String userId = decodedToken['userId'];
       // Construct the URL with the userId as a query parameter
-      String url = 'http://10.0.2.2:8080/get-all-judges-events?userId=$userId';
+      String url =
+          'https://tab-lu.vercel.app/get-all-judges-events?userId=$userId';
 
       // Make the HTTP request
       final response = await http.get(
@@ -59,16 +60,23 @@ class _EventsJoinedState extends State<EventsJoined> {
         dynamic responseData = jsonDecode(response.body);
 
         // Check if the data is a map with the "events" key
-        if (responseData is Map<String, dynamic> && responseData.containsKey('events')) {
+        if (responseData is Map<String, dynamic> &&
+            responseData.containsKey('events')) {
           List<dynamic> eventsData = responseData['events'];
           // Convert the eventsData to a list of Event objects
           print(eventsData);
-          List<Event> events = eventsData.map((json) => Event(
-            json['eventId']['event_name'] ?? '',      // Use empty string if 'event_name' is null
-            json['eventId']['event_date'] ?? '',      // Use empty string if 'event_date' is null
-            json['eventId']['event_time'] ?? '',      // Use empty string if 'event_time' is null
-            json['eventId']['_id'] ?? '',             // Use empty string if '_id' is null
-          )).toList();
+          List<Event> events = eventsData
+              .map((json) => Event(
+                    json['eventId']['event_name'] ??
+                        '', // Use empty string if 'event_name' is null
+                    json['eventId']['event_date'] ??
+                        '', // Use empty string if 'event_date' is null
+                    json['eventId']['event_time'] ??
+                        '', // Use empty string if 'event_time' is null
+                    json['eventId']['_id'] ??
+                        '', // Use empty string if '_id' is null
+                  ))
+              .toList();
           // Set the eventsList to the fetched events
           setState(() {
             eventsList = events;
@@ -92,8 +100,6 @@ class _EventsJoinedState extends State<EventsJoined> {
     }
   }
 
-
-
   List<Event> generateEventsList() {
     List<Event> events = [];
     for (int i = 1; i <= eventsList.length; i++) {
@@ -111,8 +117,6 @@ class _EventsJoinedState extends State<EventsJoined> {
 
   @override
   Widget build(BuildContext context) {
-
-
     return Scaffold(
       appBar: AppBar(
         elevation: 0.3,
@@ -168,10 +172,7 @@ class _EventsJoinedState extends State<EventsJoined> {
                             fontSize: 13,
                           ),
                         ),
-                        Text(
-                          'Status: Active'
-                        ),
-                        
+                        Text('Status: Active'),
                         Text(
                           'Event Id: ${event.eventId}',
                           style: TextStyle(
@@ -187,7 +188,10 @@ class _EventsJoinedState extends State<EventsJoined> {
                                 // Handle join event logic
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (context) =>  ScoreCard(eventId: eventsList[index].eventId , eventData: {}, judges: []),
+                                    builder: (context) => ScoreCard(
+                                        eventId: eventsList[index].eventId,
+                                        eventData: {},
+                                        judges: []),
                                   ),
                                 );
                                 // You can implement the logic to join the event here
@@ -239,7 +243,10 @@ class _EventsJoinedState extends State<EventsJoined> {
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Cancel Event Confirmation', style: TextStyle(fontSize: 20),),
+          title: Text(
+            'Cancel Event Confirmation',
+            style: TextStyle(fontSize: 20),
+          ),
           content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
@@ -249,13 +256,16 @@ class _EventsJoinedState extends State<EventsJoined> {
           ),
           actions: <Widget>[
             TextButton(
-              child: Text('Cancel', style: TextStyle(color: Colors.green),),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: Colors.green),
+              ),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: Text('Confirm', style:TextStyle( color: Colors.green)),
+              child: Text('Confirm', style: TextStyle(color: Colors.green)),
               onPressed: () {
                 // Handle cancel event logic
                 // You can implement the logic to cancel the event here

@@ -26,7 +26,7 @@ class _LoginPageState extends State<Signin> {
   Color emailBorderColor = Colors.grey.withOpacity(0.5);
 
   Future<void> signIn() async {
-    final Uri url = Uri.parse("http://10.0.2.2:8080/signin");
+    final Uri url = Uri.parse("https://tab-lu.vercel.app/signin");
 
     if (username.text.isEmpty || password.text.isEmpty) {
       if (username.text.isEmpty) {
