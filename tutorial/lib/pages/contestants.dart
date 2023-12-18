@@ -105,7 +105,8 @@ class _ContestantsState extends State<Contestants> {
   Future<List<Contestant>> fetchContestants() async {
     try {
       String eventId = widget.eventId;
-      final url = Uri.parse("http://10.0.2.2:8080/get-contestants/$eventId");
+      final url =
+          Uri.parse("https://tab-lu.vercel.app/get-contestants/$eventId");
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -138,7 +139,7 @@ class _ContestantsState extends State<Contestants> {
 
   Future<void> deleteContestant(String? contestantId) async {
     final url =
-        Uri.parse("http://10.0.2.2:8080/delete-contestant/$contestantId");
+        Uri.parse("https://tab-lu.vercel.app/delete-contestant/$contestantId");
 
     try {
       final response = await http.delete(url);
@@ -709,7 +710,7 @@ class ListItemWidget extends StatelessWidget {
 
   Future<void> deleteContestant(String contestantId) async {
     final url =
-        Uri.parse("http://10.0.2.2:8080/delete-contestant/$contestantId");
+        Uri.parse("https://tab-lu.vercel.app/delete-contestant/$contestantId");
 
     try {
       final response = await http.delete(url);
@@ -746,7 +747,7 @@ class ListItemWidget extends StatelessWidget {
                   ? FileImage(contestant.selectedImage!)
                   : contestant.profilePic != null
                       ? NetworkImage(
-                          "http://10.0.2.2:8080/uploads/${contestant.profilePic?.path}")
+                          "https://tab-lu.vercel.app/uploads/${contestant.profilePic?.path}")
                       : null as ImageProvider<Object>?,
             ),
           ),

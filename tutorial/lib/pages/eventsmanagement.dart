@@ -114,8 +114,7 @@ class _EventsManagementState extends State<EventsManagement> {
 
   Future<void> deleteEvent(String eventId) async {
     try {
-
-      final url = Uri.parse("http://10.0.2.2:8080/api/event/$eventId");
+      final url = Uri.parse("https://tab-lu.vercel.app/api/event/$eventId");
       final response = await http.delete(url);
 
       if (response.statusCode == 200) {
@@ -249,9 +248,8 @@ class _EventsManagementState extends State<EventsManagement> {
           backgroundColor: Colors.green,
           child: const Icon(Icons.add, color: Colors.white),
           onPressed: () {
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (context) =>
-                    CreateEventScreen()));
+            Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => CreateEventScreen()));
           },
         ));
   }
