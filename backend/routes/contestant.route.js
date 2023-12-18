@@ -69,9 +69,10 @@ router.post('/uploads', uploads.single('profilePic'), (req, res) => {
 });
 
 router.get('/uploads/:contestantId', async (req, res) => {
-  console.log("Ree");
   try {
+
     const contestantId = req.params.contestantId;
+    console.log(contestantId);
     // Find the document in the uploads collection based on contestantId
     const upload = await Upload.findOne({ contestantId });
 
@@ -92,41 +93,67 @@ router.get('/uploads/:contestantId', async (req, res) => {
 
 router.post('/contestants', uploads.single('profilePic'), async (req, res) => {
   try {
-    const { name, course, department, eventId} = req.body;
+    const { name, course, department, eventId, contestantId } = req.body;
+
     // Ensure that eventId is a valid ObjectId
     if (!mongoose.Types.ObjectId.isValid(eventId)) {
       return res.status(400).json({ error: 'Invalid eventId' });
     }
 
-    if(req.file || req.file.path){
-      console.log("dsd");
+    // Check if contestantId is provided and valid
+    if (contestantId && !mongoose.Types.ObjectId.isValid(contestantId)) {
+      return res.status(400).json({ error: 'Invalid contestantId' });
     }
-  
-    const profilePicPath = req.file ? req.file.path : undefined;
 
-    const upload = new Upload({
-      filename: req.file.filename,
-      path: req.file.path,
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      contestantId: null,
-    });
+    let existingContestant;
 
-    const savedUpload = await upload.save();
+    if (contestantId) {
+      // Check if contestantId already exists
+      existingContestant = await Contestant.findById(contestantId);
 
+      if (existingContestant) {
+        // Update existing contestant
+        existingContestant.name = name;
+        existingContestant.course = course;
+        existingContestant.department = department;
+
+        const updatedContestant = await existingContestant.save();
+        return res.status(200).json(updatedContestant);
+      }
+    }
+
+    // Create a new contestant
     const contestant = new Contestant({
       name,
       course,
       department,
-      profilePic: savedUpload._id,
+      profilePic: null, // Set to null initially
       eventId,
     });
 
+    // Save the contestant to get the _id
     const savedContestant = await contestant.save();
-    upload.contestantId = savedContestant._id;
-    await upload.save();
 
+    // Handle profilePic upload
+    let savedUpload;
+    if (req.file) {
+      const upload = new Upload({
+        filename: req.file.filename,
+        path: req.file.path,
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        contestantId: savedContestant._id, // Use savedContestant._id here
+      });
+
+      savedUpload = await upload.save();
+
+      // Update contestant's profilePic
+      savedContestant.profilePic = savedUpload._id;
+      await savedContestant.save();
+    }
+
+    // Update event with the new contestant
     const event = await Event.findById(eventId);
     if (event) {
       event.contestants.push(savedContestant);
@@ -135,7 +162,7 @@ router.post('/contestants', uploads.single('profilePic'), async (req, res) => {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    // Send a success response with the created contestant data
+    // Send a success response with the created or updated contestant data
     res.status(201).json(savedContestant);
   } catch (err) {
     console.error(err);
@@ -143,16 +170,7 @@ router.post('/contestants', uploads.single('profilePic'), async (req, res) => {
   }
 });
 
-router.get('/contestants', (req, res) => {
 
-  Contestant.find({}, (err, contestants) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-    } else {
-      res.status(200).json(contestants);
-    }
-  });
-});
 
 router.put('/contestants/:id', uploads.single('profilePic'), async (req, res) => {
   const { name, course, department, eventId } = req.body;
@@ -192,6 +210,59 @@ router.put('/contestants/:id', uploads.single('profilePic'), async (req, res) =>
     }
 
     res.status(200).json(updatedContestant);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/get-contestants/:eventId', async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const contestants = await Contestant.find({ eventId }).populate('profilePic').exec();
+    
+    // Trim the path to get only the file name
+    const trimmedContestants = contestants.map(contestant => {
+      return {
+        ...contestant.toObject(),
+        profilePic: contestant.profilePic ? path.basename(contestant.profilePic.path) : null,
+      };
+    });
+
+    res.json(trimmedContestants);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+router.delete('/delete-contestant/:contestandId', async (req, res) => {
+  const contestantId = req.params.contestandId;
+  console.log(contestantId);
+
+  try {
+    // Check if the provided id is not "null" or an invalid ObjectId
+    if (contestantId === "null" || !mongoose.Types.ObjectId.isValid(contestantId)) {
+      return res.status(400).json({ error: 'Invalid contestant ID' });
+    }
+
+    // Find the contestant by ID
+    const contestant = await Contestant.findById(contestantId);
+
+    if (!contestant) {
+      return res.status(404).json({ error: 'Contestant not found' });
+    }
+
+    // Delete associated profile picture
+    if (contestant.profilePic) {
+      await Upload.findByIdAndDelete(contestant.profilePic);
+    }
+
+    // Delete the contestant
+    await Contestant.findByIdAndDelete(contestantId);
+
+    res.status(200).json({ message: 'Contestant deleted successfully' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });

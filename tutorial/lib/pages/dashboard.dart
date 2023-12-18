@@ -814,9 +814,12 @@ class _SearchEventsState extends State<SearchEvents> {
                         Navigator.of(context).pushReplacement(MaterialPageRoute(
                             builder: (context) => CreateEventScreen()));
                       } else if (code[index].name == 'Event Calendar') {
-                        Navigator.of(context).pushReplacement(MaterialPageRoute(
-                            builder: (context) =>
-                                CodeModel.EventCalendarScreen()));
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => CodeModel.EventCalendarScreen(),
+                          ),
+                       // Remove all routes from the stack
+                        );
                       }
                     },
                     child: Container(

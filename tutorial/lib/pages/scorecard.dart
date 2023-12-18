@@ -550,7 +550,9 @@ class _ScoreCardState extends State<ScoreCard> {
         // Find the document that matches the contestant.id
         return path + data['filePath'];
       } else {
+
         print('Failed to fetch image path. Status code: ${response.statusCode}');
+        return "";
       }
     } catch (e) {
       print('Error fetching image path: $e');
