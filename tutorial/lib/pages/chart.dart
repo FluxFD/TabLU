@@ -48,49 +48,46 @@ class _MyHomePageState extends State<ChartData> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        body: SfCartesianChart(
-          series: <ColumnSeries<LiveData, int>>[
-            ColumnSeries<LiveData, int>(
-              onRendererCreated: (ChartSeriesController controller) {
-                _chartSeriesController = controller;
-              },
-              dataSource: chartData,
-              color: const Color.fromRGBO(192, 108, 132, 1),
-              xValueMapper: (LiveData sales, _) => sales.time,
-              yValueMapper: (LiveData sales, _) => sales.speed,
-            )
-          ],
-          primaryXAxis: NumericAxis(
-            majorGridLines: const MajorGridLines(width: 0),
-            edgeLabelPlacement: EdgeLabelPlacement.shift,
-            interval: 3,
-            title: AxisTitle(text: 'Time (seconds)'),
-          ),
-          primaryYAxis: NumericAxis(
-            axisLine: const AxisLine(width: 0),
-            majorTickLines: const MajorTickLines(size: 0),
-            title: AxisTitle(text: 'Live Score'),
-          ),
-          annotations: <CartesianChartAnnotation>[
-            for (int i = 0; i < chartData.length; i++)
-              CartesianChartAnnotation(
-                widget: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.black),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: Text(
-                    chartData[i].speed.toStringAsFixed(2),
-                    style: TextStyle(color: Colors.black),
-                  ),
+        body: Column(
+          children: [
+            Expanded(
+              child: SfCartesianChart(
+                series: <BarSeries<LiveData, int>>[
+                  BarSeries<LiveData, int>(
+                    onRendererCreated: (ChartSeriesController controller) {
+                      _chartSeriesController = controller;
+                    },
+                    dataSource: chartData,
+                    color: Color.fromARGB(255, 16, 172, 55),
+                    xValueMapper: (LiveData sales, _) => sales.time,
+                    yValueMapper: (LiveData sales, _) => sales.speed,
+                  )
+                ],
+                primaryXAxis: NumericAxis(
+                  majorGridLines: const MajorGridLines(width: 0),
+                  edgeLabelPlacement: EdgeLabelPlacement.shift,
+                  interval: 1, // Set the interval according to your data
+                  title: AxisTitle(text: 'Data Points'),
                 ),
-                coordinateUnit: CoordinateUnit.point,
-                region: AnnotationRegion.chart,
-                x: chartData[i].time.toDouble(),
-                y: chartData[i].speed.toDouble(),
+                primaryYAxis: NumericAxis(
+                  axisLine: const AxisLine(width: 0),
+                  majorTickLines: const MajorTickLines(size: 0),
+                  title: AxisTitle(text: 'Live Score'),
+                ),
               ),
+            ),
+            // Display the fetched data in a ListView for testing
+            // Expanded(
+            //   child: ListView.builder(
+            //     itemCount: chartData.length,
+            //     itemBuilder: (context, index) {
+            //       return ListTile(
+            //         title: Text(
+            //             'Contestant: ${chartData[index].name}, Data Point: ${chartData[index].time}, Score: ${chartData[index].speed}'),
+            //       );
+            //     },
+            //   ),
+            // ),
           ],
         ),
       ),
@@ -100,19 +97,25 @@ class _MyHomePageState extends State<ChartData> {
   int time = 19;
 
   void updateDataSource(Timer timer) {
-    chartData.add(LiveData(time++, (math.Random().nextInt(60) + 30)));
-    chartData.removeAt(0);
-    _chartSeriesController.updateDataSource(
-      addedDataIndex: chartData.length - 1,
-      removedDataIndex: 0,
-    );
+    setState(() {
+      chartData.add(
+          LiveData(time++, 'New Contestant', (math.Random().nextInt(60) + 30)));
+      chartData.removeAt(0);
+
+      // Update the x-values of the remaining data points
+      for (int i = 0; i < chartData.length; i++) {
+        chartData[i] = LiveData(i, chartData[i].name, chartData[i].speed);
+      }
+
+      _chartSeriesController.updateDataSource();
+    });
   }
 
   List<LiveData> getChartData() {
     return <LiveData>[
-      LiveData(0, 42),
-      LiveData(1, 47),
-      LiveData(2, 43),
+      LiveData(0, 'Contestant 1', 42),
+      LiveData(1, 'Contestant 2', 47),
+      LiveData(2, 'Contestant 3', 43),
     ];
   }
 
@@ -124,14 +127,17 @@ class _MyHomePageState extends State<ChartData> {
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
+        final List<dynamic> contestantData =
+            jsonDecode(response.body)['contestants'];
 
         if (mounted) {
           setState(() {
-            chartData = List<LiveData>.from(data['contestants'].map((item) {
+            chartData =
+                List<LiveData>.from(contestantData.asMap().entries.map((entry) {
               return LiveData(
-                chartData.length,
-                item['averageScore'].toDouble(),
+                entry.key,
+                entry.value['contestantName'].toString(),
+                entry.value['averageScore'].toDouble(),
               );
             }));
 
@@ -149,7 +155,8 @@ class _MyHomePageState extends State<ChartData> {
 }
 
 class LiveData {
-  LiveData(this.time, this.speed);
+  LiveData(this.time, this.name, this.speed);
   final int time;
+  final String name;
   final num speed;
 }
