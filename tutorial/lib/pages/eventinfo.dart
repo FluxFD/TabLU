@@ -49,6 +49,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     return await SharedPreferencesUtils.retrieveToken();
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -414,63 +416,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                   final createdEventId = await createEvent(event, authToken);
                   if (createdEventId != null) {
                     showDialog(
-                      barrierDismissible: false,
                       context: context,
+                      barrierDismissible: false,
                       builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: Center(
-                            child: Text(
-                              'Event Created',
-                              style: TextStyle(
-                                fontSize: 24, // Adjust the font size as needed
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text('ACCESS CODE: ${accessCode}'),
-                              ElevatedButton(
-                                onPressed: () {
-                                  Clipboard.setData(ClipboardData(text: '$accessCode'));// Close the dialog after copying
-                                  setState(() {
-                                    isCopied = true;
-                                  });
-
-                                  // Optionally, you can reset the button after a certain duration
-                                  Future.delayed(Duration(seconds: 2), () {
-                                    setState(() {
-                                      isCopied = false;
-                                    });
-                                  });
-                                },
-
-                                style: ElevatedButton.styleFrom(
-                                  primary: isCopied ? Colors.grey : Colors.green,
-                                ),
-                                child: Text(
-                                  isCopied ? 'Copied to Clipboard' : 'Copy to Clipboard',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                  Navigator.of(context).push(MaterialPageRoute(
-                                      builder: (context) =>
-                                          contestants.Contestants(eventId: createdEventId)));
-
-                                },
-
-                                child: Text('Close'),
-                              ),
-                            ],
-                          ),
-
-                        );
+                        // Use a separate StatefulWidget to manage state within the dialog
+                        return EventCreatedDialog(accessCode: '$accessCode', eventId: createdEventId);
                       },
                     );
                   }
@@ -500,6 +450,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       ),
     );
   }
+
+
 
   Future<void> _selectDate() async {
     DateTime? _picked = await showDatePicker(
@@ -1152,5 +1104,82 @@ class _EditEventScreen extends State<EditEventScreen> {
       print('Failed to edit event: ${response.body}');
       return null;
     }
+  }
+}
+
+class EventCreatedDialog extends StatefulWidget {
+  final String accessCode;
+  final String eventId;
+
+  const EventCreatedDialog({Key? key, required this.accessCode, required this.eventId}) : super(key: key);
+
+  @override
+  _EventCreatedDialogState createState() => _EventCreatedDialogState();
+}
+
+class _EventCreatedDialogState extends State<EventCreatedDialog> {
+  bool isCopied = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Center(
+        child: Text(
+          'Event Created',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      content: StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('ACCESS CODE: ${widget.accessCode}'),
+              ElevatedButton(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: '${widget.accessCode}'));
+    // Use a boolean flag to check if the widget is still mounted
+                    if (mounted) {
+                      setState(() {
+                        isCopied = true;
+                      });
+                    }
+                    Future.delayed(Duration(seconds: 2), () {
+                    // Check if the widget is still mounted before calling setState
+                    if (mounted) {
+                    setState(() {
+                    isCopied = false;
+                    });
+                    }
+                    });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isCopied ? Colors.grey : Colors.green,
+                ),
+                child: Text(
+                  isCopied ? 'Copied to Clipboard' : 'Copy to Clipboard',
+                  style: TextStyle(
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) =>
+                          contestants.Contestants(eventId: widget.eventId)));
+                  // Do something when the "Close" button is pressed
+                },
+                child: Text('Close'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }
