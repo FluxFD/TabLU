@@ -419,7 +419,7 @@ router.get('/artcontest-events', verifyToken, async (req, res) => {
   try {
     const userId = req.user._id; 
     const artcontestEvents = await Event.find({
-      event_category: "Art Contest",
+      event_category: "Art Contests",
       user: userId, // Filter by the user ID
     })
 
