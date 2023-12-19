@@ -221,6 +221,7 @@ class _ContestantsState extends State<Contestants> {
         var request = http.MultipartRequest('POST', url);
         request.headers['Content-Type'] = 'multipart/form-data';
         // Add other fields to the request
+        request.fields['contestantId'] = contestantData['id'];
         request.fields['eventId'] = eventId;
         request.fields['name'] = contestantData['name'];
         request.fields['course'] = contestantData['course'];
@@ -251,7 +252,7 @@ class _ContestantsState extends State<Contestants> {
 
         // Add JSON fields to the request
         request.body = jsonEncode({
-          'contestantId': contestantData['_id'],
+          'contestantId': contestantData['id'],
           'eventId': eventId,
           'name': contestantData['name'],
           'course': contestantData['course'],
@@ -279,6 +280,7 @@ class _ContestantsState extends State<Contestants> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        _selectedImage = File(contestant.profilePic!.path);
         _nameController.text = contestant.name;
         _courseController.text = contestant.course;
         _departmentController.text = contestant.department;
@@ -301,7 +303,10 @@ class _ContestantsState extends State<Contestants> {
                   backgroundColor: Colors.grey[200],
                   backgroundImage: contestant.selectedImage != null
                       ? FileImage(contestant.selectedImage!)
-                      : null,
+                      : contestant.profilePic != null
+                      ? NetworkImage(
+                      "http://10.0.2.2:8080/uploads/${contestant.profilePic?.path}")
+                      : null as ImageProvider<Object>?,
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(

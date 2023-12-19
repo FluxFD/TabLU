@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:tutorial/pages/chart.dart';
 import 'package:tutorial/pages/eventinfo.dart';
 import 'package:tutorial/pages/globals.dart';
 import 'package:tutorial/pages/dashboard.dart';
@@ -220,6 +221,22 @@ class _EventsManagementState extends State<EventsManagement> {
                                   );
                                 },
                                 icon: Icon(Icons.remove_red_eye),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ChartData(
+                                        eventId: events[index].eventId,
+                                        eventData: {},
+                                        judges: [],
+                                        title: '',
+                                      ),
+                                    ),
+                                  );
+                                },
+                                icon: Icon(Icons.align_vertical_bottom_rounded),
                               ),
                             ],
                           ),
