@@ -48,6 +48,7 @@ dependencies:
   jwt_decoder: ^2.0.1
   path: ^1.8.3
   syncfusion_flutter_charts: ^24.1.41
+  screenshot: ^2.1.0
 
 dev_dependencies:
   flutter_test:
