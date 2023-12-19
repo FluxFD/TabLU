@@ -77,17 +77,17 @@ class _MyHomePageState extends State<ChartData> {
               ),
             ),
             // Display the fetched data in a ListView for testing
-            // Expanded(
-            //   child: ListView.builder(
-            //     itemCount: chartData.length,
-            //     itemBuilder: (context, index) {
-            //       return ListTile(
-            //         title: Text(
-            //             'Contestant: ${chartData[index].name}, Data Point: ${chartData[index].time}, Score: ${chartData[index].speed}'),
-            //       );
-            //     },
-            //   ),
-            // ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: chartData.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    title: Text(
+                        'Contestant: ${chartData[index].name}, Score: ${chartData[index].speed}'),
+                  );
+                },
+              ),
+            ),
           ],
         ),
       ),
@@ -136,7 +136,7 @@ class _MyHomePageState extends State<ChartData> {
                 List<LiveData>.from(contestantData.asMap().entries.map((entry) {
               return LiveData(
                 entry.key,
-                entry.value['contestantName'].toString(),
+                entry.value['name'].toString(),
                 entry.value['averageScore'].toDouble(),
               );
             }));
