@@ -10,8 +10,9 @@ class Event {
   final String eventDate;
   final String eventTime;
   final String eventId;
+  final String judgeId;
 
-  Event(this.eventName, this.eventDate, this.eventTime, this.eventId);
+  Event(this.eventName, this.eventDate, this.eventTime, this.eventId, this.judgeId);
 }
 
 class EventsJoined extends StatefulWidget {
@@ -67,8 +68,11 @@ class _EventsJoinedState extends State<EventsJoined> {
             json['eventId']['event_name'] ?? '',      // Use empty string if 'event_name' is null
             json['eventId']['event_date'] ?? '',      // Use empty string if 'event_date' is null
             json['eventId']['event_time'] ?? '',      // Use empty string if 'event_time' is null
-            json['eventId']['_id'] ?? '',             // Use empty string if '_id' is null
+            json['eventId']['_id'] ?? '',
+            json['_id'] ?? '',// Use empty string if '_id' is null
           )).toList();
+
+          print(events);
           // Set the eventsList to the fetched events
           setState(() {
             eventsList = events;
@@ -103,6 +107,7 @@ class _EventsJoinedState extends State<EventsJoined> {
           '10-10-10',
           'at 5:00pm',
           '65667e3ca0872db453cdae8d',
+          '65667e3ca0872db453cdae8d'
         ),
       );
     }
@@ -171,7 +176,7 @@ class _EventsJoinedState extends State<EventsJoined> {
                         Text(
                           'Status: Active'
                         ),
-                        
+
                         Text(
                           'Event Id: ${event.eventId}',
                           style: TextStyle(
@@ -214,7 +219,7 @@ class _EventsJoinedState extends State<EventsJoined> {
                                 ),
                               ),
                               child: Text(
-                                'Delete Event',
+                                'Leave Event',
                                 style: TextStyle(color: Colors.white),
                               ),
                             ),
@@ -232,6 +237,50 @@ class _EventsJoinedState extends State<EventsJoined> {
     );
   }
 
+
+  Future<void> deleteEvent(String judgeId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('http://10.0.2.2:8080/delete-judge/$judgeId'),
+        headers: {
+          'Content-Type': 'application/json',
+          // Add any other headers if needed
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Show a success SnackBar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Event deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        await fetchData();
+        print('Event deleted successfully');
+      } else {
+        // Handle errors
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete event. Error code: ${response.statusCode}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        print('Failed to delete event. Error code: ${response.statusCode}');
+      }
+    } catch (error) {
+      // Handle exceptions
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('An error occurred while deleting event'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      print('An error occurred while deleting judge: $error');
+    }
+  }
+
+
   // Function to show cancel confirmation dialog
   Future<void> _showCancelConfirmationDialog(Event event) async {
     return showDialog<void>(
@@ -239,11 +288,11 @@ class _EventsJoinedState extends State<EventsJoined> {
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Cancel Event Confirmation', style: TextStyle(fontSize: 20),),
+          title: Text('Leave Event Confirmation', style: TextStyle(fontSize: 20),),
           content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
-                Text('Do you really want to cancel this event?'),
+                Text('Do you really want to leave this event?'),
               ],
             ),
           ),
@@ -258,7 +307,7 @@ class _EventsJoinedState extends State<EventsJoined> {
               child: Text('Confirm', style:TextStyle( color: Colors.green)),
               onPressed: () {
                 // Handle cancel event logic
-                // You can implement the logic to cancel the event here
+                deleteEvent(event.judgeId);
                 Navigator.of(context).pop();
               },
             ),

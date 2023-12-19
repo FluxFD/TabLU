@@ -71,6 +71,27 @@ router.delete('/reject-request/:userId', async (req, res) => {
   }
 });
 
+router.delete('/delete-judge/:judgeId', async (req, res) => {
+  const judgeId = req.params.judgeId;
+  try {
+    const deletedJudge = await Judge.findOneAndDelete({ _id: judgeId });
+  
+    if (deletedJudge) {
+      console.log('Judge deleted successfully:', deletedJudge);
+      // Return a success response or perform additional actions if needed
+      res.status(200).json({ message: 'Judge deleted successfully' });
+    } else {
+      console.log('Judge not found');
+      // Return a not found response or handle accordingly
+      res.status(404).json({ message: 'Judge not found' });
+    }
+  } catch (error) {
+    console.error('Error deleting judge:', error);
+    // Return an internal server error response or handle accordingly
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 router.get('/judges/:eventId/confirmed', async (req, res) => {
   try {
     const { eventId } = req.params;
