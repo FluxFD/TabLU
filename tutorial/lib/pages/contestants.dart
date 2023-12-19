@@ -78,6 +78,7 @@ class Contestants extends StatefulWidget {
 
 class _ContestantsState extends State<Contestants> {
   late ImagePicker _picker;
+  File? _addSelectImage;
 
   @override
   void initState() {
@@ -434,124 +435,17 @@ class _ContestantsState extends State<Contestants> {
           showDialog(
             context: context,
             builder: (BuildContext context) {
-              return AlertDialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                ),
-                title: const Text(
-                  'Add Contestant Information',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Color(0xFF054E07),
-                  ),
-                ),
-                content: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 64,
-                        backgroundImage: _selectedImage != null
-                            ? FileImage(_selectedImage!)
-                            : null,
-                      ),
-                      SizedBox(
-                        height: 15,
-                      ),
-                      ElevatedButton(
-                        onPressed: () async {
-                          await addProfilePicture(contestants.isNotEmpty
-                              ? contestants[0]
-                              : Contestant(
-                                  name: 'DefaultName',
-                                  course: 'DefaultCourse',
-                                  department: 'DefaultDepartment',
-                                  eventId: widget.eventId,
-                                  // criterias: []
-                                ));
-
-                          if (_selectedImage != null) {
-                            print(
-                                'Selected Image: ${_selectedImage!.path.split('/').last}');
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          primary: Colors.green,
-                          onPrimary: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: const Text('Select Image'),
-                      ),
-                      SizedBox(
-                        height: 20,
-                      ),
-                      TextField(
-                        controller: _nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Contestant Name',
-                          labelStyle:
-                              TextStyle(fontSize: 15, color: Colors.green),
-                        ),
-                      ),
-                      TextField(
-                        controller: _courseController,
-                        decoration: const InputDecoration(
-                          labelText: 'Course',
-                          labelStyle:
-                              TextStyle(fontSize: 15, color: Colors.green),
-                        ),
-                      ),
-                      TextField(
-                        controller: _departmentController,
-                        decoration: const InputDecoration(
-                          labelText: 'Department',
-                          labelStyle:
-                              TextStyle(fontSize: 15, color: Colors.green),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(color: Colors.green),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () async {
-                      Contestant newContestant = Contestant(
-                        name: _nameController.text,
-                        course: _courseController.text,
-                        department: _departmentController.text,
-                        profilePic: _selectedImage,
-                        selectedImage: _selectedImage,
-                        eventId: widget.eventId,
-                        // criterias: []);
-                      );
-
-                      insertItem(newContestant);
-
-                      _nameController.clear();
-                      _courseController.clear();
-                      _departmentController.clear();
-                      _selectedImage = null;
-
-                      Navigator.pop(context);
-                    },
-                    child: const Text(
-                      'Add',
-                      style: TextStyle(color: Colors.green),
-                    ),
-                  ),
-                ],
+              return AddContestantDialog(
+                eventId: widget.eventId,
+                onImageChanged: (File? newImage) {
+                  setState(() {
+                    _addSelectImage = newImage;
+                  });
+                },
+                onContestantAdded: (Contestant newContestant) {
+                  // Insert the new contestant into the list
+                  insertItem(newContestant);
+                },
               );
             },
           );
@@ -808,14 +702,14 @@ class _ProfilePictureDialogState extends State<ProfilePictureDialog> {
             TextField(
               controller: _courseController,
               decoration: InputDecoration(
-                labelText: 'Course',
+                labelText: 'Age',
                 labelStyle: TextStyle(fontSize: 15, color: Colors.green),
               ),
             ),
             TextField(
               controller: _departmentController,
               decoration: InputDecoration(
-                labelText: 'Department',
+                labelText: 'Address',
                 labelStyle: TextStyle(fontSize: 15, color: Colors.green),
               ),
             ),
@@ -856,6 +750,154 @@ class _ProfilePictureDialogState extends State<ProfilePictureDialog> {
   }
 
   Future<void> changeProfilePicture() async {
+    final XFile? image = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 50,
+    );
+
+    if (image != null) {
+      print('Selected image path: ${image.path}');
+      setState(() {
+        _selectedImage = File(image.path);
+      });
+    } else {
+      print('Image selection canceled');
+    }
+  }
+}
+
+class AddContestantDialog extends StatefulWidget {
+  final Function(File?) onImageChanged;
+  final Function(Contestant) onContestantAdded;
+  String eventId;
+  AddContestantDialog(
+      {required this.onImageChanged,
+      required this.onContestantAdded,
+      required this.eventId});
+
+  @override
+  _AddContestantDialogState createState() => _AddContestantDialogState();
+}
+
+class _AddContestantDialogState extends State<AddContestantDialog> {
+  File? _selectedImage;
+
+  TextEditingController _nameController = TextEditingController();
+  TextEditingController _courseController = TextEditingController();
+  TextEditingController _departmentController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10.0),
+      ),
+      title: const Text(
+        'Add Contestant Information',
+        style: TextStyle(
+          fontSize: 16,
+          color: Color(0xFF054E07),
+        ),
+      ),
+      content: SingleChildScrollView(
+          child: Column(
+        children: [
+          CircleAvatar(
+            radius: 64,
+            backgroundColor: Colors.grey[200],
+            backgroundImage:
+                _selectedImage != null ? FileImage(_selectedImage!) : null,
+          ),
+          SizedBox(
+            height: 15,
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await addProfilePicture();
+              if (_selectedImage != null) {
+                print(
+                    'Selected Image: ${_selectedImage!.path.split('/').last}');
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              primary: Colors.green,
+              onPrimary: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text('Select Image'),
+          ),
+          SizedBox(
+            height: 20,
+          ),
+          TextField(
+            controller: _nameController,
+            decoration: const InputDecoration(
+              labelText: 'Contestant Name',
+              labelStyle: TextStyle(fontSize: 15, color: Colors.green),
+            ),
+          ),
+          TextField(
+            controller: _courseController,
+            decoration: const InputDecoration(
+              labelText: 'Course',
+              labelStyle: TextStyle(fontSize: 15, color: Colors.green),
+            ),
+          ),
+          TextField(
+            controller: _departmentController,
+            decoration: const InputDecoration(
+              labelText: 'Department',
+              labelStyle: TextStyle(fontSize: 15, color: Colors.green),
+            ),
+          ),
+        ],
+      )),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: const Text(
+            'Cancel',
+            style: TextStyle(color: Colors.green),
+          ),
+        ),
+        TextButton(
+          onPressed: () async {
+            Contestant newContestant = Contestant(
+              name: _nameController.text,
+              course: _courseController.text,
+              department: _departmentController.text,
+              profilePic: _selectedImage,
+              selectedImage: _selectedImage,
+              eventId: widget.eventId,
+            );
+
+            // Invoke the callback function to notify the parent widget
+            widget.onContestantAdded(newContestant);
+
+            // Clear form fields and selected image
+            _nameController.clear();
+            _courseController.clear();
+            _departmentController.clear();
+            _selectedImage = null;
+
+            Navigator.pop(context);
+          },
+          child: const Text(
+            'Add',
+            style: TextStyle(color: Colors.green),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> addProfilePicture() async {
     final XFile? image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
       imageQuality: 50,
