@@ -740,6 +740,10 @@ class _ScoreCardState extends State<ScoreCard> {
                     controller: controllers[uniqueKey],
                     keyboardType: TextInputType.number,
                     textAlign: TextAlign.center,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(3),
+                    ],
                     decoration: InputDecoration(
                       labelText: 'Score for ${criteria.criterianame}',
                       border: OutlineInputBorder(
@@ -1222,7 +1226,7 @@ class _ScoreCardState extends State<ScoreCard> {
                             color: Colors.green,
                             alignment: Alignment.topCenter,
                             child: const Text(
-                              'Edit',
+                              'Info',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.white,
