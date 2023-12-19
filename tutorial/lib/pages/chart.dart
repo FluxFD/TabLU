@@ -24,15 +24,24 @@ class ChartData extends StatefulWidget {
 class _MyHomePageState extends State<ChartData> {
   late List<LiveData> chartData;
   late ChartSeriesController _chartSeriesController;
+  late Timer _timer;
 
   @override
   void initState() {
     chartData = getChartData();
     fetchScoreCards();
-    Timer.periodic(const Duration(seconds: 60), (timer) {
-      fetchScoreCards();
+    _timer = Timer.periodic(const Duration(seconds: 60), (timer) {
+      if (mounted) {
+        fetchScoreCards();
+      }
     });
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
   }
 
   @override
@@ -46,7 +55,7 @@ class _MyHomePageState extends State<ChartData> {
                 _chartSeriesController = controller;
               },
               dataSource: chartData,
-              color: Color.fromARGB(255, 31, 177, 51),
+              color: const Color.fromRGBO(192, 108, 132, 1),
               xValueMapper: (LiveData sales, _) => sales.time,
               yValueMapper: (LiveData sales, _) => sales.speed,
             )
@@ -55,12 +64,12 @@ class _MyHomePageState extends State<ChartData> {
             majorGridLines: const MajorGridLines(width: 0),
             edgeLabelPlacement: EdgeLabelPlacement.shift,
             interval: 3,
-            title: AxisTitle(text: ''),
+            title: AxisTitle(text: 'Time (seconds)'),
           ),
           primaryYAxis: NumericAxis(
             axisLine: const AxisLine(width: 0),
             majorTickLines: const MajorTickLines(size: 0),
-            title: AxisTitle(text: 'Live Graph'),
+            title: AxisTitle(text: 'Live Score'),
           ),
           annotations: <CartesianChartAnnotation>[
             for (int i = 0; i < chartData.length; i++)
@@ -117,16 +126,18 @@ class _MyHomePageState extends State<ChartData> {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
 
-        setState(() {
-          chartData = List<LiveData>.from(data['contestants'].map((item) {
-            return LiveData(
-              chartData.length,
-              item['averageScore'].toDouble(),
-            );
-          }));
+        if (mounted) {
+          setState(() {
+            chartData = List<LiveData>.from(data['contestants'].map((item) {
+              return LiveData(
+                chartData.length,
+                item['averageScore'].toDouble(),
+              );
+            }));
 
-          chartData.sort((a, b) => b.speed.compareTo(a.speed));
-        });
+            chartData.sort((a, b) => b.speed.compareTo(a.speed));
+          });
+        }
       } else {
         print(
             'Failed to fetch scorecards. Status code: ${response.statusCode}');
