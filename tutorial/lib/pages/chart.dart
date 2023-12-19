@@ -48,10 +48,14 @@ class _MyHomePageState extends State<ChartData> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
+        appBar: AppBar(
+          title: Text('Live Scores Update'),
+        ),
         body: Column(
           children: [
             Expanded(
               child: SfCartesianChart(
+                isTransposed: true,
                 series: <BarSeries<LiveData, int>>[
                   BarSeries<LiveData, int>(
                     onRendererCreated: (ChartSeriesController controller) {
@@ -83,7 +87,9 @@ class _MyHomePageState extends State<ChartData> {
                 itemBuilder: (context, index) {
                   return ListTile(
                     title: Text(
-                        'Contestant: ${chartData[index].name}, Score: ${chartData[index].speed}'),
+                      'Contestant: ${chartData[index].name}, Score: ${chartData[index].speed}',
+                      textAlign: TextAlign.center,
+                  ),
                   );
                 },
               ),
@@ -121,7 +127,7 @@ class _MyHomePageState extends State<ChartData> {
 
   Future<void> fetchScoreCards() async {
     final eventId = widget.eventId;
-    final url = Uri.parse('http://localhost:8080/winners/$eventId');
+    final url = Uri.parse('http://10.0.2.2:8080/winners/$eventId');
 
     try {
       final response = await http.get(url);
