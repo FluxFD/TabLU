@@ -351,7 +351,7 @@ router.get('/pageant-events',verifyToken, async (req, res) => {
   try {
     const userId = req.user._id; 
     const pageantEvents = await Event.find({
-      event_category: "Pageant Shows",
+      event_category: "Pageants",
       user: userId, // Filter by the user ID
     });
 
