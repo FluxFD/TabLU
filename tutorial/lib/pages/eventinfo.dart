@@ -28,13 +28,13 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   String? token;
   bool isCopied = false;
 
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   accessCode = generateRandomAccessCode(8);
-  //   if (isAdding == false) {}
-  //   //print('Generated Access Code: $accessCode');
-  // }
+  @override
+  void initState() {
+    super.initState();
+    accessCode = generateRandomAccessCode(8);
+    if (isAdding == false) {}
+    //print('Generated Access Code: $accessCode');
+  }
 
   String generateRandomAccessCode(int length) {
     const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -48,6 +48,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   Future<String?> retrieveToken() async {
     return await SharedPreferencesUtils.retrieveToken();
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -418,8 +420,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                       barrierDismissible: false,
                       builder: (BuildContext context) {
                         // Use a separate StatefulWidget to manage state within the dialog
-                        return EventCreatedDialog(
-                            accessCode: '$accessCode', eventId: createdEventId);
+                        return EventCreatedDialog(accessCode: '$accessCode', eventId: createdEventId);
                       },
                     );
                   }
@@ -449,6 +450,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       ),
     );
   }
+
+
 
   Future<void> _selectDate() async {
     DateTime? _picked = await showDatePicker(
@@ -1108,9 +1111,7 @@ class EventCreatedDialog extends StatefulWidget {
   final String accessCode;
   final String eventId;
 
-  const EventCreatedDialog(
-      {Key? key, required this.accessCode, required this.eventId})
-      : super(key: key);
+  const EventCreatedDialog({Key? key, required this.accessCode, required this.eventId}) : super(key: key);
 
   @override
   _EventCreatedDialogState createState() => _EventCreatedDialogState();
@@ -1139,21 +1140,21 @@ class _EventCreatedDialogState extends State<EventCreatedDialog> {
               Text('ACCESS CODE: ${widget.accessCode}'),
               ElevatedButton(
                 onPressed: () {
-                  Clipboard.setData(
-                      ClipboardData(text: '${widget.accessCode}'));
-                  if (mounted) {
-                    setState(() {
-                      isCopied = true;
-                    });
-                  }
-                  Future.delayed(Duration(seconds: 2), () {
-                    // Check if the widget is still mounted before calling setState
+                  Clipboard.setData(ClipboardData(text: '${widget.accessCode}'));
+    // Use a boolean flag to check if the widget is still mounted
                     if (mounted) {
                       setState(() {
-                        isCopied = false;
+                        isCopied = true;
                       });
                     }
-                  });
+                    Future.delayed(Duration(seconds: 2), () {
+                    // Check if the widget is still mounted before calling setState
+                    if (mounted) {
+                    setState(() {
+                    isCopied = false;
+                    });
+                    }
+                    });
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isCopied ? Colors.grey : Colors.green,
