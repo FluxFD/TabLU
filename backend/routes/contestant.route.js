@@ -6,6 +6,8 @@ const { someFunction, Event } = require('../models/event.model');
 const Contestant = require('../models/contestant.model');
 const Upload = require('../models/upload.model');
 const multer = require('multer');
+const fs = require('fs');
+
 
 // const contestantSchema = new mongoose.Schema({
 //   name: { type: String, required: true },
@@ -111,15 +113,41 @@ router.post('/contestants', uploads.single('profilePic'), async (req, res) => {
       // Check if contestantId already exists
       existingContestant = await Contestant.findById(contestantId);
 
-      if (existingContestant) {
+      if (existingContestant && req.file) {
         // Update existing contestant
         existingContestant.name = name;
         existingContestant.course = course;
         existingContestant.department = department;
-
+    
+        // Change the image on the uploads
+        const existingUpload = await Upload.findOne({ contestantId: existingContestant._id });
+    
+        if (existingUpload) {
+            // Remove the existing file
+            fs.unlinkSync(existingUpload.path);
+    
+            // Update information for the new file
+            existingUpload.filename = req.file.filename;
+            existingUpload.path = req.file.path;
+            existingUpload.originalname = req.file.originalname;
+            existingUpload.mimetype = req.file.mimetype;
+            existingUpload.size = req.file.size;
+    
+            // Save the updated upload information
+            await existingUpload.save();
+        }
+    
         const updatedContestant = await existingContestant.save();
         return res.status(200).json(updatedContestant);
-      }
+    } else {
+        // Update existing contestant
+        existingContestant.name = name;
+        existingContestant.course = course;
+        existingContestant.department = department;
+    
+        const updatedContestant = await existingContestant.save();
+        return res.status(200).json(updatedContestant);
+    }
     }
 
     // Create a new contestant

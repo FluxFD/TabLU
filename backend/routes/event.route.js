@@ -396,11 +396,11 @@ router.get('/talent-events', verifyToken, async (req, res) => {
 
 
 
-router.get('debate-events', verifyToken, async (req, res) => {
+router.get('/debate-events', verifyToken, async (req, res) => {
   try {
     const userId = req.user._id; 
     const debateEvents = await Event.find({
-      event_category: "Debate Shows",
+      event_category: "Debates",
       user: userId, // Filter by the user ID
     });
 
