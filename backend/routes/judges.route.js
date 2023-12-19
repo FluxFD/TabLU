@@ -92,7 +92,7 @@ router.get('/get-all-judges-events', async (req, res) => {
     const userId = req.query.userId;
 
     // Assuming you want to find judges based on the userId
-    const events = await Judge.find({ userId: userId }).populate('eventId');
+    const events = await Judge.find({ userId: userId, isConfirm: true }).populate('eventId');
 
     // Send the response with the list of judges
     res.status(200).json({ events: events });
