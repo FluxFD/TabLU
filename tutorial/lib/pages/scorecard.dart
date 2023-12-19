@@ -14,6 +14,7 @@ class Event {
   final String eventVenue;
   final String eventOrganizer;
   final String eventDate;
+  final String accessCode;
   final String eventTime;
   final List<Contestant> contestants;
   final List<Criteria> criterias;
@@ -24,6 +25,7 @@ class Event {
     required this.eventVenue,
     required this.eventOrganizer,
     required this.eventDate,
+    required this.accessCode,
     required this.eventTime,
     required this.contestants,
     required this.criterias,
@@ -41,6 +43,8 @@ class Event {
           : '',
       eventDate: json['eventDate'] != null ? json['eventDate'].toString() : '',
       eventTime: json['eventTime'] != null ? json['eventTime'].toString() : '',
+      accessCode:
+          json['accessCode'] != null ? json['accessCode'].toString() : '',
       contestants: (json['contestants'] as List<dynamic>?)
               ?.map((contestant) => Contestant.fromJson(contestant))
               .toList() ??
@@ -830,7 +834,7 @@ class _ScoreCardState extends State<ScoreCard> {
                 'eventName': event.eventName,
                 'eventDate': event.eventDate,
                 'eventTime': event.eventTime,
-                // 'accessCode': event.accessCode,
+                'accessCode': event.accessCode,
                 // Add other data as needed
               };
             });
@@ -1306,6 +1310,7 @@ class _ScoreCardState extends State<ScoreCard> {
                           )),
                           content: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Center(
                                   child: Text(
@@ -1318,8 +1323,8 @@ class _ScoreCardState extends State<ScoreCard> {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    'Event ID: ${events.isNotEmpty ? events[0]?.eventId ?? '' : ''}',
-                                    style: TextStyle(fontSize: 10),
+                                    'ACCESS CODE: ${events.isNotEmpty ? events[0]?.accessCode ?? '' : ''}',
+                                    style: TextStyle(fontSize: 15),
                                   ),
                                   IconButton(
                                     icon: const Icon(
@@ -1329,7 +1334,7 @@ class _ScoreCardState extends State<ScoreCard> {
                                     onPressed: () {
                                       Clipboard.setData(new ClipboardData(
                                           text:
-                                              '${events.isNotEmpty ? events[0]?.eventId ?? '' : ''}'));
+                                              '${events.isNotEmpty ? events[0]?.accessCode ?? '' : ''}'));
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         const SnackBar(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial/authstate.dart';
 import 'package:tutorial/models/categorymodel.dart'; // as CategoryModel;
 import 'package:tutorial/models/codemodel.dart' as CodeModel;
@@ -257,6 +258,15 @@ class _SearchEventsState extends State<SearchEvents> {
   List<String> contestants = [];
   List<String> criterias = [];
   int notificationCount = 0;
+  @override
+  void initState() {
+    super.initState();
+    _getInitialInfo();
+    _decodeToken();
+    fetchAndCountNotifications();
+    loadNotificationCount();
+    authState = Provider.of<AuthState>(context, listen: false);
+  }
 
   void _getInitialInfo() {
     categories = CategoryModel.getCategories();
@@ -272,6 +282,22 @@ class _SearchEventsState extends State<SearchEvents> {
       contestants: [],
       criterias: [],
     );
+  }
+
+
+
+  Future<void> loadNotificationCount() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int savedCount = prefs.getInt('notificationCount') ?? 0;
+
+    setState(() {
+      notificationCount = savedCount;
+    });
+  }
+
+  Future<void> saveNotificationCount(int count) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('notificationCount', count);
   }
 
   Future<void> fetchAndCountNotifications() async {
@@ -294,6 +320,8 @@ class _SearchEventsState extends State<SearchEvents> {
           setState(() {
             notificationCount = notifications.length;
           });
+
+          saveNotificationCount(notificationCount);
         } else {
           // Handle server errors (e.g., 404, 500)
           print('Server error: ${response.statusCode}');
@@ -357,14 +385,7 @@ class _SearchEventsState extends State<SearchEvents> {
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _getInitialInfo();
-    _decodeToken();
-    fetchAndCountNotifications();
-    authState = Provider.of<AuthState>(context, listen: false);
-  }
+
 
   void _decodeToken() async {
     try {

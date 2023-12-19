@@ -351,7 +351,7 @@ router.get('/pageant-events',verifyToken, async (req, res) => {
   try {
     const userId = req.user._id; 
     const pageantEvents = await Event.find({
-      event_category: "Pageant Shows",
+      event_category: "Pageants",
       user: userId, // Filter by the user ID
     });
 
@@ -419,7 +419,7 @@ router.get('/artcontest-events', verifyToken, async (req, res) => {
   try {
     const userId = req.user._id; 
     const artcontestEvents = await Event.find({
-      event_category: "Art Contest",
+      event_category: "Art Contests",
       user: userId, // Filter by the user ID
     })
 
@@ -526,8 +526,10 @@ router.get('/calendar-events/:userId', async (req, res) => {
       path: 'criteria contestants',
     });
 
+    console.log(events);
+
     // Find judges that match the user ID and populate the events field
-    const judges = await Judge.find({ userId: userId }).populate({
+    const judges = await Judge.find({ userId: userId, isConfirm: true }).populate({
       path: 'eventId',
       populate: {
         path: 'contestants criteria',
