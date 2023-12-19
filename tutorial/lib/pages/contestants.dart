@@ -700,14 +700,14 @@ class _ProfilePictureDialogState extends State<ProfilePictureDialog> {
           TextField(
             controller: _courseController,
             decoration: InputDecoration(
-              labelText: 'Course',
+              labelText: 'Age',
               labelStyle: TextStyle(fontSize: 15, color: Colors.green),
             ),
           ),
           TextField(
             controller: _departmentController,
             decoration: InputDecoration(
-              labelText: 'Department',
+              labelText: 'Address',
               labelStyle: TextStyle(fontSize: 15, color: Colors.green),
             ),
           ),
@@ -848,7 +848,7 @@ class _AddContestantDialogState extends State<AddContestantDialog> {
     TextField(
     controller: _courseController,
     decoration: const InputDecoration(
-    labelText: 'Course',
+    labelText: 'Age',
     labelStyle:
     TextStyle(fontSize: 15, color: Colors.green),
     ),
@@ -856,7 +856,7 @@ class _AddContestantDialogState extends State<AddContestantDialog> {
     TextField(
     controller: _departmentController,
     decoration: const InputDecoration(
-    labelText: 'Department',
+    labelText: 'Address',
     labelStyle:
     TextStyle(fontSize: 15, color: Colors.green),
     ),
