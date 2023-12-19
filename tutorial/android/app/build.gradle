@@ -51,12 +51,26 @@ android {
         versionName flutterVersionName
     }
 
+
+    // ... (your existing configurations)
+
+    signingConfigs {
+        release {
+            storeFile file('C:/Users/JBLumawag/Desktop/Documents/projects/TabLU/tutorial/upload-keystore.jks')
+            storePassword 'TabLU12'
+            keyAlias 'mykey'
+            keyPassword 'TabLU12'
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
+    }
+
+    buildFeatures {
+        viewBinding true
     }
 }
 
