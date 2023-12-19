@@ -526,8 +526,10 @@ router.get('/calendar-events/:userId', async (req, res) => {
       path: 'criteria contestants',
     });
 
+    console.log(events);
+
     // Find judges that match the user ID and populate the events field
-    const judges = await Judge.find({ userId: userId }).populate({
+    const judges = await Judge.find({ userId: userId, isConfirm: true }).populate({
       path: 'eventId',
       populate: {
         path: 'contestants criteria',
