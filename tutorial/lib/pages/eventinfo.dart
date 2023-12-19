@@ -23,7 +23,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   TextEditingController _eventNameController = TextEditingController();
   TextEditingController _venueController = TextEditingController();
   TextEditingController _organizerController = TextEditingController();
-  String? accessCode;
+  String? accessCode = "";
   String? eventId;
   String? token;
   bool isCopied = false;
@@ -31,7 +31,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   // @override
   // void initState() {
   //   super.initState();
-  //   accessCode = generateRandomAccessCode(8);
   //   if (isAdding == false) {}
   //   //print('Generated Access Code: $accessCode');
   // }
@@ -419,7 +418,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                       builder: (BuildContext context) {
                         // Use a separate StatefulWidget to manage state within the dialog
                         return EventCreatedDialog(
-                            accessCode: '$accessCode', eventId: createdEventId);
+                            accessCode: accessCode, eventId: createdEventId);
                       },
                     );
                   }
@@ -504,11 +503,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
   Future<String?> createEvent(
       Map<String, dynamic> eventData, String authToken) async {
-    eventData["accessCode"] = generateRandomAccessCode(
-        8); //Make a logic if event already exist dont change access code
-
-    accessCode = eventData["accessCode"];
-
+    accessCode = generateRandomAccessCode(8);
+    eventData["accessCode"] = accessCode;
+    print(eventData["accessCode"]);
     final response = await http.post(
       Uri.parse(
           'https://tab-lu.vercel.app/events'), // Use Uri.parse to convert the string to Uri
@@ -605,7 +602,6 @@ class _EditEventScreen extends State<EditEventScreen> {
   TextEditingController _eventNameController = TextEditingController();
   TextEditingController _venueController = TextEditingController();
   TextEditingController _organizerController = TextEditingController();
-  String? accessCode;
   String? eventId;
   String? token;
 
@@ -1075,7 +1071,7 @@ class _EditEventScreen extends State<EditEventScreen> {
       "eventOrganizer": eventOrganizer,
       "eventDate": eventDate,
       "eventTime": eventTime,
-      "accessCode": accessCode,
+      // "accessCode": accessCode,
       // "userId": userId,
     };
   }
@@ -1107,7 +1103,7 @@ class _EditEventScreen extends State<EditEventScreen> {
 }
 
 class EventCreatedDialog extends StatefulWidget {
-  final String accessCode;
+  final String? accessCode;
   final String eventId;
 
   const EventCreatedDialog(

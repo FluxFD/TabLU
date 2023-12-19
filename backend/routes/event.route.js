@@ -104,15 +104,15 @@ router.get('/protected-route', verifyToken, (req, res) => {
 
 // the findEventByAccessCode located here
 
-function generateRandomAccessCode(length) {
-  const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  let accessCode = '';
-  for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * charset.length);
-    accessCode += charset[randomIndex];
-  }
-  return accessCode;
-}
+// function generateRandomAccessCode(length) {
+//   const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+//   let accessCode = '';
+//   for (let i = 0; i < length; i++) {
+//     const randomIndex = Math.floor(Math.random() * charset.length);
+//     accessCode += charset[randomIndex];
+//   }
+//   return accessCode;
+// }
 
 router.post('/events', verifyToken, async (req, res) => {
   console.log('Request Headers:', req.headers);
@@ -121,7 +121,7 @@ router.post('/events', verifyToken, async (req, res) => {
     console.log('Entered /events route');
 
     // Ensure that required fields are present in the request
-    const { eventName, eventCategory, eventVenue, eventOrganizer, eventDate, eventTime } = req.body;
+    const { eventName, eventCategory, eventVenue, eventOrganizer, eventDate, eventTime, accessCode  } = req.body;
 
     console.log('Received Data:', { eventName, eventCategory, eventVenue, eventOrganizer, eventDate, eventTime });
 
@@ -137,8 +137,6 @@ router.post('/events', verifyToken, async (req, res) => {
       return res.status(httpStatus.UNAUTHORIZED).json({ error: 'Unauthorized: User ID not available' });
     }
 
-    // Generate an access code
-    const accessCode = generateRandomAccessCode(8);
 
     // Ensure that req.user and req.user._id are defined before accessing their properties
     const userId = req.user._id;
