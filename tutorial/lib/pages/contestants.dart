@@ -304,9 +304,9 @@ class _ContestantsState extends State<Contestants> {
                   backgroundImage: contestant.selectedImage != null
                       ? FileImage(contestant.selectedImage!)
                       : contestant.profilePic != null
-                      ? NetworkImage(
-                      "http://10.0.2.2:8080/uploads/${contestant.profilePic?.path}")
-                      : null as ImageProvider<Object>?,
+                          ? NetworkImage(
+                              "https://tab-lu.vercel.app/uploads/${contestant.profilePic?.path}")
+                          : null as ImageProvider<Object>?,
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(

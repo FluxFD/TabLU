@@ -89,7 +89,7 @@ class _MyHomePageState extends State<ChartData> {
                     title: Text(
                       'Contestant: ${chartData[index].name}, Score: ${chartData[index].speed}',
                       textAlign: TextAlign.center,
-                  ),
+                    ),
                   );
                 },
               ),
@@ -127,19 +127,19 @@ class _MyHomePageState extends State<ChartData> {
 
   Future<void> fetchScoreCards() async {
     final eventId = widget.eventId;
-    final url = Uri.parse('http://10.0.2.2:8080/winners/$eventId');
+    final url = Uri.parse('https://tab-lu.vercel.app/winners/$eventId');
 
     try {
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
         final List<dynamic> contestantData =
-        jsonDecode(response.body)['contestants'];
+            jsonDecode(response.body)['contestants'];
 
         if (mounted) {
           setState(() {
             chartData =
-            List<LiveData>.from(contestantData.asMap().entries.map((entry) {
+                List<LiveData>.from(contestantData.asMap().entries.map((entry) {
               return LiveData(
                 entry.key,
                 entry.value['name'].toString(),
