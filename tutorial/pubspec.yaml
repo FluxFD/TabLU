@@ -35,7 +35,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
 
   cupertino_icons: ^1.0.2
-  http: ^1.1.0
+  http: ^0.13.6
   fluttertoast: ^8.2.4
   flutter_svg: ^2.0.7
   shared_preferences: ^2.2.2
@@ -48,7 +48,10 @@ dependencies:
   jwt_decoder: ^2.0.1
   path: ^1.8.3
   syncfusion_flutter_charts: ^24.1.41
+  path_provider: ^2.0.9
   screenshot: ^2.1.0
+  gallery_saver: ^2.1.1
+  image_gallery_saver: ^1.6.8
 
 dev_dependencies:
   flutter_test:

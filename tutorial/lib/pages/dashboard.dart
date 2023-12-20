@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial/authstate.dart';
 import 'package:tutorial/models/categorymodel.dart'; // as CategoryModel;
@@ -284,7 +287,19 @@ class _SearchEventsState extends State<SearchEvents> {
     );
   }
 
+  File? _image;
+  String defaultImagePath = 'assets/icons/aubrey.jpg';
 
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path);
+      });
+    }
+  }
 
   Future<void> loadNotificationCount() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -384,8 +399,6 @@ class _SearchEventsState extends State<SearchEvents> {
       throw Exception('Failed to load events. Error: $e');
     }
   }
-
-
 
   void _decodeToken() async {
     try {
@@ -536,19 +549,30 @@ class _SearchEventsState extends State<SearchEvents> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.center,
                                     children: [
-                                      Padding(
+                                      GestureDetector(
+                                        onTap: () {
+                                          _pickImage();
+                                        },
+                                        child: Padding(
                                           padding:
                                               const EdgeInsets.only(top: 16.0),
                                           child: Container(
                                             height: 150,
                                             width: 150,
                                             child: ClipOval(
-                                              child: Image.asset(
-                                                'assets/icons/aubrey.jpg',
-                                                fit: BoxFit.fitWidth,
-                                              ),
+                                              child: _image == null
+                                                  ? Image.asset(
+                                                      defaultImagePath,
+                                                      fit: BoxFit.fitWidth,
+                                                    )
+                                                  : Image.file(
+                                                      _image!,
+                                                      fit: BoxFit.fitWidth,
+                                                    ),
                                             ),
-                                          )),
+                                          ),
+                                        ),
+                                      ),
                                       const SizedBox(height: 7),
                                       Container(
                                         height: 40,
@@ -564,7 +588,7 @@ class _SearchEventsState extends State<SearchEvents> {
                                           ),
                                         ),
                                       ),
-                                      //const SizedBox(height: 10),
+                                      // const SizedBox(height: 10),
                                       Center(
                                         child: Text(
                                           '${email}', // ${user.email}
@@ -578,50 +602,16 @@ class _SearchEventsState extends State<SearchEvents> {
                                 ),
                                 const SizedBox(height: 10.0),
                                 Container(
-                                  height: 180,
+                                  height: 70,
                                   width: 500,
                                   child: Card(
                                     child: Container(
                                       child: Column(
                                         children: [
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                                top: 20, left: 16),
-                                            child: Row(
-                                              children: [
-                                                Icon(Icons.home),
-                                                SizedBox(width: 15),
-                                                Text(
-                                                  'Lives in ', // ${address}
-                                                ),
-                                              ],
-                                            ),
-                                          ),
                                           Align(
                                             alignment: Alignment.topLeft,
                                             child: Column(
                                               children: [
-                                                Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                          top: 10, left: 16.0),
-                                                  child: Row(
-                                                    children: [
-                                                      Icon(Icons.edit),
-                                                      TextButton(
-                                                          onPressed: () {
-                                                            Navigator.of(
-                                                                    context)
-                                                                .push(MaterialPageRoute(
-                                                                    builder:
-                                                                        (context) =>
-                                                                            EditProfile()));
-                                                          },
-                                                          child: Text(
-                                                              'Edit Profile')),
-                                                    ],
-                                                  ),
-                                                ),
                                                 Padding(
                                                   padding:
                                                       const EdgeInsets.only(
@@ -837,9 +827,10 @@ class _SearchEventsState extends State<SearchEvents> {
                       } else if (code[index].name == 'Event Calendar') {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) => CodeModel.EventCalendarScreen(),
+                            builder: (context) =>
+                                CodeModel.EventCalendarScreen(),
                           ),
-                       // Remove all routes from the stack
+                          // Remove all routes from the stack
                         );
                       }
                     },

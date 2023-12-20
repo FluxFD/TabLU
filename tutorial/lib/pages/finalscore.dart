@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
-
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
@@ -77,7 +78,6 @@ class _WinnerState extends State<Winner> {
         final Map<String, dynamic> data = jsonDecode(response.body);
 
         setState(() {
-          // Clear existing scoreCards and add new ones
           scoreCards = List<ScoreCard>.from(data['contestants'].map((item) {
             return ScoreCard(
               eventId: eventId,
@@ -89,7 +89,6 @@ class _WinnerState extends State<Winner> {
           // Sort scoreCards by score in descending order
           scoreCards.sort((a, b) => b.score.compareTo(a.score));
 
-          // Debugging: Print the size of the scoreCards list
           print('ScoreCards size: ${scoreCards.length}');
 
           for (var scorecard in scoreCards) {
@@ -103,6 +102,13 @@ class _WinnerState extends State<Winner> {
     } catch (error) {
       print('Error fetching scorecards: $error');
     }
+  }
+
+  void saveScreenshot(Uint8List? imageBytes) async {
+    final directory = await getExternalStorageDirectory();
+    final file = File('${directory!.path}/screenshot.png');
+    await file.writeAsBytes(imageBytes!);
+    showSuccessToast();
   }
 
   @override
@@ -132,7 +138,7 @@ class _WinnerState extends State<Winner> {
           IconButton(
             onPressed: () async {
               Uint8List? imageBytes = await screenshotController.capture();
-              showSuccessToast();
+              saveScreenshot(imageBytes);
             },
             icon: Icon(Icons.camera),
           ),
@@ -181,7 +187,7 @@ class _WinnerState extends State<Winner> {
                             const SizedBox(
                               width: 25,
                             ),
-                            Text("${scoreCards[0].score.toString()} %"),
+                            Text("${scoreCards[0].score.toStringAsFixed(2)} %"),
                           ],
                         ),
                       ),
@@ -205,7 +211,7 @@ class _WinnerState extends State<Winner> {
                             const SizedBox(
                               width: 25,
                             ),
-                            Text("${scoreCards[1].score.toString()} %"),
+                            Text("${scoreCards[1].score.toStringAsFixed(2)} %"),
                           ],
                         ),
                       ),
@@ -229,7 +235,7 @@ class _WinnerState extends State<Winner> {
                             const SizedBox(
                               width: 25,
                             ),
-                            Text("${scoreCards[2].score.toString()} %"),
+                            Text("${scoreCards[2].score.toStringAsFixed(2)} %"),
                           ],
                         ),
                       ),

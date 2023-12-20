@@ -25,10 +25,16 @@ class _LoginPageState extends State<Signin> {
   Color passwordBorderColor = Colors.grey.withOpacity(0.5);
   Color emailBorderColor = Colors.grey.withOpacity(0.5);
 
+  bool isEmailValid(String email) {
+    return email.contains('@');
+  }
+
   Future<void> signIn() async {
     final Uri url = Uri.parse("https://tab-lu.vercel.app/signin");
 
-    if (username.text.isEmpty || password.text.isEmpty) {
+    if (username.text.isEmpty || email.text.isEmpty || password.text.isEmpty) {
+      // Handle empty fields
+      // Set border colors to indicate the error
       if (username.text.isEmpty) {
         setState(() {
           usernameBorderColor = Colors.red;
@@ -45,6 +51,15 @@ class _LoginPageState extends State<Signin> {
         });
       }
       showLoginErrorToast('Please fill in all fields');
+      return;
+    }
+
+    if (!isEmailValid(email.text)) {
+      // Handle invalid email
+      setState(() {
+        emailBorderColor = Colors.red;
+      });
+      showLoginErrorToast('Please enter a valid email address');
       return;
     }
 
@@ -386,55 +401,9 @@ class _LoginPageState extends State<Signin> {
                     ],
                   ),
                 ),
-                /*   const SizedBox(
-                  height: 20,
-                ),
-                const Text(
-                  "Use your other social media accounts to Sign in",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.green,
-                  ),
-                ),*/
                 const SizedBox(
                   height: 20,
                 ),
-                /*Center(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 10),
-                      Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const SearchEvents(token: '',),
-                                  ),
-                                );
-                              },
-                              child: Tab(
-                                icon: Image.asset(
-                                    "assets/icons/facebook-logo-2019.png"),
-                              ),
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 8.0),
-                            ),
-                            Tab(
-                              icon: Image.asset(
-                                  "assets/icons/google-logo-png-suite-everything-you-need-know-about-google-newest-0.png"),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),*/
-
                 Center(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,

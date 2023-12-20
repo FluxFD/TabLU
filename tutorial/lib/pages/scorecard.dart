@@ -680,26 +680,6 @@ class _ScoreCardState extends State<ScoreCard> {
                             ),
                           ),
                           const SizedBox(height: 8.0),
-                          Text.rich(
-                            TextSpan(
-                              text: 'Event ID: ',
-                              style: TextStyle(
-                                color: Colors.black54,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              children: [
-                                TextSpan(
-                                  text: '${contestant.eventId}',
-                                  style: TextStyle(
-                                    color: Colors.black54,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.normal,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
                         ],
                       ),
                     ),
@@ -711,10 +691,16 @@ class _ScoreCardState extends State<ScoreCard> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                print('Winner button pressed');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => Winner(eventId: widget.eventId),
+                  ),
+                );
               },
               child: const Text(
-                'Close',
+                'Winner',
                 style: TextStyle(color: Colors.green),
               ),
             ),
@@ -749,7 +735,7 @@ class _ScoreCardState extends State<ScoreCard> {
                       LengthLimitingTextInputFormatter(3),
                     ],
                     decoration: InputDecoration(
-                      labelText: 'Score for ${criteria.criterianame}',
+                      // labelText: 'Score for ${criteria.criterianame}',
                       border: OutlineInputBorder(
                         borderSide: BorderSide(color: Colors.green),
                       ),
@@ -973,12 +959,12 @@ class _ScoreCardState extends State<ScoreCard> {
           if (responseBody.containsKey('error')) {
             final errorMessage = responseBody['error'] as String;
 
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(errorMessage),
-                backgroundColor: Colors.red,
-              ),
-            );
+            // ScaffoldMessenger.of(context).showSnackBar(
+            //   SnackBar(
+            //     content: Text(errorMessage),
+            //     backgroundColor: Colors.red,
+            //   ),
+            // );
           }
         }
         print('Response body: ${response.body}');

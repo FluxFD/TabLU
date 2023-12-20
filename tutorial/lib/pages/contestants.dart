@@ -671,7 +671,7 @@ class _ProfilePictureDialogState extends State<ProfilePictureDialog> {
                   ? FileImage(_selectedImage!)
                   : widget.contestant.profilePic != null
                       ? NetworkImage(
-                          "http://10.0.2.2:8080/uploads/${widget.contestant.profilePic?.path}")
+                          "https://tab-lu.vercel.app/uploads/${widget.contestant.profilePic?.path}")
                       : null as ImageProvider<Object>?,
             ),
             SizedBox(height: 20),

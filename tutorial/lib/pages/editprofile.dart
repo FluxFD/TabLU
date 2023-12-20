@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:tutorial/pages/settings.dart';
 
 class EditProfile extends StatelessWidget {
-   EditProfile({Key? key});
+  EditProfile({Key? key});
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +16,7 @@ class EditProfile extends StatelessWidget {
 }
 
 class EditProfilePage extends StatefulWidget {
-   EditProfilePage({Key? key});
+  EditProfilePage({Key? key});
 
   @override
   _EditProfilePageState createState() => _EditProfilePageState();
@@ -29,36 +29,18 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-  elevation: 0,
-  leading: IconButton(
-    icon: Icon(
-      Icons.arrow_back,
-      color: Color.fromARGB(255, 5, 70, 20),
-    ),
-   onPressed: () {
-     
-       Navigator.pop(context);
-   },
-  ),
-  actions: [
-    IconButton(
-      icon: Icon(
-        Icons.settings,
-        color: Color.fromARGB(255, 5, 70, 20),
-      ),
-      onPressed: () {
-        Navigator.push<void>(
-          context,
-          MaterialPageRoute<void>(
-            builder: (BuildContext context) => SettingsPage(),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back,
+            color: Color.fromARGB(255, 5, 70, 20),
           ),
-        );
-      },
-    )
-  ],
-),
-
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+      ),
       body: GestureDetector(
         onTap: () {
           FocusScope.of(context).unfocus();
@@ -127,14 +109,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   )
                 ],
               ),
-            ),
-            const SizedBox(height: 35),
-            buildTextField("Full Name", "Juan Dela Cruz", false),
-            buildTextField("Email", "example@example.com", false),
-            buildTextField("Password", "**********", true),
-            buildTextField("Address", "Calauan, Laguna", false),
-            const SizedBox(
-              height: 35,
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
