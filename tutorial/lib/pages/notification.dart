@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'package:tutorial/pages/dashboard.dart';
+import 'package:tutorial/refresher.dart';
 import 'package:tutorial/utility/sharedPref.dart';
 
 class Notif extends StatefulWidget {
@@ -20,7 +21,17 @@ Future<List<dynamic>> fetchNotifications(String userId) async {
   );
 
   if (response.statusCode == 200) {
-    return json.decode(response.body);
+    // Decode the JSON response
+    List<dynamic> notifications = json.decode(response.body);
+
+    // Sort the notifications based on the 'date' field
+    notifications.sort((a, b) {
+      DateTime dateTimeA = DateTime.parse(a['date']);
+      DateTime dateTimeB = DateTime.parse(b['date']);
+      return dateTimeB.compareTo(dateTimeA); // Descending order, modify if needed
+    });
+
+    return notifications;
   } else {
     throw Exception('Failed to load notifications');
   }
@@ -64,7 +75,9 @@ class _NotifState extends State<Notif> {
           },
         ),
       ),
-      body: FutureBuilder<List<dynamic>>(
+    body: Refresher(
+    onRefresh: refreshNotifications,
+    child: FutureBuilder<List<dynamic>>(
         future: notifications,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -116,6 +129,7 @@ class _NotifState extends State<Notif> {
           }
         },
       ),
+    ),
     );
   }
 
@@ -141,6 +155,7 @@ class _NotifState extends State<Notif> {
     final String notificationType = notification['type'];
     final String userId = notification['userId'];
 
+
     return GestureDetector(
       onTap: () {
         if (notificationType == 'confirmation') {
@@ -162,7 +177,7 @@ class _NotifState extends State<Notif> {
                   children: [
                     // Text(userId),
                     message(body),
-                    timeAndDate(formattedDate),
+                    timeAndDate(date),
                   ],
                 ),
               ),
@@ -354,14 +369,32 @@ class _NotifState extends State<Notif> {
     );
   }
 
-  Widget timeAndDate(String formattedDate) {
+  Widget timeAndDate(DateTime formattedDate) {
+    final DateTime notificationDate = formattedDate;
+    final DateTime currentDate = DateTime.now();
+
+    final Duration difference = currentDate.difference(notificationDate);
+
+    String timeDifference = '';
+
+    if (difference.inDays > 0) {
+      timeDifference = '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      timeDifference = '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      timeDifference = '${difference.inMinutes}m ago';
+    } else if (difference.inSeconds > 0) {
+      timeDifference = '${difference.inSeconds}s ago';
+    } else {
+      timeDifference = 'Just now';
+    }
     return Container(
       margin: EdgeInsets.only(top: 5),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            formattedDate,
+            timeDifference,
             style: TextStyle(
               fontSize: 10,
               color: Colors.grey,

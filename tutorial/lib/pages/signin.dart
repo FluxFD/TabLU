@@ -25,16 +25,20 @@ class _LoginPageState extends State<Signin> {
   Color passwordBorderColor = Colors.grey.withOpacity(0.5);
   Color emailBorderColor = Colors.grey.withOpacity(0.5);
 
+
   Future<void> signIn() async {
     final Uri url = Uri.parse("http://10.0.2.2:8080/signin");
-
+    setState(() {
+      usernameBorderColor = DefaultSelectionStyle.defaultColor;
+      emailBorderColor = DefaultSelectionStyle.defaultColor;
+    });
     if (username.text.isEmpty || password.text.isEmpty) {
       if (username.text.isEmpty) {
         setState(() {
           usernameBorderColor = Colors.red;
         });
       }
-      if (email.text.isEmpty) {
+      if (email.text.isEmpty ) {
         setState(() {
           emailBorderColor = Colors.red;
         });
@@ -60,7 +64,7 @@ class _LoginPageState extends State<Signin> {
           'username': username.text
         }),
       );
-
+      var jsonResponse = json.decode(response.body);
       if (response.statusCode == 201) {
         print('Sign-up successful');
         var jsonResponse = json.decode(response.body);
@@ -73,12 +77,20 @@ class _LoginPageState extends State<Signin> {
               builder: (context) => SearchEvents(token: "myToken")),
         );
       } else if (response.statusCode == 400) {
-        print('Username or Email already exists');
-        showLoginErrorToast('User or Email already exists');
-        setState(() {
-          usernameBorderColor = Colors.red;
-          passwordBorderColor = Colors.red;
-        });
+        print(jsonResponse);
+        if (jsonResponse["error"] == "email"){
+          showLoginErrorToast(jsonResponse["message"]);
+          setState(() {
+            emailBorderColor = Colors.red;
+          });
+        }
+        if (jsonResponse["error"] == "username"){
+          showLoginErrorToast(jsonResponse["message"]);
+          setState(() {
+            usernameBorderColor = Colors.red;
+          });
+        }
+
       } else {
         print('HTTP Error: ${response.statusCode}');
       }

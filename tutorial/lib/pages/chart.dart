@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:socket_io_client/socket_io_client.dart' as io;
 
 class ChartData extends StatefulWidget {
   ChartData({
@@ -24,24 +25,49 @@ class ChartData extends StatefulWidget {
 class _MyHomePageState extends State<ChartData> {
   late List<LiveData> chartData;
   late ChartSeriesController _chartSeriesController;
-  late Timer _timer;
-
+  // late Timer _timer;
+  List<String> contestantNames = [];
+  final io.Socket socket = io.io('http://10.0.2.2:8080', <String, dynamic>{
+    'transports': ['websocket'],
+    'autoConnect': false,
+  });
   @override
   void initState() {
+    super.initState();
     chartData = getChartData();
     fetchScoreCards();
-    _timer = Timer.periodic(const Duration(seconds: 60), (timer) {
-      if (mounted) {
+    // _timer = Timer.periodic(const Duration(seconds: 60), (timer) {
+    //   if (mounted) {
+    //     fetchScoreCards();
+    //   }
+    // });
+    socket.connect();
+    socket.onConnect((_) {
+      print('Socket connected');
+      socket.on('chartUpdate', (data) {
+        // Handle the updated data and update the chart
         fetchScoreCards();
-      }
+      });
     });
-    super.initState();
+
+    socket.onDisconnect((_) {
+      print('Socket disconnected');
+    });
+
+    socket.onError((error) {
+      print('Socket error: $error');
+    });
+    // Listen for the 'chartUpdate' event
+
   }
 
   @override
   void dispose() {
-    _timer.cancel();
-    super.dispose();
+    // _timer.cancel();  // If you have a timer, you might cancel it here.
+    super.dispose();  // Call the superclass dispose method.
+    // Disconnect the socket and execute code after disconnection.
+      socket.disconnect();
+      socket.clearListeners();
   }
 
   @override
@@ -56,22 +82,25 @@ class _MyHomePageState extends State<ChartData> {
             Expanded(
               child: SfCartesianChart(
                 isTransposed: true,
-                series: <BarSeries<LiveData, int>>[
-                  BarSeries<LiveData, int>(
+                series: <BarSeries<LiveData, String>>[
+                  BarSeries<LiveData, String>(
                     onRendererCreated: (ChartSeriesController controller) {
                       _chartSeriesController = controller;
                     },
                     dataSource: chartData,
                     color: Color.fromARGB(255, 16, 172, 55),
-                    xValueMapper: (LiveData sales, _) => sales.time,
+                    xValueMapper: (LiveData sales, _) => sales.name,
                     yValueMapper: (LiveData sales, _) => sales.speed,
+                    // Add data labels
+                    dataLabelSettings: const DataLabelSettings(
+                      isVisible: true,
+                      alignment: ChartAlignment.center,
+                    ),
                   )
                 ],
-                primaryXAxis: NumericAxis(
+                primaryXAxis: CategoryAxis(
                   majorGridLines: const MajorGridLines(width: 0),
-                  edgeLabelPlacement: EdgeLabelPlacement.shift,
-                  interval: 1, // Set the interval according to your data
-                  title: AxisTitle(text: 'Data Points'),
+                  title: AxisTitle(text: 'Contestants'),
                 ),
                 primaryYAxis: NumericAxis(
                   axisLine: const AxisLine(width: 0),
@@ -105,7 +134,8 @@ class _MyHomePageState extends State<ChartData> {
   void updateDataSource(Timer timer) {
     setState(() {
       chartData.add(
-          LiveData(time++, 'New Contestant', (math.Random().nextInt(60) + 30)));
+        LiveData(chartData.length, 'New Contestant', (math.Random().nextInt(60) + 30)),
+      );
       chartData.removeAt(0);
 
       // Update the x-values of the remaining data points
@@ -116,7 +146,6 @@ class _MyHomePageState extends State<ChartData> {
       _chartSeriesController.updateDataSource();
     });
   }
-
   List<LiveData> getChartData() {
     return <LiveData>[
       LiveData(0, 'Contestant 1', 42),
@@ -135,6 +164,7 @@ class _MyHomePageState extends State<ChartData> {
       if (response.statusCode == 200) {
         final List<dynamic> contestantData =
         jsonDecode(response.body)['contestants'];
+        // print("Contestant Data: ${jsonDecode(response.body)['contestants']}");
 
         if (mounted) {
           setState(() {

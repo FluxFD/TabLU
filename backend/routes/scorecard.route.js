@@ -1,3 +1,4 @@
+//scorecard.route.js
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose'); 
@@ -7,6 +8,18 @@ const ScoreCard = require('../models/scorecard.model');
 const Criteria = require('../models/criteria.model');
 const Judge = require('../models/judges.model');
 const User = require('../models/user.model');
+const { io } = require('./socket');
+
+io.on('connection', (socket) => {
+  
+  console.log(`Number of connected sockets: ${io.sockets.sockets.size}`);
+  // Your socket.io event handlers here
+  socket.on('disconnect', () => {
+    console.log('A user disconnected');
+    // Your actions on user disconnect here
+  });
+  
+});
 
 router.post('/scorecards', async (req, res) => {
   try {
@@ -17,8 +30,7 @@ router.post('/scorecards', async (req, res) => {
       
       const { eventId, contestantId, criterias, userId } = scoreData;
       // console.log(criterias.length);
-      // console.log(eventId, contestantId, criterias);
-
+      console.log("Event Id:",eventId,"Contestant Id:", contestantId, "Event Id:", userId);
       // Validate ObjectId for eventId and contestantId
       if (
         !mongoose.Types.ObjectId.isValid(userId) ||
@@ -36,13 +48,16 @@ router.post('/scorecards', async (req, res) => {
       if (!event || !contestant) {
         return res.status(404).json({ error: 'Event or Contestant not found' });
       }
-
-     
-
+      const creator = await Event.findOne({_id: event._id, user: user._id});
+      if (creator){
+        console.log("you are creator")
+        return res.status(403).json({ error: 'Cannot submit scores as you are the creator' });
+      }
       judge = await Judge.findOne({ eventId: event._id, userId: user._id });
       if (judge && judge.scoreSubmitted) {
         return res.status(403).json({ error: 'Scores already submitted' });
       } 
+     
       
       const criteriaEntries = [];
       for (const criteria of criterias) {
@@ -75,7 +90,6 @@ router.post('/scorecards', async (req, res) => {
 
         // Save the score card entry
         const savedScoreCardEntry = await scoreCardEntry.save();
-
         // Add the saved entry to the array
         criteriaEntries.push(savedScoreCardEntry);
       }
@@ -86,22 +100,17 @@ router.post('/scorecards', async (req, res) => {
       scoreCardEntries.push({ eventId: event._id, contestantId: contestant._id, criteriaEntries });
     }
 
+
     if (judge) {
       judge.scoreSubmitted = true;
       await judge.save();
     }
-    else{
-      return res.status(403).json({ error: 'Cannot submit scores as you are the creator' });
-    }
-   
     res.status(201).json({ message: 'Score card entries created successfully', scoreCardEntries });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
-
-
   
 router.get('/scorecards', async (req, res) => {
   try {
@@ -140,6 +149,7 @@ router.get('/scorecards', async (req, res) => {
   }
 });
 
+
 // Add a new route to get the top three winners for a specific event
 router.get('/winners/:eventId', async (req, res) => {
   try {
@@ -159,9 +169,9 @@ router.get('/winners/:eventId', async (req, res) => {
       {
         $sort: { averageScore: -1 }, // Sort by average score in descending order
       },
-      {
-        $limit: 3, // Take only the top three
-      },
+      // {
+      //   $limit: 3, // Take only the top three
+      // },
       {
         $lookup: {
           from: 'contestants', // Assuming the contestants collection
@@ -181,7 +191,7 @@ router.get('/winners/:eventId', async (req, res) => {
         },
       },
     ]);
-
+    io.emit('chartUpdate', { contestants });
     // Respond with the top three winners and their average scores
     res.status(200).json({ contestants });
   } catch (error) {

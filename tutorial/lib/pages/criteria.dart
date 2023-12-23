@@ -7,12 +7,14 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class Criteria {
+  String? criteriaId;
   String criterianame;
   String percentage;
   String eventId; // Event ID
   //String contestantId; // Contestant ID
 
   Criteria({
+    this.criteriaId,
     required this.criterianame,
     required this.percentage,
     required this.eventId,
@@ -21,6 +23,7 @@ class Criteria {
 
   factory Criteria.fromJson(Map<String, dynamic> json) {
     return Criteria(
+      criteriaId: json['_id'] ?? '',
       criterianame: json['criterianame'] ?? '',
       percentage: json['percentage'] ?? '',
       eventId: json['eventId'] ?? '',
@@ -29,6 +32,7 @@ class Criteria {
 
   Map<String, dynamic> toJson() {
     return {
+      'criteriaId' : criteriaId,
       'criterianame': criterianame,
       'percentage': percentage,
       'eventId': eventId,
@@ -107,7 +111,7 @@ class _CriteriasState extends State<Criterias> {
 
       if (response.statusCode == 200) {
         final List<dynamic> criteriaList = jsonDecode(response.body);
-
+        // print("Critieria List ${criteriaList}");
         final List<Criteria> fetchedCriterias = criteriaList
             .map((criteriaJson) => Criteria.fromJson(criteriaJson))
             .toList();
@@ -221,7 +225,8 @@ class _CriteriasState extends State<Criterias> {
                 // Update the criteria
                 criteria.criterianame = _criteriaNameController.text;
                 criteria.percentage = _percentageController.text;
-                calculateTotalPercentage();
+                updateTotalPercentage();
+
                 // Notify the list to update the UI
                 _listKey.currentState!.setState(() {});
                 Navigator.pop(context);
@@ -262,6 +267,7 @@ class _CriteriasState extends State<Criterias> {
       final percentage = double.tryParse(criteria.percentage) ?? 0.0;
       totalPercentage += percentage;
     }
+
     return totalPercentage;
   }
 
@@ -317,6 +323,7 @@ class _CriteriasState extends State<Criterias> {
       final url = Uri.parse("http://10.0.2.2:8080/criteria");
 
       try {
+        print(criteriaData);
         // Check if criteria with the same name already exists
         final response = await http.post(
           url,
@@ -336,10 +343,9 @@ class _CriteriasState extends State<Criterias> {
         } else {
           final Map<String, dynamic> responseData = jsonDecode(response.body);
           final String errorMessage = responseData['error'];
-          _showErrorSnackBar(
-              'Failed to create criteria: ${errorMessage}',
-              Colors.red);
-
+          // _showErrorSnackBar(
+          //     'Failed to create criteria: ${errorMessage}',
+          //     Colors.red);
           // Check for null response body
           final responseBody = response.body;
           if (responseBody != null && responseBody.isNotEmpty) {
@@ -406,12 +412,12 @@ class _CriteriasState extends State<Criterias> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: totalPercentage == 100.0 ? Colors.grey : Colors.green,
+        backgroundColor: totalPercentage >= 100.0 ? Colors.grey : Colors.green,
         child: const Icon(
           Icons.add,
           color: Colors.white,
         ),
-        onPressed: totalPercentage == 100.0
+        onPressed: totalPercentage >= 100.0
             ? null // Set onPressed to null to disable the button
             : () {
                 _criteriaNameController.clear();

@@ -7,21 +7,18 @@ const { someFunction, Event } = require('../models/event.model');
   // API for adding new criteria
   router.post('/criteria', async (req, res) => {
     try {
-      const { criterianame, percentage, eventId } = req.body;
-  
+      const { criterianame, percentage, eventId, criteriaId } = req.body;
+        console.log("Criteria ID:", criteriaId);
       // Check if a criteria with the same name already exists
-      const existingCriteria = await Criteria.findOne({ criterianame });
+      if(criteriaId) {
+      const existingCriteria = await Criteria.findOne({ _id: criteriaId});
   
-      if (existingCriteria && existingCriteria.percentage != null) {
-        if (existingCriteria.percentage == parseFloat(percentage)) {
-          return res.status(409).json({ error: 'Criteria with the same name and percentage already exists' });
-        }
-  
-        // Update the existing criteria with the new percentage
-        existingCriteria.percentage = parseFloat(percentage);
-        const updatedCriteria = await existingCriteria.save();
-        return res.status(200).json({ message: 'Criteria updated successfully', updatedCriteria });
-      }
+     
+      existingCriteria.criterianame = criterianame;
+      existingCriteria.percentage = percentage;
+      await existingCriteria.save();
+      return res.status(200).json({ message: 'Criteria edited successfully'});
+    }
   
       const associatedEvent = await Event.findById(eventId);
   
@@ -37,8 +34,7 @@ const { someFunction, Event } = require('../models/event.model');
       const newPercentage = parseFloat(percentage);
   
       if (totalPercentage + newPercentage > 100) {
-        console.log("eew");
-        return res.status(400).json({ error: 'Total percentage exceeds 100%' });
+           return res.status(400).json({ error: 'Total percentage exceeds 100%' });
       }
   
       const newCriteria = new Criteria({

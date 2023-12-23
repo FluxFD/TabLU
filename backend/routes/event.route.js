@@ -269,6 +269,7 @@ router.get('/event/:eventId', async (req, res) => {
       eventDate: fetchedEvent.event_date ?? 'Default Event Date',
       contestant: fetchedEvent.contestants,
       criteria: fetchedEvent.criteria,
+      user: fetchedEvent.user,
     };
     console.log(modifiedResponse);
     

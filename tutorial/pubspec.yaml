@@ -49,6 +49,9 @@ dependencies:
   path: ^1.8.3
   syncfusion_flutter_charts: ^24.1.41
   screenshot: ^2.1.0
+  http_parser: ^4.0.2
+  firebase_storage: ^11.5.6
+  socket_io_client: ^2.0.3+1
 
 dev_dependencies:
   flutter_test:

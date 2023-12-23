@@ -3,6 +3,7 @@ const User = require("../models/user.model");
 const router = express.Router();
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
+const validator = require("validator");
 const nodemailer = require("nodemailer");
 const Judge = require("../models/judges.model");
 const jwt = require("jsonwebtoken");
@@ -31,18 +32,24 @@ const verifyToken = (req, res, next) => {
 
 router.post("/signin", async (req, res) => {
   const { username, email, password } = req.body;
-
+  console.log(req.body)
   try {
     // Check if a user with the given email or username already exists
     const existingUser = await User.findOne({
       $or: [{ username: username }, { email: email }],
     });
 
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({ message: "Invalid email address", error: "email" });
+    }
+
     if (existingUser) {
       return res
         .status(400)
-        .json({ message: "Username or Email already exists" });
+        .json({ message: "Username or Email already exists", error: "username" });
     }
+
+    
 
     // If the user doesn't exist, create a new user
     const newUser = new User({

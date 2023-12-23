@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:tutorial/pages/criteria.dart';
+import 'package:http_parser/http_parser.dart';
+
 
 class Contestant {
   String name;
@@ -239,6 +241,7 @@ class _ContestantsState extends State<Contestants> {
           await http.MultipartFile.fromPath(
             'profilePic', // This should match the field name in your multer configuration
             imageFile.path,
+            contentType: MediaType('image', 'jpeg'),
           ),
         );
 
@@ -294,7 +297,7 @@ class _ContestantsState extends State<Contestants> {
           contestant: contestant,
           onChanged: (File? newImage) {
             setState(() {
-              contestant.profilePic = newImage;
+              contestant.profilePic = _selectedImage;
             });
           },
           onImageChanged: (File? newImage) {
@@ -576,7 +579,7 @@ class ListItemWidget extends StatelessWidget {
                   ? FileImage(contestant.selectedImage!)
                   : contestant.profilePic != null
                   ? NetworkImage(
-                  "http://10.0.2.2:8080/uploads/${contestant.profilePic?.path}")
+                  "${contestant.profilePic?.path}")
                   : null as ImageProvider<Object>?,
             ),
           ),
@@ -669,7 +672,7 @@ class _ProfilePictureDialogState extends State<ProfilePictureDialog> {
                 ? FileImage(_selectedImage!)
                 : widget.contestant.profilePic != null
                 ? NetworkImage(
-                "http://10.0.2.2:8080/uploads/${widget.contestant.profilePic?.path}")
+                "${widget.contestant.profilePic?.path}")
                 : null as ImageProvider<Object>?,
           ),
           SizedBox(height: 20),
@@ -741,10 +744,6 @@ class _ProfilePictureDialogState extends State<ProfilePictureDialog> {
         ),
       ],
     );
-  }
-
-  static void _defaultCallback() {
-    // Provide a default implementation or leave it empty
   }
 
   Future<void> changeProfilePicture() async {
