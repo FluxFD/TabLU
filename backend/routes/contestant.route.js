@@ -8,7 +8,7 @@ const Upload = require('../models/upload.model');
 const multer = require('multer');
 const fs = require('fs');
 const admin = require('firebase-admin');
-const serviceAccount = require('./serviceaccount.json');
+const serviceAccount = require('./firebase-config');
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
