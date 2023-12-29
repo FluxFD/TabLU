@@ -110,7 +110,9 @@ class ScoreCard {
     return ScoreCard(
       eventId: json['eventId'],
       contestantName: json['contestantName'],
-      score: json['score'].toDouble(), // Assuming score is a double in JSON
+      score: (json['score'] != null && json['score'] != '')
+          ? double.parse(json['score'].toString())
+          : 0.0, // Assuming score is a double in JSON
     );
   }
 }
@@ -439,11 +441,11 @@ class _WinnerState extends State<Winner> {
                             const SizedBox(
                               width: 25,
                             ),
-                            Text(scoreCards[0].contestantName),
+                            Text(scoreCards.isNotEmpty ? scoreCards[0].contestantName : "No Scores"),
                             const SizedBox(
                               width: 25,
                             ),
-                            Text("${scoreCards[0].score.toStringAsFixed(2)} %"),
+                            Text(scoreCards.isNotEmpty ? scoreCards[0].score.toStringAsFixed(2): ""),
                           ],
                         ),
                       ),
@@ -463,11 +465,11 @@ class _WinnerState extends State<Winner> {
                             const SizedBox(
                               width: 25,
                             ),
-                            Text(scoreCards[1].contestantName),
+                            Text(scoreCards.isNotEmpty ? scoreCards[1].contestantName : "No Scores"),
                             const SizedBox(
                               width: 25,
                             ),
-                            Text("${scoreCards[1].score.toStringAsFixed(2)} %"),
+                            Text(scoreCards.isNotEmpty ? scoreCards[1].score.toStringAsFixed(2) : ""),
                           ],
                         ),
                       ),
@@ -487,11 +489,11 @@ class _WinnerState extends State<Winner> {
                             const SizedBox(
                               width: 25,
                             ),
-                            Text(scoreCards[2].contestantName),
+                            Text(scoreCards.isNotEmpty ? scoreCards[2].contestantName : "No Scores"),
                             const SizedBox(
                               width: 25,
                             ),
-                            Text("${scoreCards[2].score.toStringAsFixed(2)} %"),
+                            Text(scoreCards.isNotEmpty ? scoreCards[2].score.toStringAsFixed(2) : ""),
                           ],
                         ),
                       ),
