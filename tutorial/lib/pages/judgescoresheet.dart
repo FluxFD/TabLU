@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
 import 'package:tutorial/pages/dashboard.dart';
-import 'package:tutorial/pages/judgescoresheet.dart';
+import 'package:tutorial/pages/scorecard.dart';
 import 'package:tutorial/refresher.dart';
 import 'package:tutorial/utility/sharedPref.dart';
 
@@ -185,51 +185,54 @@ class Criteria {
     );
   }
 }
-
 class Judge {
-  final String id; // Assuming each judge has an ID
-  final String name; // And a name
+  String id;
+  String name;
+  bool scoreSubmitted;
 
-  Judge({required this.id, required this.name});
+  Judge({
+    required this.id,
+    required this.name,
+    required this.scoreSubmitted,
+  });
 
   factory Judge.fromJson(Map<String, dynamic> json) {
-    // Debug: Print the raw JSON to see what data is received.
-    print("Judge JSON: $json");
-
-    var judge = Judge(
+    return Judge(
       id: json['_id'] ?? 'No ID', // Fallback to 'No ID' if null
       name: json['userId']?['username'] ?? 'No Name', // Fallback to 'No Name' if null
+      scoreSubmitted: json['scoreSubmitted'] ?? false, // Fallback to false if null
     );
-
-    // Debug: Print the created Judge object.
-    print("Created Judge: id=${judge.id}, name=${judge.name}");
-
-    return judge;
   }
 }
 
 
-class ScoreCard extends StatefulWidget {
-  String eventId;
-  final Map<String, dynamic> eventData;
-  final List<User> judges;
 
-  ScoreCard(
-      {required this.eventId, required this.eventData, required this.judges});
+
+class JudgeScoreSheet extends StatefulWidget {
+  late final String eventId;
+  final Map<String, dynamic> eventData;
+  final judges;
+
+  JudgeScoreSheet({
+    required this.eventId,
+    required this.eventData,
+    required this.judges,
+  });
 
   void updateEventId(String newEventId) {
-    ScoreCard._scoreCardState.currentState?.updateEventId(newEventId);
+    JudgeScoreSheet._judgeScoreSheetState.currentState?.updateEventId(newEventId);
   }
 
   @override
-  State<ScoreCard> createState() => _ScoreCardState();
-  static final GlobalKey<_ScoreCardState> _scoreCardState =
-  GlobalKey<_ScoreCardState>();
+  State<JudgeScoreSheet> createState() => _JudgeScoreSheetState();
+  static final GlobalKey<_JudgeScoreSheetState> _judgeScoreSheetState =
+  GlobalKey<_JudgeScoreSheetState>();
 }
+
 
 String criterianame = "default_value";
 
-class _ScoreCardState extends State<ScoreCard> {
+class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   //----------------------------------------------------------------------
   late List<Contestant> contestants = [];
 
@@ -249,7 +252,7 @@ class _ScoreCardState extends State<ScoreCard> {
   @override
   void initState() {
     super.initState();
-   fetchAll();
+    fetchAll();
   }
   void checkCreator(Event event) async {
     // Assuming User has a userId property
@@ -263,7 +266,7 @@ class _ScoreCardState extends State<ScoreCard> {
     }
     // 99
     if(userId == event.userId){
-        isCreator = false;
+      isCreator = false;
     }
   }
 
@@ -278,27 +281,30 @@ class _ScoreCardState extends State<ScoreCard> {
       });
     });
   }
-  Future<void> initializeControllers() async {
-    controllers.clear();
-    for (var contestant in _contestants) {
-      for (var criteria in criterias) {
-        String uniqueKey = "${contestant.id}_${criteria.criteriaId}";
-        print(uniqueKey);
-        controllers[uniqueKey] = TextEditingController();
-      }
-    }
-    // print("Controllers initialized: ${controllers.length}");
-  }
+  // Future<void> initializeControllers() async {
+  //   controllers.clear();
+  //   for (var contestant in _contestants) {
+  //     for (var criteria in criterias) {
+  //       String uniqueKey = "${contestant.id}_${criteria.criteriaId}";
+  //       print(uniqueKey);
+  //       controllers[uniqueKey] = TextEditingController();
+  //     }
+  //   }
+  //   // print("Controllers initialized: ${controllers.length}");
+  // }
   void dispose() {
     // Dispose of each controller in the 'controllers' map.
     for (var controller in controllers.values) {
       controller.dispose();
     }
+    for (var controller in judgeControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
   bool areAllFieldsPopulated() {
-    for (TextEditingController controller in controllers.values) {
-      if (controller.text.isEmpty) {
+    for (TextEditingController judgeControllers in judgeControllers.values) {
+      if (judgeControllers.text.isEmpty) {
         // If any controller's text is empty, return false
         return false;
       }
@@ -315,6 +321,7 @@ class _ScoreCardState extends State<ScoreCard> {
             backgroundColor: Colors.orange,
           ),
         );
+        return;
       }
       if (!areAllFieldsPopulated()) {
         // Handle the case where not all fields are populated
@@ -336,8 +343,8 @@ class _ScoreCardState extends State<ScoreCard> {
       }
       Map<String, Map<String, double>> contestantScores = {};
       Map<String, Map<String, double>> contestantRawScores = {};
-      print(controllers.length);
-      controllers.forEach((key, controller) {
+      print(judgeControllers.length);
+      judgeControllers.forEach((key, controller) {
         if (key != null && controller.text.isNotEmpty) {
           var ids = key.split('_');
           var contestantId = ids[0];
@@ -358,8 +365,8 @@ class _ScoreCardState extends State<ScoreCard> {
               double percentage = double.parse(criteria.percentage) / 100;
 
               // Calculate the score based on the percentage
-              rawScore = parsedValue;
               score = (parsedValue * percentage);
+              rawScore = parsedValue;
             }
           }
 
@@ -416,23 +423,19 @@ class _ScoreCardState extends State<ScoreCard> {
             content: Text('Score successfully submitted'),
           ),
         );
+        fetchAll();
       }
-      //
-      // if (response.statusCode == 403) {
-      //   final Map<String, dynamic> responseBody = jsonDecode(response.body);
-      //
-      //   if (responseBody.containsKey('error')) {
-      //     final errorMessage = responseBody['error'] as String;
-      //
-      //     ScaffoldMessenger.of(context).showSnackBar(
-      //       SnackBar(
-      //         content: Text(errorMessage),
-      //         backgroundColor: Colors.orange,
-      //       ),
-      //     );
-      //   }
-      // }
-
+      if (response.statusCode == 403) {
+        print('Scores already submitted');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Scores already submitted'
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
 
 
     } catch (error) {
@@ -454,6 +457,7 @@ class _ScoreCardState extends State<ScoreCard> {
 
     if (response.statusCode == 200) {
       List<dynamic> judgesJson = json.decode(response.body);
+
       return judgesJson.map((json) => Judge.fromJson(json)).toList();
     } else {
       throw Exception('Failed to load judges');
@@ -817,7 +821,7 @@ class _ScoreCardState extends State<ScoreCard> {
   Widget buildContestantList(List<Contestant> contestants, List<Criteria>? criterias) {
     if (isLoading) {
       return Padding(
-        padding: const EdgeInsets.only(top: 150, right: 110),
+        padding: const EdgeInsets.only(top: 150, right: 0),
         child: Center(
           child: CircularProgressIndicator(),
         ),
@@ -841,7 +845,7 @@ class _ScoreCardState extends State<ScoreCard> {
                       controller: controllers[uniqueKey],
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
-                      enabled: isCreator,
+                      enabled: false,
                       decoration: InputDecoration(
                         labelText: 'score',
                         border: OutlineInputBorder(
@@ -883,10 +887,10 @@ class _ScoreCardState extends State<ScoreCard> {
     }
   }
 
-  Widget buildJudgesList(List<Judge> judges, List<Criteria>? criterias) {
+  Widget buildJudgesList(List<Contestant> contestants, List<Criteria>? criterias) {
     if (isLoading) {
       return Padding(
-        padding: const EdgeInsets.only(top: 150, right: 110),
+        padding: const EdgeInsets.only(top: 150, right: 0),
         child: Center(
           child: CircularProgressIndicator(),
         ),
@@ -894,10 +898,35 @@ class _ScoreCardState extends State<ScoreCard> {
     } else {
       return Expanded(
         child: ListView.builder(
-          itemCount: judges.length,
+          itemCount: contestants.length,
           itemBuilder: (BuildContext context, int index) {
-            Judge judge = judges[index];
+            Contestant contestant = contestants[index];
             List<Widget> scoreFields = [];
+            if (criterias != null && criterias.isNotEmpty) {
+              scoreFields = criterias.map((criteria) {
+                String uniqueKey = "${contestant.id}_${criteria.criteriaId ??
+                    ''}";
+                return Expanded(
+                  child: Container(
+                    height: 30,
+                    alignment: Alignment.center,
+                    child: TextFormField(
+                      controller: judgeControllers[uniqueKey],
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      // enabled: isCreator,
+                      decoration: InputDecoration(
+                        labelText: 'score',
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.green),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList();
+            }
+
             return Card(
               elevation: 5.0,
               margin: const EdgeInsets.symmetric(
@@ -907,26 +936,11 @@ class _ScoreCardState extends State<ScoreCard> {
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child: Text(judge.name,
+                      child: Text(contestant.name,
                           style: const TextStyle(fontSize: 16)),
                     ),
                   ),
                   ...scoreFields,
-                  IconButton(
-                    icon: const Icon(Icons.remove_red_eye, color: Colors.green),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => JudgeScoreSheet(
-                            eventId: events[0].eventId,
-                            eventData: {},
-                            judges: judge,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
                 ],
               ),
             );
@@ -1042,46 +1056,33 @@ class _ScoreCardState extends State<ScoreCard> {
         if (contestantData != null && contestantData is List) {
           List<Contestant> fetchedContestants =
           contestantData.map((data) => Contestant.fromJson(data)).toList();
-
+          int index = 0;
           // Fetch existing scores for each contestant and criteria
           for (var contestant in fetchedContestants) {
             try {
               List<double> existingScores =
               await fetchExistingScoresForContestant(contestant.id, eventId);
-
               // Check if the fetch is successful
               if (existingScores.isNotEmpty) {
-                int criteriaLength = criterias.length;
-                // Split the scores into chunks based on criteria length
-                List<List<double>> splitScores = List.generate(
-                  criteriaLength-1,
-                      (index) {
-                    int start = index * criteriaLength;
-                    int end = (index + 1) * criteriaLength;
-                    // print('Index: $index, Start: $start, End: $end');
-                    return existingScores.sublist(start, end);
-                  },
-                );
-
-                // Calculate the averages for each criterion across all judges
-                List<double> criterionAverages = List.generate(
-                  criteriaLength,
-                      (index) => splitScores.fold(0.0, (sum, scores) => sum + scores[index]) / splitScores.length,
-                );
-
-
-                // Now, set up the text controllers with the averages
                 for (var criteria in criterias) {
+
                   String uniqueKey = "${contestant.id}_${criteria.criteriaId}";
+
                   controllers[uniqueKey] = TextEditingController(
-                    text: criterionAverages[criterias.indexOf(criteria)].toStringAsFixed(2),
+                    text: existingScores[index * 2].toStringAsFixed(2),  // Assuming raw scores are at even indices
                   );
+
+                  judgeControllers[uniqueKey] = TextEditingController(
+                    text: existingScores[index * 2 + 1].toString(),  // Assuming judge scores are at odd indices
+                  );
+                  index++;
                 }
               } else {
                 for (var contestant in fetchedContestants) {
                   for (var criteria in criterias) {
                     String uniqueKey = "${contestant.id}_${criteria.criteriaId}"; // Assuming each criteria has a unique id
                     controllers[uniqueKey] = TextEditingController();
+                    judgeControllers[uniqueKey] = TextEditingController();
                   }
                 }
                 print("Controllers populated after fetching contestants: ${controllers.length}");
@@ -1130,11 +1131,12 @@ class _ScoreCardState extends State<ScoreCard> {
         userId = decodedToken['userId'];
       }
       // Make a GET request to your server endpoint with contestantId and eventId as query parameters
-      final Uri uri = Uri.parse('http://192.168.1.8:8080/scorecards'); // Update the URL accordingly
+      final Uri uri = Uri.parse('http://192.168.1.8:8080/judge-scorecards'); // Update the URL accordingly
       final response = await http.get(
         uri.replace(queryParameters: {
           'contestantId': contestantId ?? '',
           'eventId': eventId,
+          'judgeId': widget.judges.id,
           'userId': userId,
         }),
       );
@@ -1144,10 +1146,16 @@ class _ScoreCardState extends State<ScoreCard> {
         final Map<String, dynamic> responseBody = jsonDecode(response.body);
         // Extract the scores from the response
         final List<dynamic> scoresData = responseBody['scores'];
-        final List<double> scores = scoresData.map<double>((score) {
+        final List<double> scores = [];
+
+        for (var score in scoresData) {
           // Assuming the criteriascore is the value you want to extract
-          return score['criteria']['criteriascore'].toDouble();
-        }).toList();
+          double criteriaScore = score['criteria']['criteriascore'].toDouble();
+          double rawScore = score['criteria']['rawScore'].toDouble();
+
+          scores.add(criteriaScore);
+          scores.add(rawScore);
+        }
 
         print("Contestant scores: $scores");
 
@@ -1156,31 +1164,30 @@ class _ScoreCardState extends State<ScoreCard> {
       } else {
         // Handle error responses
         print('Failed to fetch scores. Status code: ${response.statusCode}');
-        if (response.statusCode == 401) {
-          final Map<String, dynamic> responseBody = jsonDecode(response.body);
-
-          // if (responseBody.containsKey('error')) {
-          //   final errorMessage = responseBody['error'] as String;
-          //
-          //   ScaffoldMessenger.of(context).showSnackBar(
-          //     SnackBar(
-          //       content: Text(errorMessage),
-          //       backgroundColor: Colors.red,
-          //     ),
-          //   );
-          // }
+        if(response.statusCode == 401 || response.statusCode == 404){
+          return [];
         }
+        final Map<String, dynamic> responseBody = jsonDecode(response.body);
+
+        if (responseBody.containsKey('error')) {
+          final errorMessage = responseBody['error'] as String;
+
+          // You might want to throw an exception or handle the error accordingly
+          throw Exception(errorMessage);
+        }
+
         print('Response body: ${response.body}');
         // You might want to throw an exception or handle the error accordingly
-        return [];
+        throw Exception('Failed to fetch scores');
       }
     } catch (e) {
       // Handle exceptions
       print('Error fetching scores: $e');
       // You might want to throw an exception or handle the error accordingly
-      return [];
+      throw Exception('Failed to fetch scores');
     }
   }
+
 
   Future<List<Criteria>> fetchCriteria(String eventId,
       {VoidCallback? onCriteriaFetched}) async {
@@ -1231,6 +1238,33 @@ class _ScoreCardState extends State<ScoreCard> {
       throw e;
     }
     return [];
+  }
+
+  // Function to show the confirmation dialog
+  Future<bool> showConfirmationDialog() async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirmation'),
+          content: Text('Are you sure you want to submit?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false); // User cancelled
+              },
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(true); // User confirmed
+              },
+              child: Text('Submit'),
+            ),
+          ],
+        );
+      },
+    ) ?? false; // Return false if the user dismissed the dialog
   }
 
   Future<void> fetchData() async {
@@ -1320,8 +1354,8 @@ class _ScoreCardState extends State<ScoreCard> {
           ),
         ],
         centerTitle: true,
-        title: const Text(
-          'Score Sheet',
+        title: Text(
+          '${widget.judges.name}',
           style: TextStyle(
             fontSize: 18,
             color: Color(0xFF054E07),
@@ -1339,7 +1373,6 @@ class _ScoreCardState extends State<ScoreCard> {
                           padding: const EdgeInsets.all(8.0),
                           child: Container(
                             height: 80,
-                            width: 500,
                             child: Card(
                               elevation: 1,
                               child: Padding(
@@ -1367,12 +1400,12 @@ class _ScoreCardState extends State<ScoreCard> {
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: Container(
-                            height: 400, // Adjust the height as needed
+                            height: 400,// Adjust the height as needed
                             child: Card(
                               child: Padding(
                                 padding: const EdgeInsets.only(left: 8.0),
                                 child: SizedBox(
-                                  width: 500,
+                                  width: 600,
                                   child: Column(
                                     children: [
                                       Row(
@@ -1440,76 +1473,83 @@ class _ScoreCardState extends State<ScoreCard> {
                             ),
                           ),
                         ),
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0, left: 5.0, right: 5.0),
-                child: Container(
-                  height: 500,
-                  child: Column(
-                    children: [
-                      // Header Row
-                      Container(
-                        height: 35,
-                        padding: const EdgeInsets.only(top: 5, left: 5, right: 5),
-                        color: Colors.green,
-                        alignment: Alignment.topCenter,
-                        child: const Text(
-                          'Judges',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500,
+                        Container(
+                          height: 35,
+                          padding: const EdgeInsets.only(top: 5, left: 5, right: 5),
+                          color: Colors.green,
+                          alignment: Alignment.topCenter,
+                          child: const Text(
+                            'Your Score',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
-                      ),
-                      Container(
-                        height: 50,
-                        padding: const EdgeInsets.only(top: 5),
-                        color: Colors.green,
-                        alignment: Alignment.topCenter,
-                        child: Row(
-                          children: [
-                            // Name Column
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5),
-                                child: Center(
-                                  child: Text(
-                                    'Name',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w500,
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8.0, left: 5.0, right: 5.0),
+                  child: Container(
+                    height: 300,
+                    child: SizedBox(
+                      width: 600,
+                      child: Column(
+                      children: [
+                        Container(
+                          height: 50,
+                          padding: const EdgeInsets.only(top: 5),
+                          color: Colors.green,
+                          alignment: Alignment.topCenter,
+                          child: Row(
+                            children: [
+                              // Name Column
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                                  child: Center(
+                                    child: Text(
+                                      'Name',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
-
-                            ),
-                            // Criteria Columns
-                            Expanded(
-                            child: Container(
-                              height: 50,
-                              padding: const EdgeInsets.only(top: 5),
-                              color: Colors.green,
-                              alignment: Alignment.topCenter,
-                              child: Center(
-                                child: Text(
-                                  'View Scoresheet',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
+                              // Criteria Columns
+                              ...criterias.map((criteria) {
+                                double percentage = double.tryParse(criteria.percentage) ?? 0.0;
+                                return Expanded(
+                                  child: Container(
+                                    height: 50,
+                                    padding: const EdgeInsets.symmetric(horizontal: 5),
+                                    color: Colors.green,
+                                    alignment: Alignment.topCenter,
+                                    child: Center(
+                                      child: buildCriteriaRow(
+                                        criteria.criterianame,
+                                        percentage,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
-                            ),
-                            ),
-                          ],
+                                );
+                              }).toList(),
+                            ],
+                          ),
                         ),
-                      ),
-
-                      buildJudgesList(judges, criterias),
-                    ],
+                        buildJudgesList(_contestants, criterias),
+                      ],
+                    ),
+                    ),
                   ),
                 ),
               ),
@@ -1596,12 +1636,55 @@ class _ScoreCardState extends State<ScoreCard> {
                             ],
                           ),
                           actions: [
-                            TextButton(
-                              onPressed: () {
+                            Row(
+                              children: [
+                                TextButton(
+                                  onPressed: () async {
+                                    try {
+                                      // Fetch judges
+                                      List<Judge> judges = await fetchJudges(widget.eventId);
 
-                                Navigator.of(context).pop();
-                              },
-                              child: const Text('Close'),
+                                      // Check if all judges have submitted scores
+                                      bool allScoresSubmitted = judges.every((judge) => judge.scoreSubmitted == true);
+
+                                      if (allScoresSubmitted) {
+                                        // If all judges have submitted scores, do something
+                                        // For example, navigate to a new screen or perform another action
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (context) => Winner(eventId: widget.eventId)),
+                                        );
+                                      } else {
+                                        // If not all judges have submitted scores, show a Snackbar
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Please wait for all judges to submit their scores'),
+                                            backgroundColor: Colors.orange,
+                                          ),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      // Handle any errors that occur during the fetchJudges function
+                                      print('Error fetching judges: $e');
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Failed to load judges'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  child: const Text('View scores'),
+                                ),
+                                Spacer(), // Adds space between the buttons
+                                TextButton(
+                                  onPressed: () {
+                                    // Handle 'Close' button press
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: const Text('Close'),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -1626,19 +1709,23 @@ class _ScoreCardState extends State<ScoreCard> {
             const SizedBox(width: 10),
             ElevatedButton(
               onPressed: () async {
-                try {
-                  // await handleSubmit();
-                  // The rest of your code goes here
-                  final String? token = await SharedPreferencesUtils.retrieveToken();
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) =>  Winner(eventId: widget.eventId),
-                    ),
-                  );
-                } catch (error) {
-                  // Handle the error here, you can log it or show a user-friendly message
-                  print('An error occurred: $error');
+                bool confirmed = await showConfirmationDialog();
+                if (confirmed){
+                  try {
+                    await handleSubmit();
+                    // The rest of your code goes here
+                    final String? token = await SharedPreferencesUtils.retrieveToken();
+                    // Navigator.of(context).push(
+                    //   MaterialPageRoute(
+                    //     builder: (context) =>  SearchEvents(token: token),
+                    //   ),
+                    // );
+                  } catch (error) {
+                    // Handle the error here, you can log it or show a user-friendly message
+                    print('An error occurred: $error');
+                  }
                 }
+
               },
               style: ElevatedButton.styleFrom(
                 primary: Colors.green,

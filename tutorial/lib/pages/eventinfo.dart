@@ -23,10 +23,13 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   TextEditingController _eventNameController = TextEditingController();
   TextEditingController _venueController = TextEditingController();
   TextEditingController _organizerController = TextEditingController();
+  TextEditingController _endDateController = TextEditingController();
+  TextEditingController _endTimeController = TextEditingController();
   String? accessCode = "";
   String? eventId;
   String? token;
   bool isCopied = false;
+  bool isButtonDisabled = false;
 
   @override
   void initState() {
@@ -368,6 +371,101 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                             },
                           ),
                         ),
+
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 30),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(left: 16),
+                          child: Text(
+                            'End Date',
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.green,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 110),
+                        SizedBox(
+                          width: 180,
+                          height: 35,
+                          child: TextField(
+                            controller: _endDateController,
+                            decoration: const InputDecoration(
+                              labelText: 'END DATE',
+                              prefixIcon: Icon(
+                                Icons.calendar_today,
+                                color: Colors.green,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.green),
+                              ),
+                            ),
+                            readOnly: true,
+                            onTap: () {
+                              _selectEndDate();
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                // Add end time input field
+                const SizedBox(height: 30),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(left: 16),
+                          child: Text(
+                            'End Time',
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.green,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 105),
+                        SizedBox(
+                          width: 180,
+                          height: 35,
+                          child: TextField(
+                            controller: _endTimeController,
+                            decoration: const InputDecoration(
+                              labelText: 'END TIME',
+                              prefixIcon: Icon(
+                                Icons.access_time,
+                                color: Colors.green,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.green),
+                              ),
+                            ),
+                            readOnly: true,
+                            onTap: () {
+                              _selectEndTime();
+                            },
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -376,6 +474,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
             ),
           ),
         ),
+
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.only(left: 16, right: 16, bottom: 10),
@@ -408,7 +507,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
             ),
             const SizedBox(width: 10),
             ElevatedButton(
-              onPressed: () async {
+              onPressed: isButtonDisabled ? null : () async {
+                setState(() {
+                  isButtonDisabled = true; // Disable the button
+                });
                 final String? authToken = await retrieveToken();
                 if (authToken != null) {
                   final event = createEventFromControllers();
@@ -427,6 +529,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                   // Handle the case where login fails
                   print('Failed to create an Event');
                 }
+                setState(() {
+                  isButtonDisabled = false; // Re-enable the button after the operation is complete
+                });
               },
               style: ElevatedButton.styleFrom(
                 primary: Colors.green,
@@ -478,6 +583,33 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     }
   }
 
+  Future<void> _selectEndDate() async {
+    DateTime? _picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (_picked != null) {
+      setState(() {
+        _endDateController.text = _picked.toString().split(" ")[0];
+      });
+    }
+  }
+
+  Future<void> _selectEndTime() async {
+    TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        _endTimeController.text = picked.format(context);
+      });
+    }
+  }
+
+
   DropdownMenuItem<String> buildMenuItem(String item) =>
       DropdownMenuItem<String>(
         value: item,
@@ -491,7 +623,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     String eventOrganizer = _organizerController.text;
     String eventDate = _dateController.text;
     String eventTime = _timeController.text;
-
+    String eventEndDate = _endDateController.text;
+    String eventEndTime= _endTimeController.text;
     return {
       "eventName": eventName,
       "eventCategory": eventCategory,
@@ -499,6 +632,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       "eventOrganizer": eventOrganizer,
       "eventDate": eventDate,
       "eventTime": eventTime,
+      "eventEndDate": eventEndDate,
+      "eventEndTime": eventEndTime,
       "accessCode": accessCode,
       // "userId": userId,
     };
@@ -511,7 +646,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       print(eventData["accessCode"]);
     final response = await http.post(
       Uri.parse(
-          'http://10.0.2.2:8080/events'), // Use Uri.parse to convert the string to Uri
+          'http://192.168.1.8:8080/events'), // Use Uri.parse to convert the string to Uri
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $authToken',
@@ -551,7 +686,7 @@ class _EditEventScreen extends State<EditEventScreen> {
     token = await SharedPreferencesUtils.retrieveToken();
     try {
       final response =
-          await http.get(Uri.parse('http://10.0.2.2:8080/event/$eventId'));
+          await http.get(Uri.parse('http://192.168.1.8:8080/event/$eventId'));
 
       if (response.statusCode == 200) {
         final dynamic eventData = json.decode(response.body);
@@ -569,6 +704,8 @@ class _EditEventScreen extends State<EditEventScreen> {
           print(eventData["eventDate"]);
           _dateController.text = eventData["eventDate"].split("T")[0];
           _timeController.text = eventData["eventTime"];
+          _endDateController.text = eventData["eventEndDate"].split("T")[0];
+          _endTimeController.text = eventData["eventEndTime"];
           _eventNameController.text = eventData["eventName"];
           _venueController.text = eventData["eventVenue"];
           _organizerController.text = eventData["eventOrganizer"];
@@ -602,6 +739,8 @@ class _EditEventScreen extends State<EditEventScreen> {
 
   TextEditingController _dateController = TextEditingController();
   TextEditingController _timeController = TextEditingController();
+  TextEditingController _endDateController = TextEditingController();
+  TextEditingController _endTimeController = TextEditingController();
   TextEditingController _eventNameController = TextEditingController();
   TextEditingController _venueController = TextEditingController();
   TextEditingController _organizerController = TextEditingController();
@@ -620,9 +759,38 @@ class _EditEventScreen extends State<EditEventScreen> {
     //print('Generated Access Code: $accessCode');
   }
 
+
+
   Future<String?> retrieveToken() async {
     return await SharedPreferencesUtils.retrieveToken();
   }
+
+  Future<void> _selectEndDate() async {
+    DateTime? _picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (_picked != null) {
+      setState(() {
+        _endDateController.text = _picked.toString().split(" ")[0];
+      });
+    }
+  }
+
+  Future<void> _selectEndTime() async {
+    TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        _endTimeController.text = picked.format(context);
+      });
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -946,6 +1114,100 @@ class _EditEventScreen extends State<EditEventScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 30),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(left: 16),
+                          child: Text(
+                            'End Date',
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.green,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 110),
+                        SizedBox(
+                          width: 180,
+                          height: 35,
+                          child: TextField(
+                            controller: _endDateController,
+                            decoration: const InputDecoration(
+                              labelText: 'END DATE',
+                              prefixIcon: Icon(
+                                Icons.calendar_today,
+                                color: Colors.green,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.green),
+                              ),
+                            ),
+                            readOnly: true,
+                            onTap: () {
+                              _selectEndDate();
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                // Add end time input field
+                const SizedBox(height: 30),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(left: 16),
+                          child: Text(
+                            'End Time',
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.green,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 105),
+                        SizedBox(
+                          width: 180,
+                          height: 35,
+                          child: TextField(
+                            controller: _endTimeController,
+                            decoration: const InputDecoration(
+                              labelText: 'END TIME',
+                              prefixIcon: Icon(
+                                Icons.access_time,
+                                color: Colors.green,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.green),
+                              ),
+                            ),
+                            readOnly: true,
+                            onTap: () {
+                              _selectEndTime();
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -1066,7 +1328,8 @@ class _EditEventScreen extends State<EditEventScreen> {
     String eventOrganizer = _organizerController.text;
     String eventDate = _dateController.text;
     String eventTime = _timeController.text;
-
+    String eventEndDate = _endDateController.text;
+    String eventEndTime= _endTimeController.text;
     return {
       "eventName": eventName,
       "eventCategory": eventCategory,
@@ -1074,7 +1337,8 @@ class _EditEventScreen extends State<EditEventScreen> {
       "eventOrganizer": eventOrganizer,
       "eventDate": eventDate,
       "eventTime": eventTime,
-      // "accessCode": accessCode,
+      "eventEndDate": eventEndDate,
+      "eventEndTime": eventEndTime,
       // "userId": userId,
     };
   }
@@ -1083,7 +1347,7 @@ class _EditEventScreen extends State<EditEventScreen> {
       Map<String, dynamic> eventData, String authToken, String eventId) async {
     final response = await http.put(
       Uri.parse(
-          'http://10.0.2.2:8080/events/$eventId'), // Include eventId in the URL
+          'http://192.168.1.8:8080/events/$eventId'), // Include eventId in the URL
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $authToken',

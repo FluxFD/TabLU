@@ -17,7 +17,7 @@ class Notif extends StatefulWidget {
 
 Future<List<dynamic>> fetchNotifications(String userId) async {
   final response = await http.get(
-    Uri.parse('http://10.0.2.2:8080/get-notifications/$userId'),
+    Uri.parse('http://192.168.1.8:8080/get-notifications/$userId'),
   );
 
   if (response.statusCode == 200) {
@@ -39,6 +39,7 @@ Future<List<dynamic>> fetchNotifications(String userId) async {
 
 class _NotifState extends State<Notif> {
   late Future<List<dynamic>> notifications;
+  bool notificationSent = false;
 
   @override
   void initState() {
@@ -198,12 +199,13 @@ class _NotifState extends State<Notif> {
     }
   }
 
-  Future<void> updateJudgeConfirmationStatus(String userId) async {
+  Future<void> updateJudgeConfirmationStatus(String userId, String eventId) async {
     try {
       final response = await http.post(
-        Uri.parse('http://10.0.2.2:8080/update-confirmation'),
+        Uri.parse('http://192.168.1.8:8080/update-confirmation'),
         body: {
           'userId': userId,
+          'eventId': eventId,
           'isConfirm': true.toString(),
         },
       );
@@ -221,7 +223,7 @@ class _NotifState extends State<Notif> {
   Future<void> rejectJudgeRequest(String userId) async {
     try {
       final response = await http.delete(
-        Uri.parse('http://10.0.2.2:8080/reject-request/$userId'),
+        Uri.parse('http://192.168.1.8:8080/reject-request/$userId'),
       );
 
       if (response.statusCode == 200) {
@@ -237,7 +239,7 @@ class _NotifState extends State<Notif> {
   Future<void> deleteNotification(String userId) async {
     try {
       final response = await http.delete(
-        Uri.parse('http://10.0.2.2:8080/delete-notification/$userId'),
+        Uri.parse('http://192.168.1.8:8080/delete-notification/$userId'),
       );
 
       if (response.statusCode == 200) {
@@ -253,9 +255,10 @@ class _NotifState extends State<Notif> {
   Future<void> sendNotificationWithoutType(
       String receiverId, String? username, String status) async {
     try {
+      notificationSent = true;
       // Make an HTTP POST request to send a notification without specifying the type
       final response = await http.post(
-        Uri.parse('http://10.0.2.2:8080/notifications'),
+        Uri.parse('http://192.168.1.8:8080/notifications'),
         body: {
           'userId': widget.userId,
           'receiver': receiverId,
@@ -266,9 +269,11 @@ class _NotifState extends State<Notif> {
       if (response.statusCode == 200) {
         print('Notification sent successfully');
       } else {
+        notificationSent = false;
         print('Failed to send notification');
       }
     } catch (error) {
+      notificationSent = false;
       print('Error sending notification: $error');
     }
   }
@@ -276,7 +281,7 @@ class _NotifState extends State<Notif> {
   Future<String?> getUsernameById(String userId) async {
     try {
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:8080/get-username/$userId'),
+        Uri.parse('http://192.168.1.8:8080/get-username/$userId'),
       );
 
       if (response.statusCode == 200) {
@@ -295,6 +300,7 @@ class _NotifState extends State<Notif> {
   void showConfirmationDialog(BuildContext context, String notificationBody,
       String userId, dynamic notification) async {
     final receiverId = notification['receiver'];
+    final eventId = notification['eventId'];
     final username = await getUsernameById(receiverId);
 
     showDialog(
@@ -307,14 +313,16 @@ class _NotifState extends State<Notif> {
             TextButton(
               onPressed: () async {
                 // Handle accept logic here
-                updateJudgeConfirmationStatus(userId);
+                updateJudgeConfirmationStatus(userId, eventId);
                 await deleteNotification(userId);
                 await refreshNotifications();
                 // Get the receiver ID from the current notification
                 final receiverId = notification['userId'];
 
-                await sendNotificationWithoutType(
-                    receiverId, username, "accepted");
+                if (!notificationSent) {
+                  await sendNotificationWithoutType(
+                      receiverId, username, "accepted");
+                }
                 Navigator.of(context).pop(); // Close the dialog
               },
               child: Text('Accept'),

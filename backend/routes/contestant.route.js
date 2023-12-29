@@ -120,14 +120,32 @@ router.post('/contestants', uploads.single('profilePic'), async (req, res) => {
         existingContestant.department = department;
     
         // Change the image on the uploads
-        const existingUpload = await Upload.findOne({ contestantId: existingContestant._id });
+        let existingUpload = await Upload.findOne({ contestantId: existingContestant._id });
     
         if (existingUpload) {
-            // Remove the existing file
-            const fileToDelete = bucket.file(existingUpload.filename);
-            await fileToDelete.delete();
-    
-            // Update information for the new file
+          // Remove the existing file
+          const fileToDelete = bucket.file(existingUpload.filename);
+          await fileToDelete.delete();
+      }
+      
+      // Upload the new file to Firebase Storage
+      const fileUpload = bucket.file(req.file.originalname);
+      const blobStream = fileUpload.createWriteStream({
+          metadata: {
+              contentType: req.file.mimetype,
+          },
+      });
+
+      blobStream.on('error', (error) => {
+          console.error(error);
+          res.status(500).json({ error: 'Error uploading file to Firebase Storage' });
+      });
+      
+      blobStream.on('finish', async () => {
+          // File uploaded successfully.
+          // Save the upload information to your database
+          if (existingUpload) {
+            // If existing upload record is found, update its information
             existingUpload.filename = req.file.originalname;
             existingUpload.path = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${req.file.originalname}?alt=media`;
             existingUpload.originalname = req.file.originalname;
@@ -136,11 +154,33 @@ router.post('/contestants', uploads.single('profilePic'), async (req, res) => {
     
             // Save the updated upload information
             await existingUpload.save();
-        }
+        } else {
+            // If no existing upload record is found, create a new one
+            existingUpload = new Upload({
+                filename: req.file.originalname,
+                path: `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${req.file.originalname}?alt=media`,
+                originalname: req.file.originalname,
+                mimetype: req.file.mimetype,
+                size: req.file.size,
+                contestantId: existingContestant._id,
+            });
     
-        const updatedContestant = await existingContestant.save();
-        return res.status(200).json(updatedContestant);
-      } else {
+            // Save the new upload information
+            await existingUpload.save();
+        }
+
+          // Update the contestant's profilePic
+          existingContestant.profilePic = existingUpload._id;
+
+          // Save the updated contestant information
+          const updatedContestant = await existingContestant.save();
+          return res.status(200).json(updatedContestant);
+      });
+
+      blobStream.end(req.file.buffer);
+      return res.status(200); // Send the file buffer to Firebase Storage
+  } else {
+ 
         // Update existing contestant
         existingContestant.name = name;
         existingContestant.course = course;
@@ -148,8 +188,11 @@ router.post('/contestants', uploads.single('profilePic'), async (req, res) => {
     
         const updatedContestant = await existingContestant.save();
         return res.status(200).json(updatedContestant);
-      }
-    }
+      
+  }
+      } 
+      
+    
 
     // Create a new contestant
     const contestant = new Contestant({

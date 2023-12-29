@@ -36,7 +36,7 @@ router.post('/judges', async (req, res) => {
 
 router.post('/update-confirmation', async (req, res) => {
   try {
-    const { userId, isConfirm} = req.body;
+    const { userId, isConfirm, eventId} = req.body;
     console.log(userId, isConfirm);
 
     // Validate input
@@ -45,7 +45,7 @@ router.post('/update-confirmation', async (req, res) => {
     }
     
     // Update judge confirmation status
-    const updatedJudge = await Judge.findOneAndUpdate({ userId: userId }, { isConfirm }, { new: isConfirm });
+    const updatedJudge = await Judge.findOneAndUpdate({ userId: userId, eventId: eventId }, { isConfirm }, { new: isConfirm });
     if (!updatedJudge) {
       return res.status(404).json({ message: 'Judge not found' });
     }
@@ -115,8 +115,9 @@ router.get('/get-all-judges-events', async (req, res) => {
     // Assuming you want to find judges based on the userId
     const events = await Judge.find({ userId: userId, isConfirm: true }).populate('eventId');
 
+    console.log("events", events);
     // Send the response with the list of judges
-    res.status(200).json({ events: events });
+    res.status(200).json({ events: events});
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Internal server error' });

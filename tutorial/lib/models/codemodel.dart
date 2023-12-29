@@ -19,6 +19,8 @@ class Event {
   final String eventOrganizer;
   final String eventDate;
   final String eventTime;
+  final String? eventEndDate;
+  final String? eventEndTime;
   final List<Contestant> contestants;
   final List<Criteria> criterias;
 
@@ -30,6 +32,8 @@ class Event {
     required this.eventOrganizer,
     required this.eventDate,
     required this.eventTime,
+    this.eventEndDate,
+    this.eventEndTime,
     required this.contestants,
     required this.criterias,
   });
@@ -47,6 +51,8 @@ class Event {
           : '',
       eventDate: json['event_date'] != null ? json['event_date'].toString() : '',
       eventTime: json['event_time'] != null ? json['event_time'].toString() : '',
+      eventEndDate: json['event_end_date'] != null ? json['event_end_date'].toString() : '',
+      eventEndTime: json['event_end_time'] != null ? json['event_end_time'].toString() : '',
       contestants: (json['contestants'] as List<dynamic>?)
           ?.map((contestant) => Contestant.fromJson(contestant))
           .toList() ??
@@ -218,7 +224,7 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
         Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
         userId = decodedToken['userId'];
       }
-      final response = await http.get(Uri.parse('http://10.0.2.2:8080/calendar-events/$userId'));
+      final response = await http.get(Uri.parse('http://192.168.1.8:8080/calendar-events/$userId'));
       if (response.statusCode == 200) {
         print(response);
         final List<dynamic> data = json.decode(response.body);
@@ -379,7 +385,7 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
                     itemBuilder: (context, index) {
                       final event = getEventsForSelectedDay()[index];
                       return ListTile(
-                        title: Text("${event.eventName} ${event.eventTime}"),
+                        title: Text("${event.eventName} ${event.eventTime} \nEnd Date: ${event.eventEndDate?.split("T")[0]} ${event.eventEndTime}"),
                       );
                     },
                   ),

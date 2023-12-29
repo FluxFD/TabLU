@@ -10,9 +10,15 @@ const { someFunction, Event } = require('../models/event.model');
       const { criterianame, percentage, eventId, criteriaId } = req.body;
         console.log("Criteria ID:", criteriaId);
       // Check if a criteria with the same name already exists
+
       if(criteriaId) {
       const existingCriteria = await Criteria.findOne({ _id: criteriaId});
-  
+      
+      const associatedScoreCards = await ScoreCard.find({ eventId: eventId, 'criteria.criteriaId': criteriaId });
+
+      if (associatedScoreCards.length > 0) {
+        return res.status(304).json({ error: 'Cannot modify criteria, scores are already submitted.' });
+      }
      
       existingCriteria.criterianame = criterianame;
       existingCriteria.percentage = percentage;
@@ -88,6 +94,12 @@ router.delete('/criteria', async (req, res) => {
   try {
     const eventId = req.query.eventId;
     const criteriaName = req.query.criteriaName;
+
+    const associatedScoreCards = await ScoreCard.find({ eventId: eventId });
+
+    if (associatedScoreCards.length > 0) {
+      return res.status(304).json({ error: 'Cannot modify criteria; scores are already submitted.' });
+    }
 
     // Find the criteria to delete
     const criteriaToDelete = await Criteria.findOne({

@@ -106,7 +106,7 @@ class _CriteriasState extends State<Criterias> {
   Future<void> _fetchCriterias(String eventId) async {
     try {
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:8080/criteria/$eventId'),
+        Uri.parse('http://192.168.1.8:8080/criteria/$eventId'),
       );
 
       if (response.statusCode == 200) {
@@ -127,7 +127,7 @@ class _CriteriasState extends State<Criterias> {
   }
 
   Future<void> deleteCriteria(String eventId, String criteriaName) async {
-    final url = Uri.parse("http://10.0.2.2:8080/criteria?eventId=$eventId&criteriaName=$criteriaName");
+    final url = Uri.parse("http://192.168.1.8:8080/criteria?eventId=$eventId&criteriaName=$criteriaName");
     updateTotalPercentage();
     try {
       final response = await http.delete(url);
@@ -137,10 +137,11 @@ class _CriteriasState extends State<Criterias> {
       } else {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         final String errorMessage = responseData['error'];
-        _showErrorSnackBar(
-          'Failed to delete criteria: ${errorMessage}',
-          Colors.red,
-        );
+        // _showErrorSnackBar(
+        //   'Failed to delete criteria: ${errorMessage}',
+        //   Colors.red,
+        // );
+        print("Failed to delete criteria: ${errorMessage}");
       }
     } catch (e) {
       print('Error deleting criteria: $e');
@@ -320,7 +321,7 @@ class _CriteriasState extends State<Criterias> {
             (currentPercentage + adjustmentPerCriteria).toString();
       }
     } else {
-      final url = Uri.parse("http://10.0.2.2:8080/criteria");
+      final url = Uri.parse("http://192.168.1.8:8080/criteria");
 
       try {
         print(criteriaData);
@@ -339,7 +340,7 @@ class _CriteriasState extends State<Criterias> {
 
 
         if (response.statusCode == 201) {
-          _showErrorSnackBar('Criteria created successfully', Colors.green);
+          print("Criteria Created Successfully");
         } else {
           final Map<String, dynamic> responseData = jsonDecode(response.body);
           final String errorMessage = responseData['error'];
@@ -547,7 +548,34 @@ class _CriteriasState extends State<Criterias> {
 
             OutlinedButton(
               onPressed: () {
-                // Add your cancel button action here
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: Text('Clear All Criteria'),
+                      content: Text('Are you sure you want to delete all criteria?'),
+                      actions: <Widget>[
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            // Delete all criteria
+                            for (int i = criterias.length - 1; i >= 0; i--) {
+                              removeItem(i);
+                            }
+                            // Close the dialog
+                            Navigator.of(context).pop();
+                          },
+                          child: Text('Delete All'),
+                        ),
+                      ],
+                    );
+                  },
+                );
               },
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 50),
@@ -586,13 +614,17 @@ class _CriteriasState extends State<Criterias> {
                           print('Error: Event ID is null');
                         }
                       }
+
+
                     }
+                    _fetchCriterias(widget.eventId);
+                    _showErrorSnackBar('Criteria created successfully', Colors.green);
 
                     final String? eventId = widget.eventId;
                     if (eventId != null) {
                       print('Fetching event with ID: $eventId');
                       final response = await http.get(
-                        Uri.parse('http://10.0.2.2:8080/event/$eventId'),
+                        Uri.parse('http://192.168.1.8:8080/event/$eventId'),
                       );
 
                       if (response.statusCode == 200) {

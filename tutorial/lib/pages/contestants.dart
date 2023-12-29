@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:permission_handler/permission_handler.dart';
 import 'dart:convert';
 import 'package:tutorial/pages/criteria.dart';
 import 'package:http_parser/http_parser.dart';
@@ -110,7 +111,7 @@ class _ContestantsState extends State<Contestants> {
   Future<List<Contestant>> fetchContestants() async {
     try {
       String eventId = widget.eventId;
-      final url = Uri.parse("http://10.0.2.2:8080/get-contestants/$eventId");
+      final url = Uri.parse("http://192.168.1.8:8080/get-contestants/$eventId");
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -141,7 +142,7 @@ class _ContestantsState extends State<Contestants> {
   }
 
   Future<void> deleteContestant(String? contestantId) async {
-    final url = Uri.parse("http://10.0.2.2:8080/delete-contestant/$contestantId");
+    final url = Uri.parse("http://192.168.1.8:8080/delete-contestant/$contestantId");
 
     try {
       final response = await http.delete(url);
@@ -183,6 +184,13 @@ class _ContestantsState extends State<Contestants> {
 
 
   Future<void> addProfilePicture(Contestant contestant) async {
+
+    bool galleryPermission = await _requestGalleryPermission();
+    if (!galleryPermission) {
+      // Handle permission not granted
+      return;
+    }
+
     final XFile? image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
       imageQuality: 50,
@@ -199,6 +207,12 @@ class _ContestantsState extends State<Contestants> {
   }
 
   Future<void> changeProfilePicture(Contestant contestant) async {
+    bool galleryPermission = await _requestGalleryPermission();
+    if (!galleryPermission) {
+      // Handle permission not granted
+      return;
+    }
+
     final XFile? image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
       imageQuality: 50,
@@ -214,11 +228,16 @@ class _ContestantsState extends State<Contestants> {
     }
   }
 
+  Future<bool> _requestGalleryPermission() async {
+    PermissionStatus status = await Permission.storage.request();
+    return status == PermissionStatus.granted;
+  }
+
 
 
   Future<void> createContestant(
       String eventId, Map<String, dynamic> contestantData) async {
-    final url = Uri.parse("http://10.0.2.2:8080/contestants");
+    final url = Uri.parse("http://192.168.1.8:8080/contestants");
     try {
       // Read the image file
 
@@ -314,7 +333,7 @@ class _ContestantsState extends State<Contestants> {
 
 // Function to update the contestant information in the database
   Future<void> updateContestant(String eventId, Contestant contestant) async {
-    final url = Uri.parse("http://10.0.2.2:8080/contestants/${contestant.id}");
+    final url = Uri.parse("http://192.168.1.8:8080/contestants/${contestant.id}");
 
     try {
       final response = await http.put(
@@ -481,6 +500,8 @@ class _ContestantsState extends State<Contestants> {
                     await createContestant(widget.eventId, contestant.toJson());
                   }
                 }
+
+                fetchContestants();
                 //  String eventId = widget.eventId;
 
                 Navigator.of(context).push(
@@ -542,7 +563,7 @@ class ListItemWidget extends StatelessWidget {
     );
   }
   Future<void> deleteContestant(String contestantId) async {
-    final url = Uri.parse("http://10.0.2.2:8080/delete-contestant/$contestantId");
+    final url = Uri.parse("http://192.168.1.8:8080/delete-contestant/$contestantId");
 
     try {
       final response = await http.delete(url);
@@ -589,7 +610,7 @@ class ListItemWidget extends StatelessWidget {
                 fontSize: 16, color: Colors.black, fontWeight: FontWeight.w500),
           ),
           subtitle: Text(
-            'Course: ${contestant.course}\nDepartment: ${contestant.department}',
+            'Age: ${contestant.course}\nAddress: ${contestant.department}',
             style: const TextStyle(
                 fontSize: 14, color: Colors.grey, fontStyle: FontStyle.italic),
           ),
@@ -746,7 +767,18 @@ class _ProfilePictureDialogState extends State<ProfilePictureDialog> {
     );
   }
 
+  Future<bool> _requestGalleryPermission() async {
+    PermissionStatus status = await Permission.storage.request();
+    return status == PermissionStatus.granted;
+  }
+
   Future<void> changeProfilePicture() async {
+    bool galleryPermission = await _requestGalleryPermission();
+    if (!galleryPermission) {
+      // Handle permission not granted
+      return;
+    }
+
     final XFile? image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
       imageQuality: 50,
@@ -904,7 +936,18 @@ class _AddContestantDialogState extends State<AddContestantDialog> {
     );
   }
 
+  Future<bool> _requestGalleryPermission() async {
+    PermissionStatus status = await Permission.storage.request();
+    return status == PermissionStatus.granted;
+  }
   Future<void> addProfilePicture() async {
+
+    bool galleryPermission = await _requestGalleryPermission();
+    if (!galleryPermission) {
+      // Handle permission not granted
+      return;
+    }
+
     final XFile? image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
       imageQuality: 50,

@@ -10,10 +10,11 @@ const { Event } = require('../models/event.model');
 router.post('/notifications', async (req, res) => {
   try {
     // Extract necessary information from the request body
-    const { body, userId, receiver, type } = req.body;
+    const { body, userId, receiver, type, eventId } = req.body;
 
     // Create a new notification document
     const newNotification = new Notification({
+      eventId: eventId,
       userId: userId,
       body: body,
       receiver: receiver,

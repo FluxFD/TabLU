@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:tutorial/pages/judgescoresheet.dart';
 import 'package:tutorial/pages/scorecard.dart';
 import 'package:tutorial/utility/sharedPref.dart';
 import 'package:http/http.dart' as http;
@@ -9,10 +10,42 @@ class Event {
   final String eventName;
   final String eventDate;
   final String eventTime;
+  final String eventEndDate;
+  final String eventEndTime;
   final String eventId;
   final String judgeId;
+  late String status = '';
 
-  Event(this.eventName, this.eventDate, this.eventTime, this.eventId, this.judgeId);
+  Event(this.eventName, this.eventDate, this.eventTime, this.eventEndDate, this.eventEndTime, this.eventId, this.judgeId) {
+    // Initialize status based on the current date and event end date
+    DateTime currentDate = DateTime.now();
+    DateTime endDate = DateTime.parse((eventEndDate != '') ? eventEndDate : DateTime.now().toString());
+    status = endDate.isAfter(currentDate) ? 'Active' : 'Inactive';
+
+  }
+}
+
+
+class Judge {
+  final String id; // Assuming each judge has an ID
+  final String name; // And a name
+
+  Judge({required this.id, required this.name});
+
+  factory Judge.fromJson(Map<String, dynamic> json) {
+    // Debug: Print the raw JSON to see what data is received.
+    print("Judge JSON: $json");
+
+    var judge = Judge(
+      id: json['id'] ?? 'No ID', // Fallback to 'No ID' if null
+      name: json['name'] ?? 'Score Sheet', // Fallback to 'No Name' if null
+    );
+
+    // Debug: Print the created Judge object.
+    print("Created Judge: id=${judge.id}, name=${judge.name}");
+
+    return judge;
+  }
 }
 
 class EventsJoined extends StatefulWidget {
@@ -24,6 +57,7 @@ class EventsJoined extends StatefulWidget {
 
 class _EventsJoinedState extends State<EventsJoined> {
   List<Event> eventsList = []; // Updated to store the fetched events
+  late Judge currentJudge;
 
   @override
   void initState() {
@@ -44,7 +78,7 @@ class _EventsJoinedState extends State<EventsJoined> {
       Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
       String userId = decodedToken['userId'];
       // Construct the URL with the userId as a query parameter
-      String url = 'http://10.0.2.2:8080/get-all-judges-events?userId=$userId';
+      String url = 'http://192.168.1.8:8080/get-all-judges-events?userId=$userId';
 
       // Make the HTTP request
       final response = await http.get(
@@ -58,21 +92,25 @@ class _EventsJoinedState extends State<EventsJoined> {
       if (response.statusCode == 200) {
         // Parse the JSON response
         dynamic responseData = jsonDecode(response.body);
+        Map <String, dynamic> judge = {};
+        judge['id'] = responseData['events'][0]['_id'];
+        judge['name'] = "Score Sheet";
 
+         currentJudge = Judge.fromJson(judge);
         // Check if the data is a map with the "events" key
         if (responseData is Map<String, dynamic> && responseData.containsKey('events')) {
           List<dynamic> eventsData = responseData['events'];
           // Convert the eventsData to a list of Event objects
-          print(eventsData);
           List<Event> events = eventsData.map((json) => Event(
             json['eventId']['event_name'] ?? '',      // Use empty string if 'event_name' is null
             json['eventId']['event_date'] ?? '',      // Use empty string if 'event_date' is null
             json['eventId']['event_time'] ?? '',      // Use empty string if 'event_time' is null
+            json['eventId']['event_end_date'] ?? '',
+            json['eventId']['event_end_time'] ?? '',
             json['eventId']['_id'] ?? '',
             json['_id'] ?? '',// Use empty string if '_id' is null
           )).toList();
 
-          print(events);
           // Set the eventsList to the fetched events
           setState(() {
             eventsList = events;
@@ -98,21 +136,21 @@ class _EventsJoinedState extends State<EventsJoined> {
 
 
 
-  List<Event> generateEventsList() {
-    List<Event> events = [];
-    for (int i = 1; i <= eventsList.length; i++) {
-      events.add(
-        Event(
-          'Event $i',
-          '10-10-10',
-          'at 5:00pm',
-          '65667e3ca0872db453cdae8d',
-          '65667e3ca0872db453cdae8d'
-        ),
-      );
-    }
-    return events;
-  }
+  // List<Event> generateEventsList() {
+  //   List<Event> events = [];
+  //   for (int i = 1; i <= eventsList.length; i++) {
+  //     events.add(
+  //       Event(
+  //         'Event $i',
+  //         '10-10-10',
+  //         'at 5:00pm',
+  //         '65667e3ca0872db453cdae8d',
+  //         '65667e3ca0872db453cdae8d'
+  //       ),
+  //     );
+  //   }
+  //   return events;
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -168,13 +206,19 @@ class _EventsJoinedState extends State<EventsJoined> {
                           ),
                         ),
                         Text(
-                          '${event.eventDate} at ${event.eventTime}',
+                          'Start Date: ${event.eventDate.split("T")[0]} at ${event.eventTime}',
                           style: TextStyle(
                             fontSize: 13,
                           ),
                         ),
                         Text(
-                          'Status: Active'
+                          'End Date: ${event.eventEndDate.split("T")[0]} at ${event.eventEndTime}',
+                          style: TextStyle(
+                            fontSize: 13,
+                          ),
+                        ),
+                        Text(
+                          'Status: ${event.status}'
                         ),
 
                         Text(
@@ -190,11 +234,20 @@ class _EventsJoinedState extends State<EventsJoined> {
                             ElevatedButton(
                               onPressed: () {
                                 // Handle join event logic
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) =>  ScoreCard(eventId: eventsList[index].eventId , eventData: {}, judges: []),
-                                  ),
-                                );
+                                if (event.status == 'Active'){
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) =>  JudgeScoreSheet(eventId: eventsList[index].eventId , eventData: {}, judges: currentJudge),
+                                    ),
+                                  );
+                                }else{
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Event is already done. Cannot access this event'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
                                 // You can implement the logic to join the event here
                               },
                               style: ElevatedButton.styleFrom(
@@ -241,7 +294,7 @@ class _EventsJoinedState extends State<EventsJoined> {
   Future<void> deleteEvent(String judgeId) async {
     try {
       final response = await http.delete(
-        Uri.parse('http://10.0.2.2:8080/delete-judge/$judgeId'),
+        Uri.parse('http://192.168.1.8:8080/delete-judge/$judgeId'),
         headers: {
           'Content-Type': 'application/json',
           // Add any other headers if needed

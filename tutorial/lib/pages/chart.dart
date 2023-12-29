@@ -27,7 +27,7 @@ class _MyHomePageState extends State<ChartData> {
   late ChartSeriesController _chartSeriesController;
   // late Timer _timer;
   List<String> contestantNames = [];
-  final io.Socket socket = io.io('http://10.0.2.2:8080', <String, dynamic>{
+  final io.Socket socket = io.io('http://192.168.1.8:8080', <String, dynamic>{
     'transports': ['websocket'],
     'autoConnect': false,
   });
@@ -53,7 +53,6 @@ class _MyHomePageState extends State<ChartData> {
     socket.onDisconnect((_) {
       print('Socket disconnected');
     });
-
     socket.onError((error) {
       print('Socket error: $error');
     });
@@ -89,7 +88,7 @@ class _MyHomePageState extends State<ChartData> {
                     },
                     dataSource: chartData,
                     color: Color.fromARGB(255, 16, 172, 55),
-                    xValueMapper: (LiveData sales, _) => sales.name,
+                    xValueMapper: (LiveData sales, _) => sales.name.split(' ')[0],
                     yValueMapper: (LiveData sales, _) => sales.speed,
                     // Add data labels
                     dataLabelSettings: const DataLabelSettings(
@@ -156,7 +155,7 @@ class _MyHomePageState extends State<ChartData> {
 
   Future<void> fetchScoreCards() async {
     final eventId = widget.eventId;
-    final url = Uri.parse('http://10.0.2.2:8080/winners/$eventId');
+    final url = Uri.parse('http://192.168.1.8:8080/winners/$eventId');
 
     try {
       final response = await http.get(url);

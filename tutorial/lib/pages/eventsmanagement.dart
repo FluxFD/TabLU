@@ -57,7 +57,7 @@ class _EventsManagementState extends State<EventsManagement> {
     token = await SharedPreferencesUtils.retrieveToken();
     try {
       final response =
-          await http.get(Uri.parse('http://10.0.2.2:8080/api/events'));
+          await http.get(Uri.parse('http://192.168.1.8:8080/api/events'));
       if (response.statusCode == 200) {
         final dynamic eventData = json.decode(response.body);
         print(eventData);
@@ -91,7 +91,7 @@ class _EventsManagementState extends State<EventsManagement> {
         throw Exception('Authentication token not found');
       }
 
-      final url = Uri.parse("http://10.0.2.2:8080/user-events");
+      final url = Uri.parse("http://192.168.1.8:8080/user-events");
       final response = await http.get(
         url,
         // Include the Authorization header with the token
@@ -114,21 +114,48 @@ class _EventsManagementState extends State<EventsManagement> {
   }
 
   Future<void> deleteEvent(String eventId) async {
-    try {
-      final url = Uri.parse("http://10.0.2.2:8080/api/event/$eventId");
-      final response = await http.delete(url);
+    // Show a confirmation dialog
+    bool deleteConfirmed = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirm Deletion'),
+          content: Text('Are you sure you want to delete this event?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false); // Return false to indicate cancellation
+              },
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(true); // Return true to indicate confirmation
+              },
+              child: Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
 
-      if (response.statusCode == 200) {
-        print('Event deleted successfully');
-        // Reload the events after deletion
-        setState(() {});
-      } else {
-        print('Error deleting event: ${response.body}');
-        throw Exception('Failed to delete event. Error: ${response.body}');
+    // If deletion is confirmed, proceed with the deletion
+    if (deleteConfirmed == true) {
+      try {
+        final url = Uri.parse("http://192.168.1.8:8080/api/event/$eventId");
+        final response = await http.delete(url);
+
+        if (response.statusCode == 200) {
+          print('Event deleted successfully');
+          // Reload the events after deletion
+        } else {
+          print('Error deleting event: ${response.body}');
+          throw Exception('Failed to delete event. Error: ${response.body}');
+        }
+      } catch (e) {
+        print('Error deleting event: $e');
+        throw Exception('Failed to delete event. Error: $e');
       }
-    } catch (e) {
-      print('Error deleting event: $e');
-      throw Exception('Failed to delete event. Error: $e');
     }
   }
 

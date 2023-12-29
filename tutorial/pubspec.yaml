@@ -48,10 +48,16 @@ dependencies:
   jwt_decoder: ^2.0.1
   path: ^1.8.3
   syncfusion_flutter_charts: ^24.1.41
+  syncfusion_flutter_pdfviewer: ^24.1.43
+  syncfusion_flutter_pdf: ^24.1.43
   screenshot: ^2.1.0
   http_parser: ^4.0.2
   firebase_storage: ^11.5.6
   socket_io_client: ^2.0.3+1
+  permission_handler: ^11.1.0
+  path_provider: ^2.1.1
+  share_plus: ^7.2.1
+
 
 dev_dependencies:
   flutter_test:

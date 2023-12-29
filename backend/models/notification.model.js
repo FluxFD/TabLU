@@ -4,10 +4,11 @@ const mongoose = require('mongoose');
 const notificationTypes = ['normal', 'confirmation'];
 
 const notificationSchema = new mongoose.Schema({
+  eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Event', required: true },
   body: { type: String, required: true },
   date: { type: Date, default: Date.now },
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'user', required: true },
-  receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'user', required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   type: { type: String, enum: notificationTypes, default: 'normal' }, // Add the 'type' field with enum and default
   // Other notification-specific fields can be added here
 });

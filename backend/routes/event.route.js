@@ -121,7 +121,7 @@ router.post('/events', verifyToken, async (req, res) => {
     console.log('Entered /events route');
 
     // Ensure that required fields are present in the request
-    const { eventName, eventCategory, eventVenue, eventOrganizer, eventDate, eventTime, accessCode  } = req.body;
+    const { eventName, eventCategory, eventVenue, eventOrganizer, eventDate, eventTime, eventEndDate, eventEndTime, accessCode  } = req.body;
 
     console.log('Received Data:', { eventName, eventCategory, eventVenue, eventOrganizer, eventDate, eventTime });
 
@@ -130,7 +130,7 @@ router.post('/events', verifyToken, async (req, res) => {
     }
 
     // Verify user authentication
-    console.log('User ID from verifyToken middleware:', req.userId);
+    console.log('User ID from verifyToken middleware:', req.user);
 
     if (!req.user || !req.user._id) {
       console.log('Unauthorized: User ID not available');
@@ -149,6 +149,8 @@ router.post('/events', verifyToken, async (req, res) => {
       event_organizer: eventOrganizer,
       event_date: eventDate,
       event_time: eventTime,
+      event_end_date: eventEndDate,
+      event_end_time: eventEndTime,
       access_code: accessCode,
       user: userId,
     });
@@ -267,6 +269,8 @@ router.get('/event/:eventId', async (req, res) => {
       eventOrganizer: fetchedEvent.event_organizer ?? 'Default Event Organizer',
       eventTime: fetchedEvent.event_time ?? 'Default Event Time',
       eventDate: fetchedEvent.event_date ?? 'Default Event Date',
+      eventEndDate: fetchedEvent.event_end_date ?? 'Default Event End Date',
+      eventEndTime: fetchedEvent.event_end_time ?? 'Default Event End Time',
       contestant: fetchedEvent.contestants,
       criteria: fetchedEvent.criteria,
       user: fetchedEvent.user,
@@ -503,6 +507,8 @@ router.put('/events/:eventId', async (req, res) => {
     event.event_organizer = req.body.eventOrganizer;
     event.event_date = req.body.eventDate;
     event.event_time = req.body.eventTime;
+    event.event_end_date = req.body.eventEndDate;
+    event.event_end_time = req.body.eventEndTime;
 
     // Save the updated event
     await event.save();

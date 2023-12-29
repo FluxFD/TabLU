@@ -20,7 +20,7 @@ class _ForgotpassState extends State<Forgotpass> {
       });
 
       var response = await http.post(
-        Uri.parse('http://10.0.2.2:8080/send-verification-code'),
+        Uri.parse('http://192.168.1.8:8080/send-verification-code'),
         body: {'email': email},
       );
 
@@ -333,7 +333,7 @@ class _ResetPassState extends State<ResetPass> {
   Future<void> resetPassword(
       String resetToken, String newPassword, String accessCode) async {
     try {
-      final Uri url = Uri.parse("http://10.0.2.2:8080/reset-password");
+      final Uri url = Uri.parse("http://192.168.1.8:8080/reset-password");
 
       final Map<String, dynamic> requestBody = {
         'resetToken': resetToken,

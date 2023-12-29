@@ -313,7 +313,7 @@ class _SearchEventsState extends State<SearchEvents> {
 
         // Make the API request with the userId
         final response = await http
-            .get(Uri.parse('http://10.0.2.2:8080/get-notifications/$userId'));
+            .get(Uri.parse('http://192.168.1.8:8080/get-notifications/$userId'));
 
         if (response.statusCode == 200) {
           List<dynamic> notifications = json.decode(response.body);
@@ -344,7 +344,7 @@ class _SearchEventsState extends State<SearchEvents> {
         return [];
       }
 
-      final url = Uri.parse("http://10.0.2.2:8080/events/$accessCode");
+      final url = Uri.parse("http://192.168.1.8:8080/events/$accessCode");
       final response = await http.get(
         url,
         headers: {
@@ -423,7 +423,7 @@ class _SearchEventsState extends State<SearchEvents> {
   TextEditingController searchController = TextEditingController();
   Future<List<dynamic>> fetchNotifications(String userId) async {
     final response = await http.get(
-      Uri.parse('http://10.0.2.2:8080/get-notifications/$userId'),
+      Uri.parse('http://192.168.1.8:8080/get-notifications/$userId'),
     );
 
     if (response.statusCode == 200) {
@@ -1219,7 +1219,7 @@ class EventApi {
       String userId = decodedToken['userId'];
 
       final response = await http.post(
-        Uri.parse("http://10.0.2.2:8080/api-join-event"),
+        Uri.parse("http://192.168.1.8:8080/api-join-event"),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -1267,7 +1267,7 @@ class NotificationApi {
         final String username = decodedToken['username'];
         // Fetch event information before sending the notification
         final eventInfoResponse = await http.get(
-          Uri.parse("http://10.0.2.2:8080/notifications/$eventId"),
+          Uri.parse("http://192.168.1.8:8080/notifications/$eventId"),
           headers: {
             'Content-Type': 'application/json',
           },
@@ -1287,11 +1287,12 @@ class NotificationApi {
               'User $username has requested access to event $eventName';
           // Send the join notification
           final response = await http.post(
-            Uri.parse("http://10.0.2.2:8080/notifications"),
+            Uri.parse("http://192.168.1.8:8080/notifications"),
             headers: {
               'Content-Type': 'application/json',
             },
             body: jsonEncode({
+              'eventId': eventId,
               'userId': userId,
               'body': notificationBody,
               'receiver': user,
