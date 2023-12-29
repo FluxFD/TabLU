@@ -914,7 +914,30 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                       controller: judgeControllers[uniqueKey],
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
-                      // enabled: isCreator,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(3), // Limit to 3 digits
+                        TextInputFormatter.withFunction((oldValue, newValue) {
+                          // Custom logic to restrict input to the range of 0-100
+                          try {
+                            if (newValue.text.isEmpty) {
+                              // Allow empty value
+                              return newValue;
+                            }
+
+                            final enteredValue = int.parse(newValue.text);
+                            if (enteredValue >= 0 && enteredValue <= 100) {
+                              return newValue;
+                            } else {
+                              // Value is out of range, return the oldValue
+                              return oldValue;
+                            }
+                          } catch (e) {
+                            // Error parsing the value, return the oldValue
+                            return oldValue;
+                          }
+                        }),
+                      ],
                       decoration: InputDecoration(
                         labelText: 'score',
                         border: OutlineInputBorder(
