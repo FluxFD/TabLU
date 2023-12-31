@@ -224,7 +224,7 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
         Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
         userId = decodedToken['userId'];
       }
-      final response = await http.get(Uri.parse('http://192.168.1.8:8080/calendar-events/$userId'));
+      final response = await http.get(Uri.parse('http://192.168.1.7:8080/calendar-events/$userId'));
       if (response.statusCode == 200) {
         print(response);
         final List<dynamic> data = json.decode(response.body);

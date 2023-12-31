@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:tutorial/pages/finalscore.dart';
 import 'dart:convert';
@@ -241,6 +242,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   late List<Judge> judges = [];
   Map<String?, TextEditingController> controllers = {};
   Map<String, TextEditingController> judgeControllers = {};
+  TextEditingController feedbackController = TextEditingController();
   bool isLoading = false;
   late Event event;
   bool isCreator = true;
@@ -312,6 +314,116 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     // If all controllers have non-empty text, return true
     return true;
   }
+
+  void showRatingDialog(BuildContext context) {
+    double userRating = 0;
+    TextEditingController feedbackController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text('How was your experience?'),
+              content: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  RatingBar.builder(
+                    initialRating: userRating,
+                    minRating: 0,
+                    direction: Axis.horizontal,
+                    allowHalfRating: true,
+                    itemCount: 5,
+                    itemSize: 40.0,
+                    itemPadding: EdgeInsets.symmetric(horizontal: 4.0),
+                    itemBuilder: (context, _) => Icon(
+                      Icons.star,
+                      color: Colors.amber,
+                    ),
+                    onRatingUpdate: (rating) {
+                      setState(() {
+                        userRating = rating;
+                      });
+                    },
+                  ),
+                  SizedBox(height: 16.0),
+                  TextField(
+                    controller: feedbackController,
+                    maxLines: null, // Allow multiple lines
+                    decoration: InputDecoration(
+                      hintText: 'Write your feedback here...',
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Close the dialog
+                      },
+                      child: Text('No thanks'),
+                    ),
+                    Spacer(), // Adds space between the buttons
+                    TextButton(
+                      onPressed: () async {
+                        try {
+                          String? token = await SharedPreferencesUtils.retrieveToken();
+                          String? userId;
+                          if (token != null && token.isNotEmpty) {
+                            // Decode the token to extract user information
+                            Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+                            userId = decodedToken['userId'];
+                          }
+                          final Map<String, dynamic> requestBody = {
+                            'eventId': widget.eventId,
+                            'userId': userId,
+                            'receiver': "",
+                            'body': {
+                              'rating': '$userRating',
+                              'feedback': '${feedbackController.text}'
+                            },
+                            'type': 'feedback',
+                          };
+                          final String requestBodyJson = jsonEncode(requestBody);
+                          // Send server notification
+                          final response = await http.post(
+                            Uri.parse('http://192.168.1.7:8080/notifications'),
+                            headers: {'Content-Type': 'application/json'},
+                            body: requestBodyJson,
+                          );
+
+                          if (response.statusCode == 201) {
+                            // Notification successfully created on the server
+                            print('Server notification sent successfully');
+                          } else {
+                            // Handle server notification creation failure
+                            print('Failed to send server notification. Status code: ${response.statusCode}');
+                          }
+
+                          Navigator.of(context).pop(); // Close the dialog
+                        } catch (error) {
+                          // Handle any errors that occur during the submission process
+                          print('Error during submission: $error');
+                          // Display an error message or take appropriate action
+                        }
+                      },
+                      child: Text('Submit'),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+
   Future<void> handleSubmit() async {
     try {
       if (!isCreator){
@@ -408,7 +520,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       print("Datas: ${submissionData}");
       // Step 3: Send Data to Server or Process Locally
       // Replace this URL with your actual endpoint
-      var url = Uri.parse('http://192.168.1.8:8080/scorecards');
+      var url = Uri.parse('http://192.168.1.7:8080/scorecards');
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -421,9 +533,11 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Score successfully submitted'),
+            backgroundColor: Colors.green,
           ),
         );
-        fetchAll();
+        await fetchAll();
+        showRatingDialog(context);
       }
       if (response.statusCode == 403) {
         print('Scores already submitted');
@@ -452,7 +566,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
 
   Future<List<Judge>> fetchJudges(String eventId) async {
-    final url = Uri.parse('http://192.168.1.8:8080/judges/$eventId/confirmed');
+    final url = Uri.parse('http://192.168.1.7:8080/judges/$eventId/confirmed');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -612,7 +726,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
   Future<String?> fetchImagePath(Contestant contestant) async {
     final contestantId = contestant.id;
-    final url = Uri.parse('http://192.168.1.8:8080/uploads/${contestantId}'); // Replace with your server URL
+    final url = Uri.parse('http://192.168.1.7:8080/uploads/${contestantId}'); // Replace with your server URL
     try {
       final response = await http.get(url, headers: {
         'Content-Type': 'application/json',
@@ -974,7 +1088,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   }
 
   Future<String> fetchEventId() async {
-    final String url = 'http://192.168.1.8:8080/latest-event-id';
+    final String url = 'http://192.168.1.7:8080/latest-event-id';
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -1010,7 +1124,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       print('Fetched Event ID: $eventId');
       if (eventId.isNotEmpty) {
         final response =
-        await http.get(Uri.parse("http://192.168.1.8:8080/event/$eventId"));
+        await http.get(Uri.parse("http://192.168.1.7:8080/event/$eventId"));
         print('Event Details Response Status Code: ${response.statusCode}');
         if (response.statusCode == 200) {
           dynamic eventData = jsonDecode(response.body);
@@ -1071,7 +1185,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   Future<void> fetchContestants(String eventId) async {
     try {
       final response = await http.get(
-        Uri.parse("http://192.168.1.8:8080/events/$eventId/contestants"),
+        Uri.parse("http://192.168.1.7:8080/events/$eventId/contestants"),
       );
       if (response.statusCode == 200) {
         final dynamic contestantData = jsonDecode(response.body);
@@ -1154,7 +1268,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
         userId = decodedToken['userId'];
       }
       // Make a GET request to your server endpoint with contestantId and eventId as query parameters
-      final Uri uri = Uri.parse('http://192.168.1.8:8080/judge-scorecards'); // Update the URL accordingly
+      final Uri uri = Uri.parse('http://192.168.1.7:8080/judge-scorecards'); // Update the URL accordingly
       final response = await http.get(
         uri.replace(queryParameters: {
           'contestantId': contestantId ?? '',
@@ -1216,7 +1330,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       {VoidCallback? onCriteriaFetched}) async {
     try {
       final response = await http
-          .get(Uri.parse("http://192.168.1.8:8080/events/$eventId/criteria"));
+          .get(Uri.parse("http://192.168.1.7:8080/events/$eventId/criteria"));
       print('Fetch Criteria - Status Code: ${response.statusCode}');
       print('Fetch Criteria - Response Body: ${response.body}');
 
@@ -1314,7 +1428,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
   Future<Map<String, dynamic>> fetchEventData(String eventId) async {
     final response =
-    await http.get(Uri.parse('http://192.168.1.8:8080/events/$eventId'));
+    await http.get(Uri.parse('http://192.168.1.7:8080/events/$eventId'));
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> eventData = json.decode(response.body);

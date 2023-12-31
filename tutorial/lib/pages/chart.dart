@@ -27,7 +27,7 @@ class _MyHomePageState extends State<ChartData> {
   late ChartSeriesController _chartSeriesController;
   // late Timer _timer;
   List<String> contestantNames = [];
-  final io.Socket socket = io.io('http://192.168.1.8:8080', <String, dynamic>{
+  final io.Socket socket = io.io('http://192.168.1.7:8080', <String, dynamic>{
     'transports': ['websocket'],
     'autoConnect': false,
   });
@@ -155,7 +155,7 @@ class _MyHomePageState extends State<ChartData> {
 
   Future<void> fetchScoreCards() async {
     final eventId = widget.eventId;
-    final url = Uri.parse('http://192.168.1.8:8080/winners/$eventId');
+    final url = Uri.parse('http://192.168.1.7:8080/winners/$eventId');
 
     try {
       final response = await http.get(url);

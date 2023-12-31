@@ -297,7 +297,7 @@ class _WinnerState extends State<Winner> {
   Future<void> fetchScoreCards() async {
     final eventId = widget.eventId;
     print(eventId);
-    final url = Uri.parse('http://192.168.1.8:8080/winners/$eventId');
+    final url = Uri.parse('http://192.168.1.7:8080/winners/$eventId');
 
     try {
       final response = await http.get(url);

@@ -401,7 +401,7 @@ class _ScoreCardState extends State<ScoreCard> {
       print("Datas: ${submissionData}");
       // Step 3: Send Data to Server or Process Locally
       // Replace this URL with your actual endpoint
-      var url = Uri.parse('http://192.168.1.8:8080/scorecards');
+      var url = Uri.parse('http://192.168.1.7:8080/scorecards');
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -449,7 +449,7 @@ class _ScoreCardState extends State<ScoreCard> {
 
 
   Future<List<Judge>> fetchJudges(String eventId) async {
-    final url = Uri.parse('http://192.168.1.8:8080/judges/$eventId/confirmed');
+    final url = Uri.parse('http://192.168.1.7:8080/judges/$eventId/confirmed');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -608,7 +608,7 @@ class _ScoreCardState extends State<ScoreCard> {
 
   Future<String?> fetchImagePath(Contestant contestant) async {
     final contestantId = contestant.id;
-    final url = Uri.parse('http://192.168.1.8:8080/uploads/${contestantId}'); // Replace with your server URL
+    final url = Uri.parse('http://192.168.1.7:8080/uploads/${contestantId}'); // Replace with your server URL
     try {
       final response = await http.get(url, headers: {
         'Content-Type': 'application/json',
@@ -937,7 +937,7 @@ class _ScoreCardState extends State<ScoreCard> {
   }
 
   Future<String> fetchEventId() async {
-    final String url = 'http://192.168.1.8:8080/latest-event-id';
+    final String url = 'http://192.168.1.7:8080/latest-event-id';
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -973,7 +973,7 @@ class _ScoreCardState extends State<ScoreCard> {
       print('Fetched Event ID: $eventId');
       if (eventId.isNotEmpty) {
         final response =
-        await http.get(Uri.parse("http://192.168.1.8:8080/event/$eventId"));
+        await http.get(Uri.parse("http://192.168.1.7:8080/event/$eventId"));
         print('Event Details Response Status Code: ${response.statusCode}');
         if (response.statusCode == 200) {
           dynamic eventData = jsonDecode(response.body);
@@ -1034,7 +1034,7 @@ class _ScoreCardState extends State<ScoreCard> {
   Future<void> fetchContestants(String eventId) async {
     try {
       final response = await http.get(
-        Uri.parse("http://192.168.1.8:8080/events/$eventId/contestants"),
+        Uri.parse("http://192.168.1.7:8080/events/$eventId/contestants"),
       );
       if (response.statusCode == 200) {
         final dynamic contestantData = jsonDecode(response.body);
@@ -1130,7 +1130,7 @@ class _ScoreCardState extends State<ScoreCard> {
         userId = decodedToken['userId'];
       }
       // Make a GET request to your server endpoint with contestantId and eventId as query parameters
-      final Uri uri = Uri.parse('http://192.168.1.8:8080/scorecards'); // Update the URL accordingly
+      final Uri uri = Uri.parse('http://192.168.1.7:8080/scorecards'); // Update the URL accordingly
       final response = await http.get(
         uri.replace(queryParameters: {
           'contestantId': contestantId ?? '',
@@ -1186,7 +1186,7 @@ class _ScoreCardState extends State<ScoreCard> {
       {VoidCallback? onCriteriaFetched}) async {
     try {
       final response = await http
-          .get(Uri.parse("http://192.168.1.8:8080/events/$eventId/criteria"));
+          .get(Uri.parse("http://192.168.1.7:8080/events/$eventId/criteria"));
       print('Fetch Criteria - Status Code: ${response.statusCode}');
       print('Fetch Criteria - Response Body: ${response.body}');
 
@@ -1257,7 +1257,7 @@ class _ScoreCardState extends State<ScoreCard> {
 
   Future<Map<String, dynamic>> fetchEventData(String eventId) async {
     final response =
-    await http.get(Uri.parse('http://192.168.1.8:8080/events/$eventId'));
+    await http.get(Uri.parse('http://192.168.1.7:8080/events/$eventId'));
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> eventData = json.decode(response.body);
@@ -1372,14 +1372,14 @@ class _ScoreCardState extends State<ScoreCard> {
                               child: Padding(
                                 padding: const EdgeInsets.only(left: 8.0),
                                 child: SizedBox(
-                                  width: 500,
+                                  width: 600,
                                   child: Column(
                                     children: [
                                       Row(
                                         children: [
                                           Expanded(
                                             child: Container(
-                                              height: 50,
+                                              height: 70,
                                               padding: const EdgeInsets.only(top: 5),
                                               color: Colors.green,
                                               alignment: Alignment.topCenter,
@@ -1398,7 +1398,7 @@ class _ScoreCardState extends State<ScoreCard> {
                                                 double.tryParse(criteria.percentage) ?? 0.0;
                                             return Expanded(
                                               child: Container(
-                                                height: 50,
+                                                height: 70,
                                                 padding: const EdgeInsets.only(top: 5),
                                                 color: Colors.green,
                                                 alignment: Alignment.topCenter,
@@ -1416,7 +1416,7 @@ class _ScoreCardState extends State<ScoreCard> {
                                           }),
                                           Expanded(
                                             child: Container(
-                                              height: 50,
+                                              height: 70,
                                               padding: const EdgeInsets.only(top: 5),
                                               color: Colors.green,
                                               alignment: Alignment.topCenter,

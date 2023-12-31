@@ -1,11 +1,14 @@
 const mongoose = require('mongoose');
 
 // Define the possible values for the 'type' field
-const notificationTypes = ['normal', 'confirmation'];
+const notificationTypes = ['normal', 'confirmation', 'feedback'];
 
 const notificationSchema = new mongoose.Schema({
   eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Event', required: true },
-  body: { type: String, required: true },
+  body: {
+    type: mongoose.Schema.Types.Mixed,
+    required: true
+  },
   date: { type: Date, default: Date.now },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },

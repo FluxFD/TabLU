@@ -78,7 +78,7 @@ class _EventsJoinedState extends State<EventsJoined> {
       Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
       String userId = decodedToken['userId'];
       // Construct the URL with the userId as a query parameter
-      String url = 'http://192.168.1.8:8080/get-all-judges-events?userId=$userId';
+      String url = 'http://192.168.1.7:8080/get-all-judges-events?userId=$userId';
 
       // Make the HTTP request
       final response = await http.get(
@@ -294,7 +294,7 @@ class _EventsJoinedState extends State<EventsJoined> {
   Future<void> deleteEvent(String judgeId) async {
     try {
       final response = await http.delete(
-        Uri.parse('http://192.168.1.8:8080/delete-judge/$judgeId'),
+        Uri.parse('http://192.168.1.7:8080/delete-judge/$judgeId'),
         headers: {
           'Content-Type': 'application/json',
           // Add any other headers if needed

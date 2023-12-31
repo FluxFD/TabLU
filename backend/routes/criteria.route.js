@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose'); 
 const Criteria = require('../models/criteria.model');
+const Scorecard = require('../models/scorecard.model');
 const { someFunction, Event } = require('../models/event.model');
+const ScoreCard = require('../models/scorecard.model');
   
   // API for adding new criteria
   router.post('/criteria', async (req, res) => {

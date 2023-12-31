@@ -57,7 +57,7 @@ class _EventsManagementState extends State<EventsManagement> {
     token = await SharedPreferencesUtils.retrieveToken();
     try {
       final response =
-          await http.get(Uri.parse('http://192.168.1.8:8080/api/events'));
+          await http.get(Uri.parse('http://192.168.1.7:8080/api/events'));
       if (response.statusCode == 200) {
         final dynamic eventData = json.decode(response.body);
         print(eventData);
@@ -91,7 +91,7 @@ class _EventsManagementState extends State<EventsManagement> {
         throw Exception('Authentication token not found');
       }
 
-      final url = Uri.parse("http://192.168.1.8:8080/user-events");
+      final url = Uri.parse("http://192.168.1.7:8080/user-events");
       final response = await http.get(
         url,
         // Include the Authorization header with the token
@@ -142,7 +142,7 @@ class _EventsManagementState extends State<EventsManagement> {
     // If deletion is confirmed, proceed with the deletion
     if (deleteConfirmed == true) {
       try {
-        final url = Uri.parse("http://192.168.1.8:8080/api/event/$eventId");
+        final url = Uri.parse("http://192.168.1.7:8080/api/event/$eventId");
         final response = await http.delete(url);
 
         if (response.statusCode == 200) {
