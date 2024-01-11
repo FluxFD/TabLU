@@ -18,16 +18,19 @@ class _LoginPageState extends State<Signin> {
   TextEditingController username = TextEditingController();
   TextEditingController email = TextEditingController();
   TextEditingController password = TextEditingController();
+  TextEditingController verificationCodeController = TextEditingController();
+
   bool showPassword = false;
   bool isSelected = true;
   bool isPasswordTextField = true;
+  bool isEmailVerified = false;
+
   Color usernameBorderColor = Colors.grey.withOpacity(0.5);
   Color passwordBorderColor = Colors.grey.withOpacity(0.5);
   Color emailBorderColor = Colors.grey.withOpacity(0.5);
 
-
   Future<void> signIn() async {
-    final Uri url = Uri.parse("http://192.168.1.7:8080/signin");
+    final Uri url = Uri.parse("http://localhost:8080/signin");
     setState(() {
       usernameBorderColor = DefaultSelectionStyle.defaultColor;
       emailBorderColor = DefaultSelectionStyle.defaultColor;
@@ -38,7 +41,7 @@ class _LoginPageState extends State<Signin> {
           usernameBorderColor = Colors.red;
         });
       }
-      if (email.text.isEmpty ) {
+      if (email.text.isEmpty) {
         setState(() {
           emailBorderColor = Colors.red;
         });
@@ -71,26 +74,32 @@ class _LoginPageState extends State<Signin> {
         var myToken = jsonResponse['token'];
         print(jsonResponse);
         await SharedPreferencesUtils.saveToken(myToken);
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => SearchEvents(token: "myToken")),
-        );
+        // Check if email is verified before navigating to SearchEvents
+        if (isEmailVerified) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SearchEvents(token: "myToken"),
+            ),
+          );
+        } else {
+          // If email is not verified, show verification dialog
+          showEmailVerificationDialog();
+        }
       } else if (response.statusCode == 400) {
         print(jsonResponse);
-        if (jsonResponse["error"] == "email"){
+        if (jsonResponse["error"] == "email") {
           showLoginErrorToast(jsonResponse["message"]);
           setState(() {
             emailBorderColor = Colors.red;
           });
         }
-        if (jsonResponse["error"] == "username"){
+        if (jsonResponse["error"] == "username") {
           showLoginErrorToast(jsonResponse["message"]);
           setState(() {
             usernameBorderColor = Colors.red;
           });
         }
-
       } else {
         print('HTTP Error: ${response.statusCode}');
       }
@@ -104,6 +113,84 @@ class _LoginPageState extends State<Signin> {
       msg: message,
       backgroundColor: Colors.red,
       textColor: Colors.white,
+    );
+  }
+
+  void showEmailVerificationDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Email Verification'),
+          contentPadding: EdgeInsets.symmetric(
+              vertical: 10), // Adjust the vertical padding as needed
+          content: Container(
+            width: 300, // Adjust the width as needed
+            child: Column(
+              mainAxisSize: MainAxisSize.min, // Make the dialog compact
+              children: [
+                Text('A verification code has been sent to your email.'),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: verificationCodeController,
+                  decoration: InputDecoration(
+                    labelText: 'Verification Code',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () async {
+                // Validate the entered verification code and send it to the server
+                try {
+                  final response = await http.post(
+                    Uri.parse("http://localhost:8080/verify-email"),
+                    headers: <String, String>{
+                      'Content-Type': 'application/json; charset=UTF-8',
+                    },
+                    body: jsonEncode({
+                      'email': email.text,
+                      'verificationCode': verificationCodeController.text,
+                    }),
+                  );
+
+                  var jsonResponse = json.decode(response.body);
+                  if (response.statusCode == 200) {
+                    print('Email verification successful');
+                    setState(() {
+                      isEmailVerified = true;
+                    });
+                    Navigator.pop(context); // Close the dialog
+
+                    // Proceed with sign-up if email is verified
+                    if (isEmailVerified) {
+                      signIn();
+
+                      // Navigate to SearchEvents page
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SearchEvents(token: "myToken"),
+                        ),
+                      );
+                    }
+                  } else if (response.statusCode == 400) {
+                    print(jsonResponse);
+                    showLoginErrorToast(jsonResponse["message"]);
+                  } else {
+                    print('HTTP Error: ${response.statusCode}');
+                  }
+                } catch (e) {
+                  print('Error: $e');
+                }
+              },
+              child: Text('Verify'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -398,55 +485,9 @@ class _LoginPageState extends State<Signin> {
                     ],
                   ),
                 ),
-                /*   const SizedBox(
-                  height: 20,
-                ),
-                const Text(
-                  "Use your other social media accounts to Sign in",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.green,
-                  ),
-                ),*/
                 const SizedBox(
                   height: 20,
                 ),
-                /*Center(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 10),
-                      Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const SearchEvents(token: '',),
-                                  ),
-                                );
-                              },
-                              child: Tab(
-                                icon: Image.asset(
-                                    "assets/icons/facebook-logo-2019.png"),
-                              ),
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 8.0),
-                            ),
-                            Tab(
-                              icon: Image.asset(
-                                  "assets/icons/google-logo-png-suite-everything-you-need-know-about-google-newest-0.png"),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),*/
-
                 Center(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
