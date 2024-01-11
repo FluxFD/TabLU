@@ -6,6 +6,7 @@ const scoreCardSchema = new mongoose.Schema({
     eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Event', required: true },
     criteria: { 
         criteriaId : {type: mongoose.Schema.Types.ObjectId, ref: 'Criteria', required: true} ,
+        rawScore: {type: Number, required: true},
         criteriascore: { type: Number, required: true },
     },
     contestantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Contestant', required: true },

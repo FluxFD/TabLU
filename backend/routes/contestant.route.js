@@ -7,7 +7,15 @@ const Contestant = require('../models/contestant.model');
 const Upload = require('../models/upload.model');
 const multer = require('multer');
 const fs = require('fs');
+const admin = require('firebase-admin');
+const serviceAccount = require('./firebase-config');
 
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  storageBucket: 'project-chat-d6cb6.appspot.com',
+});
+
+const bucket = admin.storage().bucket();
 
 // const contestantSchema = new mongoose.Schema({
 //   name: { type: String, required: true },
@@ -27,16 +35,7 @@ const fs = require('fs');
 //Responsible for saving images to  the database
 const path = require('path');
 
-var storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadPath = path.join(__dirname, 'uploads/');
-    cb(null, uploadPath);
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);
-  },
-});
-
+const storage = multer.memoryStorage();
 
 var uploads = multer({
   storage: storage,
@@ -65,6 +64,7 @@ router.post('/uploads', uploads.single('profilePic'), (req, res) => {
   console.log('Uploaded file:', req.file);
 
   const filePath = req.file.path;
+  
   const fileName = req.file.filename;
 
   res.json({ filePath, fileName });
@@ -82,10 +82,10 @@ router.get('/uploads/:contestantId', async (req, res) => {
       return res.status(404).json({ error: 'Image not found' });
     }
     const filePaths = upload.path
-    const filePath = filePaths.match(/[^\/\\]+$/)[0];
+    // const filePath = filePaths.match(/[^\/\\]+$/)[0];
     const fileName = upload.filename;
 
-    res.json({ filePath, fileName });
+    res.json({ filePaths, fileName });
   } catch (error) {
     console.error('Error fetching image path:', error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -96,7 +96,7 @@ router.get('/uploads/:contestantId', async (req, res) => {
 router.post('/contestants', uploads.single('profilePic'), async (req, res) => {
   try {
     const { name, course, department, eventId, contestantId } = req.body;
-
+    console.log(req.file);
     // Ensure that eventId is a valid ObjectId
     if (!mongoose.Types.ObjectId.isValid(eventId)) {
       return res.status(400).json({ error: 'Invalid eventId' });
@@ -120,26 +120,67 @@ router.post('/contestants', uploads.single('profilePic'), async (req, res) => {
         existingContestant.department = department;
     
         // Change the image on the uploads
-        const existingUpload = await Upload.findOne({ contestantId: existingContestant._id });
+        let existingUpload = await Upload.findOne({ contestantId: existingContestant._id });
     
         if (existingUpload) {
-            // Remove the existing file
-            fs.unlinkSync(existingUpload.path);
-    
-            // Update information for the new file
-            existingUpload.filename = req.file.filename;
-            existingUpload.path = req.file.path;
+          // Remove the existing file
+          const fileToDelete = bucket.file(existingUpload.filename);
+          await fileToDelete.delete();
+      }
+      
+      // Upload the new file to Firebase Storage
+      const fileUpload = bucket.file(req.file.originalname);
+      const blobStream = fileUpload.createWriteStream({
+          metadata: {
+              contentType: req.file.mimetype,
+          },
+      });
+
+      blobStream.on('error', (error) => {
+          console.error(error);
+          res.status(500).json({ error: 'Error uploading file to Firebase Storage' });
+      });
+      
+      blobStream.on('finish', async () => {
+          // File uploaded successfully.
+          // Save the upload information to your database
+          if (existingUpload) {
+            // If existing upload record is found, update its information
+            existingUpload.filename = req.file.originalname;
+            existingUpload.path = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${req.file.originalname}?alt=media`;
             existingUpload.originalname = req.file.originalname;
             existingUpload.mimetype = req.file.mimetype;
             existingUpload.size = req.file.size;
     
             // Save the updated upload information
             await existingUpload.save();
-        }
+        } else {
+            // If no existing upload record is found, create a new one
+            existingUpload = new Upload({
+                filename: req.file.originalname,
+                path: `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${req.file.originalname}?alt=media`,
+                originalname: req.file.originalname,
+                mimetype: req.file.mimetype,
+                size: req.file.size,
+                contestantId: existingContestant._id,
+            });
     
-        const updatedContestant = await existingContestant.save();
-        return res.status(200).json(updatedContestant);
-    } else {
+            // Save the new upload information
+            await existingUpload.save();
+        }
+
+          // Update the contestant's profilePic
+          existingContestant.profilePic = existingUpload._id;
+
+          // Save the updated contestant information
+          const updatedContestant = await existingContestant.save();
+          return res.status(200).json(updatedContestant);
+      });
+
+      blobStream.end(req.file.buffer);
+      return res.status(200); // Send the file buffer to Firebase Storage
+  } else {
+ 
         // Update existing contestant
         existingContestant.name = name;
         existingContestant.course = course;
@@ -147,8 +188,11 @@ router.post('/contestants', uploads.single('profilePic'), async (req, res) => {
     
         const updatedContestant = await existingContestant.save();
         return res.status(200).json(updatedContestant);
-    }
-    }
+      
+  }
+      } 
+      
+    
 
     // Create a new contestant
     const contestant = new Contestant({
@@ -164,34 +208,66 @@ router.post('/contestants', uploads.single('profilePic'), async (req, res) => {
 
     // Handle profilePic upload
     let savedUpload;
+   
     if (req.file) {
-      const upload = new Upload({
-        filename: req.file.filename,
-        path: req.file.path,
-        originalname: req.file.originalname,
-        mimetype: req.file.mimetype,
-        size: req.file.size,
-        contestantId: savedContestant._id, // Use savedContestant._id here
+      // Upload the file to Firebase Storage
+      const fileUpload = bucket.file(req.file.originalname);
+      const blobStream = fileUpload.createWriteStream({
+        metadata: {
+          contentType: req.file.mimetype,
+        },
       });
 
-      savedUpload = await upload.save();
+      blobStream.on('error', (error) => {
+        console.error(error);
+        res.status(500).json({ error: 'Error uploading file to Firebase Storage' });
+      });
 
-      // Update contestant's profilePic
-      savedContestant.profilePic = savedUpload._id;
-      await savedContestant.save();
-    }
+      blobStream.on('finish', async () => {
+        // File uploaded successfully.
+        // Save the upload information to your database
+        const upload = new Upload({
+          filename: req.file.originalname,
+          path: `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${req.file.originalname}?alt=media`,
+          originalname: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: req.file.size,
+          contestantId: savedContestant._id, // Use savedContestant._id here
+        });
 
-    // Update event with the new contestant
-    const event = await Event.findById(eventId);
-    if (event) {
-      event.contestants.push(savedContestant);
-      await event.save();
+        savedUpload = await upload.save();
+
+        // Update contestant's profilePic
+        savedContestant.profilePic = savedUpload._id;
+        await savedContestant.save();
+
+        // Update event with the new contestant
+        const event = await Event.findById(eventId);
+        if (event) {
+          event.contestants.push(savedContestant);
+          await event.save();
+        } else {
+          return res.status(404).json({ error: 'Event not found' });
+        }
+
+        // Send a success response with the created or updated contestant data
+        res.status(201).json(savedContestant);
+      });
+
+      blobStream.end(req.file.buffer); // Send the file buffer to Firebase Storage
     } else {
-      return res.status(404).json({ error: 'Event not found' });
-    }
+      // Update event with the new contestant (no file upload)
+      const event = await Event.findById(eventId);
+      if (event) {
+        event.contestants.push(savedContestant);
+        await event.save();
+      } else {
+        return res.status(404).json({ error: 'Event not found' });
+      }
 
-    // Send a success response with the created or updated contestant data
-    res.status(201).json(savedContestant);
+      // Send a success response with the created or updated contestant data
+      res.status(201).json(savedContestant);
+    }
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
@@ -253,7 +329,7 @@ router.get('/get-contestants/:eventId', async (req, res) => {
     const trimmedContestants = contestants.map(contestant => {
       return {
         ...contestant.toObject(),
-        profilePic: contestant.profilePic ? path.basename(contestant.profilePic.path) : null,
+        profilePic: contestant.profilePic ? contestant.profilePic.path : null,
       };
     });
 

@@ -477,11 +477,9 @@ class _SearchEventsState extends State<SearchEvents> {
 
                   if (token != null && token.isNotEmpty) {
                     // Decode the token to get the userId
-                    print("Hello");
                     Map<String, dynamic> jwtDecodedToken =
                         JwtDecoder.decode(token);
                     String userId = jwtDecodedToken['userId'];
-                    print("Hello");
                     // Navigate to the Notif screen with the retrieved userId
                     Navigator.of(context).push(MaterialPageRoute(
                       builder: (context) => Notif(userId: userId),
@@ -543,7 +541,7 @@ class _SearchEventsState extends State<SearchEvents> {
                             child: Column(
                               children: [
                                 Container(
-                                  height: 250,
+                                  height: 270,
                                   width: 200,
                                   child: Column(
                                     crossAxisAlignment:
@@ -1285,6 +1283,7 @@ class NotificationApi {
               'Content-Type': 'application/json',
             },
             body: jsonEncode({
+              'eventId': eventId,
               'userId': userId,
               'body': notificationBody,
               'receiver': user,

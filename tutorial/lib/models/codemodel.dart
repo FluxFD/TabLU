@@ -19,6 +19,8 @@ class Event {
   final String eventOrganizer;
   final String eventDate;
   final String eventTime;
+  final String? eventEndDate;
+  final String? eventEndTime;
   final List<Contestant> contestants;
   final List<Criteria> criterias;
 
@@ -30,6 +32,8 @@ class Event {
     required this.eventOrganizer,
     required this.eventDate,
     required this.eventTime,
+    this.eventEndDate,
+    this.eventEndTime,
     required this.contestants,
     required this.criterias,
   });
@@ -37,16 +41,26 @@ class Event {
   factory Event.fromJson(Map<String, dynamic> json) {
     return Event(
       eventId: json['_id'] != null ? json['_id'].toString() : '',
-      eventName: json['event_name'] != null ? json['event_name'].toString() : '',
-      eventCategory:
-          json['event_category'] != null ? json['event_category'].toString() : '',
+      eventName:
+          json['event_name'] != null ? json['event_name'].toString() : '',
+      eventCategory: json['event_category'] != null
+          ? json['event_category'].toString()
+          : '',
       eventVenue:
           json['event_venue'] != null ? json['event_venue'].toString() : '',
       eventOrganizer: json['event_organizer'] != null
           ? json['event_organizer'].toString()
           : '',
-      eventDate: json['event_date'] != null ? json['event_date'].toString() : '',
-      eventTime: json['event_time'] != null ? json['event_time'].toString() : '',
+      eventDate:
+          json['event_date'] != null ? json['event_date'].toString() : '',
+      eventTime:
+          json['event_time'] != null ? json['event_time'].toString() : '',
+      eventEndDate: json['event_end_date'] != null
+          ? json['event_end_date'].toString()
+          : '',
+      eventEndTime: json['event_end_time'] != null
+          ? json['event_end_time'].toString()
+          : '',
       contestants: (json['contestants'] as List<dynamic>?)
               ?.map((contestant) => Contestant.fromJson(contestant))
               .toList() ??
@@ -197,6 +211,7 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
     super.initState();
     fetchEvents(); // Fetch events when the screen is initialized
   }
+
   void eventLoader(List<Event> events) {
     eventsByDate.clear();
 
@@ -351,7 +366,6 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
                                 : null,
                           ),
                         ),
-
                         if (dateEvents.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -380,7 +394,8 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
                     itemBuilder: (context, index) {
                       final event = getEventsForSelectedDay()[index];
                       return ListTile(
-                        title: Text("${event.eventName} ${event.eventTime}"),
+                        title: Text(
+                            "${event.eventName} ${event.eventTime} \nEnd Date: ${event.eventEndDate?.split("T")[0]} ${event.eventEndTime}"),
                       );
                     },
                   ),

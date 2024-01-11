@@ -1,16 +1,22 @@
 //index.js
-const express = require("express");
-require("dotenv").config();
-const app = express();
+const express = require('express');
+// const app = express();
 const port = process.env.PORT || 8080;
-const cors = require("cors");
-const bodyParser = require("body-parser");
-const verifyToken = require("./routes/event.route");
-const mongoose = require("mongoose");
-const passport = require("passport");
-const session = require("express-session"); // Add this line
-const passportConfig = require("./passport-config");
-const path = require("path");
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const verifyToken = require('./routes/event.route');
+const mongoose = require('mongoose');
+const passport = require('passport');
+const session = require('express-session'); // Add this line
+const passportConfig = require('./passport-config');
+const path = require('path');
+const { server,io, app } = require('./routes/socket');
+
+
+io.on('connection', (socket) => {
+  console.log('A user connected');
+  // Your socket.io event handlers here
+});
 
 //const verifyToken = require('event.route');
 mongoose.set("strictPopulate", false);
@@ -21,9 +27,9 @@ mongoose
     useUnifiedTopology: true,
   })
   .then(() => {
-    console.log("MongoDB connected successfully");
-    app.listen(port, () => {
-      console.log("Running and connected on port " + port);
+    console.log('MongoDB connected successfully');
+    server.listen(port, () => {
+      console.log('Running and connected on port ' + port);
     });
   })
   .catch((err) => {
@@ -55,11 +61,13 @@ app.use(passportConfig.passport.initialize());
 app.use(passport.session());
 
 app.use(verifyToken);
-app.use("/", require("./routes/user.route"));
-app.use("/", require("./routes/event.route"));
-app.use("/", require("./routes/contestant.route"));
-app.use("/", require("./routes/scorecard.route"));
-app.use("/", require("./routes/criteria.route"));
-app.use("/", require("./routes/notification.route"));
-app.use("/", require("./routes/judges.route"));
-app.use("/api", require("./routes/event.route"));
+app.use('/', require('./routes/user.route'));
+app.use('/', require('./routes/event.route'));
+app.use('/', require('./routes/contestant.route'));
+app.use('/', require('./routes/scorecard.route'));
+app.use('/', require('./routes/criteria.route'));
+app.use('/', require('./routes/notification.route'));
+app.use('/', require('./routes/judges.route'));
+app.use('/api', require('./routes/event.route'));
+
+module.exports = { server, app };

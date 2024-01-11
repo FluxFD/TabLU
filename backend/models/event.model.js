@@ -9,6 +9,8 @@ const eventSchema = new mongoose.Schema({
   event_organizer: String,
   event_date: Date,
   event_time: String,
+  event_end_date: Date,
+  event_end_time: String,
   access_code: { type: String, required: true, unique: true },
   contestants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Contestant' }],
   criteria: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Criteria' }],

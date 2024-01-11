@@ -7,12 +7,14 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class Criteria {
+  String? criteriaId;
   String criterianame;
   String percentage;
   String eventId; // Event ID
   //String contestantId; // Contestant ID
 
   Criteria({
+    this.criteriaId,
     required this.criterianame,
     required this.percentage,
     required this.eventId,
@@ -21,6 +23,7 @@ class Criteria {
 
   factory Criteria.fromJson(Map<String, dynamic> json) {
     return Criteria(
+      criteriaId: json['_id'] ?? '',
       criterianame: json['criterianame'] ?? '',
       percentage: json['percentage'] ?? '',
       eventId: json['eventId'] ?? '',
@@ -29,6 +32,7 @@ class Criteria {
 
   Map<String, dynamic> toJson() {
     return {
+      'criteriaId': criteriaId,
       'criterianame': criterianame,
       'percentage': percentage,
       'eventId': eventId,
@@ -106,7 +110,7 @@ class _CriteriasState extends State<Criterias> {
 
       if (response.statusCode == 200) {
         final List<dynamic> criteriaList = jsonDecode(response.body);
-
+        // print("Critieria List ${criteriaList}");
         final List<Criteria> fetchedCriterias = criteriaList
             .map((criteriaJson) => Criteria.fromJson(criteriaJson))
             .toList();
@@ -133,10 +137,11 @@ class _CriteriasState extends State<Criterias> {
       } else {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         final String errorMessage = responseData['error'];
-        _showErrorSnackBar(
-          'Failed to delete criteria: ${errorMessage}',
-          Colors.red,
-        );
+        // _showErrorSnackBar(
+        //   'Failed to delete criteria: ${errorMessage}',
+        //   Colors.red,
+        // );
+        print("Failed to delete criteria: ${errorMessage}");
       }
     } catch (e) {
       print('Error deleting criteria: $e');
@@ -220,7 +225,8 @@ class _CriteriasState extends State<Criterias> {
                 // Update the criteria
                 criteria.criterianame = _criteriaNameController.text;
                 criteria.percentage = _percentageController.text;
-                calculateTotalPercentage();
+                updateTotalPercentage();
+
                 // Notify the list to update the UI
                 _listKey.currentState!.setState(() {});
                 Navigator.pop(context);
@@ -261,6 +267,7 @@ class _CriteriasState extends State<Criterias> {
       final percentage = double.tryParse(criteria.percentage) ?? 0.0;
       totalPercentage += percentage;
     }
+
     return totalPercentage;
   }
 
@@ -316,6 +323,7 @@ class _CriteriasState extends State<Criterias> {
       final url = Uri.parse("https://tab-lu.vercel.app/criteria");
 
       try {
+        print(criteriaData);
         // Check if criteria with the same name already exists
         final response = await http.post(
           url,
@@ -329,13 +337,13 @@ class _CriteriasState extends State<Criterias> {
         );
 
         if (response.statusCode == 201) {
-          _showErrorSnackBar('Criteria created successfully', Colors.green);
+          print("Criteria Created Successfully");
         } else {
           final Map<String, dynamic> responseData = jsonDecode(response.body);
           final String errorMessage = responseData['error'];
-          _showErrorSnackBar(
-              'Failed to create criteria: ${errorMessage}', Colors.red);
-
+          // _showErrorSnackBar(
+          //     'Failed to create criteria: ${errorMessage}',
+          //     Colors.red);
           // Check for null response body
           final responseBody = response.body;
           if (responseBody != null && responseBody.isNotEmpty) {
@@ -402,12 +410,12 @@ class _CriteriasState extends State<Criterias> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: totalPercentage == 100.0 ? Colors.grey : Colors.green,
+        backgroundColor: totalPercentage >= 100.0 ? Colors.grey : Colors.green,
         child: const Icon(
           Icons.add,
           color: Colors.white,
         ),
-        onPressed: totalPercentage == 100.0
+        onPressed: totalPercentage >= 100.0
             ? null // Set onPressed to null to disable the button
             : () {
                 _criteriaNameController.clear();
@@ -535,6 +543,57 @@ class _CriteriasState extends State<Criterias> {
             children: [
               OutlinedButton(
                 onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: Text('Clear All Criteria'),
+                        content: Text(
+                            'Are you sure you want to delete all criteria?'),
+                        actions: <Widget>[
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                            child: Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              // Delete all criteria
+                              for (int i = criterias.length - 1; i >= 0; i--) {
+                                removeItem(i);
+                              }
+                              // Close the dialog
+                              Navigator.of(context).pop();
+                            },
+                            child: Text('Delete All'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+                child: Text('Your Button Text'), // Add the child parameter here
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 14,
+                    letterSpacing: 2.2,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              OutlinedButton(
+                onPressed: () {
                   // Add your cancel button action here
                 },
                 style: OutlinedButton.styleFrom(
@@ -576,6 +635,10 @@ class _CriteriasState extends State<Criterias> {
                           }
                         }
                       }
+
+                      _fetchCriterias(widget.eventId);
+                      _showErrorSnackBar(
+                          'Criteria created successfully', Colors.green);
 
                       final String? eventId = widget.eventId;
                       if (eventId != null) {

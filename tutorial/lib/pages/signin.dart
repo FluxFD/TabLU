@@ -18,9 +18,13 @@ class _LoginPageState extends State<Signin> {
   TextEditingController username = TextEditingController();
   TextEditingController email = TextEditingController();
   TextEditingController password = TextEditingController();
+  TextEditingController verificationCodeController = TextEditingController();
+
   bool showPassword = false;
   bool isSelected = true;
   bool isPasswordTextField = true;
+  bool isEmailVerified = false;
+
   Color usernameBorderColor = Colors.grey.withOpacity(0.5);
   Color passwordBorderColor = Colors.grey.withOpacity(0.5);
   Color emailBorderColor = Colors.grey.withOpacity(0.5);
@@ -75,25 +79,39 @@ class _LoginPageState extends State<Signin> {
           'username': username.text
         }),
       );
-
+      var jsonResponse = json.decode(response.body);
       if (response.statusCode == 201) {
         print('Sign-up successful');
         var jsonResponse = json.decode(response.body);
         var myToken = jsonResponse['token'];
         print(jsonResponse);
         await SharedPreferencesUtils.saveToken(myToken);
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => SearchEvents(token: "myToken")),
-        );
+        // Check if email is verified before navigating to SearchEvents
+        if (isEmailVerified) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SearchEvents(token: "myToken"),
+            ),
+          );
+        } else {
+          // If email is not verified, show verification dialog
+          showEmailVerificationDialog();
+        }
       } else if (response.statusCode == 400) {
-        print('Username or Email already exists');
-        showLoginErrorToast('User or Email already exists');
-        setState(() {
-          usernameBorderColor = Colors.red;
-          passwordBorderColor = Colors.red;
-        });
+        print(jsonResponse);
+        if (jsonResponse["error"] == "email") {
+          showLoginErrorToast(jsonResponse["message"]);
+          setState(() {
+            emailBorderColor = Colors.red;
+          });
+        }
+        if (jsonResponse["error"] == "username") {
+          showLoginErrorToast(jsonResponse["message"]);
+          setState(() {
+            usernameBorderColor = Colors.red;
+          });
+        }
       } else {
         print('HTTP Error: ${response.statusCode}');
       }
@@ -107,6 +125,84 @@ class _LoginPageState extends State<Signin> {
       msg: message,
       backgroundColor: Colors.red,
       textColor: Colors.white,
+    );
+  }
+
+  void showEmailVerificationDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Email Verification'),
+          contentPadding: EdgeInsets.symmetric(
+              vertical: 10), // Adjust the vertical padding as needed
+          content: Container(
+            width: 300, // Adjust the width as needed
+            child: Column(
+              mainAxisSize: MainAxisSize.min, // Make the dialog compact
+              children: [
+                Text('A verification code has been sent to your email.'),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: verificationCodeController,
+                  decoration: InputDecoration(
+                    labelText: 'Verification Code',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () async {
+                // Validate the entered verification code and send it to the server
+                try {
+                  final response = await http.post(
+                    Uri.parse("http://localhost:8080/verify-email"),
+                    headers: <String, String>{
+                      'Content-Type': 'application/json; charset=UTF-8',
+                    },
+                    body: jsonEncode({
+                      'email': email.text,
+                      'verificationCode': verificationCodeController.text,
+                    }),
+                  );
+
+                  var jsonResponse = json.decode(response.body);
+                  if (response.statusCode == 200) {
+                    print('Email verification successful');
+                    setState(() {
+                      isEmailVerified = true;
+                    });
+                    Navigator.pop(context); // Close the dialog
+
+                    // Proceed with sign-up if email is verified
+                    if (isEmailVerified) {
+                      signIn();
+
+                      // Navigate to SearchEvents page
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SearchEvents(token: "myToken"),
+                        ),
+                      );
+                    }
+                  } else if (response.statusCode == 400) {
+                    print(jsonResponse);
+                    showLoginErrorToast(jsonResponse["message"]);
+                  } else {
+                    print('HTTP Error: ${response.statusCode}');
+                  }
+                } catch (e) {
+                  print('Error: $e');
+                }
+              },
+              child: Text('Verify'),
+            ),
+          ],
+        );
+      },
     );
   }
 

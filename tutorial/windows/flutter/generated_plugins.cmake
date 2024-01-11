@@ -4,8 +4,14 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   file_selector_windows
+  firebase_core
+  firebase_storage
   irondash_engine_context
+  permission_handler_windows
+  share_plus
   super_native_extensions
+  syncfusion_pdfviewer_windows
+  url_launcher_windows
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST

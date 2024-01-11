@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:permission_handler/permission_handler.dart';
 import 'dart:convert';
 import 'package:tutorial/pages/criteria.dart';
+import 'package:http_parser/http_parser.dart';
 
 class Contestant {
   String name;
@@ -182,6 +184,12 @@ class _ContestantsState extends State<Contestants> {
   }
 
   Future<void> addProfilePicture(Contestant contestant) async {
+    bool galleryPermission = await _requestGalleryPermission();
+    if (!galleryPermission) {
+      // Handle permission not granted
+      return;
+    }
+
     final XFile? image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
       imageQuality: 50,
@@ -198,6 +206,12 @@ class _ContestantsState extends State<Contestants> {
   }
 
   Future<void> changeProfilePicture(Contestant contestant) async {
+    bool galleryPermission = await _requestGalleryPermission();
+    if (!galleryPermission) {
+      // Handle permission not granted
+      return;
+    }
+
     final XFile? image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
       imageQuality: 50,
@@ -211,6 +225,11 @@ class _ContestantsState extends State<Contestants> {
     } else {
       print('Image selection canceled');
     }
+  }
+
+  Future<bool> _requestGalleryPermission() async {
+    PermissionStatus status = await Permission.storage.request();
+    return status == PermissionStatus.granted;
   }
 
   Future<void> createContestant(
@@ -238,6 +257,7 @@ class _ContestantsState extends State<Contestants> {
           await http.MultipartFile.fromPath(
             'profilePic', // This should match the field name in your multer configuration
             imageFile.path,
+            contentType: MediaType('image', 'jpeg'),
           ),
         );
 
@@ -297,7 +317,7 @@ class _ContestantsState extends State<Contestants> {
           contestant: contestant,
           onChanged: (File? newImage) {
             setState(() {
-              contestant.profilePic = newImage;
+              contestant.profilePic = _selectedImage;
             });
           },
           onImageChanged: (File? newImage) {
@@ -481,6 +501,8 @@ class _ContestantsState extends State<Contestants> {
                     await createContestant(widget.eventId, contestant.toJson());
                   }
                 }
+
+                fetchContestants();
                 //  String eventId = widget.eventId;
 
                 Navigator.of(context).push(
@@ -580,9 +602,12 @@ class ListItemWidget extends StatelessWidget {
               backgroundImage: contestant.selectedImage != null
                   ? FileImage(contestant.selectedImage!)
                   : contestant.profilePic != null
-                      ? NetworkImage(
-                          "https://tab-lu.vercel.app/uploads/${contestant.profilePic?.path}")
+                      ? NetworkImage("${contestant.profilePic?.path}")
                       : null as ImageProvider<Object>?,
+
+              // ? NetworkImage(
+              //     "https://tab-lu.vercel.app/uploads/${contestant.profilePic?.path}")
+              // : null as ImageProvider<Object>?,
             ),
           ),
           title: Text(
@@ -591,7 +616,7 @@ class ListItemWidget extends StatelessWidget {
                 fontSize: 16, color: Colors.black, fontWeight: FontWeight.w500),
           ),
           subtitle: Text(
-            'Course: ${contestant.course}\nDepartment: ${contestant.department}',
+            'Age: ${contestant.course}\nAddress: ${contestant.department}',
             style: const TextStyle(
                 fontSize: 14, color: Colors.grey, fontStyle: FontStyle.italic),
           ),
@@ -670,8 +695,7 @@ class _ProfilePictureDialogState extends State<ProfilePictureDialog> {
               backgroundImage: _selectedImage != null
                   ? FileImage(_selectedImage!)
                   : widget.contestant.profilePic != null
-                      ? NetworkImage(
-                          "https://tab-lu.vercel.app/uploads/${widget.contestant.profilePic?.path}")
+                      ? NetworkImage("${widget.contestant.profilePic?.path}")
                       : null as ImageProvider<Object>?,
             ),
             SizedBox(height: 20),
@@ -688,31 +712,22 @@ class _ProfilePictureDialogState extends State<ProfilePictureDialog> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: Text('Select Image'),
+              child: Text('Change Profile Picture'),
             ),
-            SizedBox(height: 20),
-            // TextFields for name, course, and department
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                labelText: 'Name',
-                labelStyle: TextStyle(fontSize: 15, color: Colors.green),
-              ),
-            ),
-            TextField(
-              controller: _courseController,
-              decoration: InputDecoration(
-                labelText: 'Age',
-                labelStyle: TextStyle(fontSize: 15, color: Colors.green),
-              ),
-            ),
-            TextField(
-              controller: _departmentController,
-              decoration: InputDecoration(
-                labelText: 'Address',
-                labelStyle: TextStyle(fontSize: 15, color: Colors.green),
-              ),
-            ),
+            // TextField(
+            //   controller: _ageController,
+            //   decoration: InputDecoration(
+            //     labelText: 'Age',
+            //     labelStyle: TextStyle(fontSize: 15, color: Colors.green),
+            //   ),
+            // ),
+            // TextField(
+            //   controller: _addressController,
+            //   decoration: InputDecoration(
+            //     labelText: 'Address',
+            //     labelStyle: TextStyle(fontSize: 15, color: Colors.green),
+            //   ),
+            // ),
           ],
         ),
       ),
@@ -745,11 +760,18 @@ class _ProfilePictureDialogState extends State<ProfilePictureDialog> {
     );
   }
 
-  static void _defaultCallback() {
-    // Provide a default implementation or leave it empty
+  Future<bool> _requestGalleryPermission() async {
+    PermissionStatus status = await Permission.storage.request();
+    return status == PermissionStatus.granted;
   }
 
   Future<void> changeProfilePicture() async {
+    bool galleryPermission = await _requestGalleryPermission();
+    if (!galleryPermission) {
+      // Handle permission not granted
+      return;
+    }
+
     final XFile? image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
       imageQuality: 50,
@@ -897,7 +919,18 @@ class _AddContestantDialogState extends State<AddContestantDialog> {
     );
   }
 
+  Future<bool> _requestGalleryPermission() async {
+    PermissionStatus status = await Permission.storage.request();
+    return status == PermissionStatus.granted;
+  }
+
   Future<void> addProfilePicture() async {
+    bool galleryPermission = await _requestGalleryPermission();
+    if (!galleryPermission) {
+      // Handle permission not granted
+      return;
+    }
+
     final XFile? image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
       imageQuality: 50,

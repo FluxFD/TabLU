@@ -114,21 +114,50 @@ class _EventsManagementState extends State<EventsManagement> {
   }
 
   Future<void> deleteEvent(String eventId) async {
-    try {
-      final url = Uri.parse("https://tab-lu.vercel.app/api/event/$eventId");
-      final response = await http.delete(url);
+    // Show a confirmation dialog
+    bool deleteConfirmed = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirm Deletion'),
+          content: Text('Are you sure you want to delete this event?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context)
+                    .pop(false); // Return false to indicate cancellation
+              },
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context)
+                    .pop(true); // Return true to indicate confirmation
+              },
+              child: Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
 
-      if (response.statusCode == 200) {
-        print('Event deleted successfully');
-        // Reload the events after deletion
-        setState(() {});
-      } else {
-        print('Error deleting event: ${response.body}');
-        throw Exception('Failed to delete event. Error: ${response.body}');
+    // If deletion is confirmed, proceed with the deletion
+    if (deleteConfirmed == true) {
+      try {
+        final url = Uri.parse("https://tab-lu.vercel.app/api/event/$eventId");
+        final response = await http.delete(url);
+
+        if (response.statusCode == 200) {
+          print('Event deleted successfully');
+          // Reload the events after deletion
+        } else {
+          print('Error deleting event: ${response.body}');
+          throw Exception('Failed to delete event. Error: ${response.body}');
+        }
+      } catch (e) {
+        print('Error deleting event: $e');
+        throw Exception('Failed to delete event. Error: $e');
       }
-    } catch (e) {
-      print('Error deleting event: $e');
-      throw Exception('Failed to delete event. Error: $e');
     }
   }
 

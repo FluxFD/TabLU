@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shimmer/shimmer.dart';
 import 'dart:convert';
 
 import 'package:tutorial/pages/dashboard.dart';
+import 'package:tutorial/refresher.dart';
 import 'package:tutorial/utility/sharedPref.dart';
 
 class Notif extends StatefulWidget {
@@ -20,7 +23,17 @@ Future<List<dynamic>> fetchNotifications(String userId) async {
   );
 
   if (response.statusCode == 200) {
-    return json.decode(response.body);
+    // Decode the JSON response
+    List<dynamic> notifications = json.decode(response.body);
+    // Sort the notifications based on the 'date' field
+    notifications.sort((a, b) {
+      DateTime dateTimeA = DateTime.parse(a['date']);
+      DateTime dateTimeB = DateTime.parse(b['date']);
+      return dateTimeB
+          .compareTo(dateTimeA); // Descending order, modify if needed
+    });
+
+    return notifications;
   } else {
     throw Exception('Failed to load notifications');
   }
@@ -28,6 +41,7 @@ Future<List<dynamic>> fetchNotifications(String userId) async {
 
 class _NotifState extends State<Notif> {
   late Future<List<dynamic>> notifications;
+  bool notificationSent = false;
 
   @override
   void initState() {
@@ -64,57 +78,69 @@ class _NotifState extends State<Notif> {
           },
         ),
       ),
-      body: FutureBuilder<List<dynamic>>(
-        future: notifications,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else {
-            // Display notifications with swipe-to-delete functionality
-            return ListView.separated(
-              itemBuilder: (context, index) {
-                return Dismissible(
-                  key: Key(index.toString()),
-                  onDismissed: (direction) async {
-                    // Handle delete logic here
-
-                    final String notificationType =
-                        snapshot.data![index]['type'];
-                    final String userId = snapshot.data![index]['userId'];
-                    if (notificationType == "confirmation") {
-                      rejectJudgeRequest(userId);
-                    }
-                    await deleteNotification(snapshot.data![index]['userId']);
-                    await refreshNotifications();
+      body: Refresher(
+        onRefresh: refreshNotifications,
+        child: FutureBuilder<List<dynamic>>(
+          future: notifications,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Shimmer.fromColors(
+                baseColor: Colors.grey[300]!,
+                highlightColor: Colors.grey[100]!,
+                child: ListView.builder(
+                  itemBuilder: (context, index) {
+                    // You can create a separate widget for the shimmer item
                   },
-                  background: Container(
-                    color: Colors.red,
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: Padding(
-                        padding: EdgeInsets.only(right: 16),
-                        child: Icon(
-                          Icons.delete,
-                          color: Colors.white,
+                  itemCount: 10, // You can adjust the number of shimmer items
+                ),
+              );
+            } else if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            } else {
+              // Display notifications with swipe-to-delete functionality
+              return ListView.separated(
+                itemBuilder: (context, index) {
+                  return Dismissible(
+                    key: Key(index.toString()),
+                    onDismissed: (direction) async {
+                      // Handle delete logic here
+
+                      final String notificationType =
+                          snapshot.data![index]['type'];
+                      final String userId = snapshot.data![index]['userId'];
+                      if (notificationType == "confirmation") {
+                        rejectJudgeRequest(userId);
+                      }
+                      await deleteNotification(snapshot.data![index]['userId']);
+                      await refreshNotifications();
+                    },
+                    background: Container(
+                      color: Colors.red,
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Padding(
+                          padding: EdgeInsets.only(right: 16),
+                          child: Icon(
+                            Icons.delete,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  child: listViewItem(context, snapshot.data![index]),
-                );
-              },
-              separatorBuilder: (context, index) {
-                return Divider(
-                  height: 0,
-                  color: Colors.grey.shade400,
-                );
-              },
-              itemCount: snapshot.data!.length,
-            );
-          }
-        },
+                    child: listViewItem(context, snapshot.data![index]),
+                  );
+                },
+                separatorBuilder: (context, index) {
+                  return Divider(
+                    height: 0,
+                    color: Colors.grey.shade400,
+                  );
+                },
+                itemCount: snapshot.data!.length,
+              );
+            }
+          },
+        ),
       ),
     );
   }
@@ -135,41 +161,63 @@ class _NotifState extends State<Notif> {
   }
 
   Widget listViewItem(BuildContext context, dynamic notification) {
-    final DateTime date = DateTime.parse(notification['date']);
-    final String formattedDate = '${date.day}-${date.month}-${date.year}';
-    final String body = notification['body'];
-    final String notificationType = notification['type'];
-    final String userId = notification['userId'];
+    return FutureBuilder<String?>(
+      future: getUsernameById(notification['userId']),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          // Show a loading indicator while waiting for the future to complete
+          return ShimmerNotificationItem();
+        } else if (snapshot.hasError) {
+          // Handle error state
+          return Text('Error: ${snapshot.error}');
+        } else if (snapshot.hasData) {
+          final String? username = snapshot.data;
+          final DateTime date = DateTime.parse(notification['date']);
+          final String formattedDate = '${date.day}-${date.month}-${date.year}';
+          final String userId = notification['userId'];
+          final String rating = notification['body']['rating'];
+          final String feedback = notification['body']['feedback'];
+          final String eventName = notification['body']['eventName'];
+          final String body = notification['body'] is Map<String, dynamic>
+              ? "$username rate the $eventName $rating\nFeedback: $feedback"
+              : notification['body'];
+          final String notificationType = notification['type'];
 
-    return GestureDetector(
-      onTap: () {
-        if (notificationType == 'confirmation') {
-          // Show accept and reject dialogue for confirmation type
-          showConfirmationDialog(context, body, userId, notification);
-        }
-      },
-      child: Container(
-        margin: EdgeInsets.symmetric(horizontal: 11, vertical: 10),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            prefixIcon(),
-            Expanded(
-              child: Container(
-                margin: EdgeInsets.only(left: 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Text(userId),
-                    message(body),
-                    timeAndDate(formattedDate),
-                  ],
-                ),
+          return GestureDetector(
+            onTap: () {
+              if (notificationType == 'confirmation') {
+                // Show accept and reject dialogue for confirmation type
+                showConfirmationDialog(context, body, userId, notification);
+              }
+            },
+            child: Container(
+              margin: EdgeInsets.symmetric(horizontal: 11, vertical: 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  prefixIcon(),
+                  Expanded(
+                    child: Container(
+                      margin: EdgeInsets.only(left: 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Text(userId),
+                          message(body),
+                          timeAndDate(date),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
+          );
+        } else {
+          // If the data is null, you can decide how to handle it (e.g., show a placeholder)
+          return Container(); // Return an empty container or any placeholder widget
+        }
+      },
     );
   }
 
@@ -183,12 +231,14 @@ class _NotifState extends State<Notif> {
     }
   }
 
-  Future<void> updateJudgeConfirmationStatus(String userId) async {
+  Future<void> updateJudgeConfirmationStatus(
+      String userId, String eventId) async {
     try {
       final response = await http.post(
         Uri.parse('https://tab-lu.vercel.app/update-confirmation'),
         body: {
           'userId': userId,
+          'eventId': eventId,
           'isConfirm': true.toString(),
         },
       );
@@ -226,6 +276,14 @@ class _NotifState extends State<Notif> {
       );
 
       if (response.statusCode == 200) {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        int notificationCount = prefs.getInt('notificationCount') ?? 0;
+
+        // Check if the notificationCount is greater than 0 before reducing it
+        if (notificationCount > 0) {
+          notificationCount--;
+          prefs.setInt('notificationCount', notificationCount);
+        }
         print('Notification deleted successfully');
       } else {
         print('Failed to delete notification');
@@ -238,6 +296,7 @@ class _NotifState extends State<Notif> {
   Future<void> sendNotificationWithoutType(
       String receiverId, String? username, String status) async {
     try {
+      notificationSent = true;
       // Make an HTTP POST request to send a notification without specifying the type
       final response = await http.post(
         Uri.parse('https://tab-lu.vercel.app/notifications'),
@@ -251,9 +310,11 @@ class _NotifState extends State<Notif> {
       if (response.statusCode == 200) {
         print('Notification sent successfully');
       } else {
+        notificationSent = false;
         print('Failed to send notification');
       }
     } catch (error) {
+      notificationSent = false;
       print('Error sending notification: $error');
     }
   }
@@ -280,6 +341,7 @@ class _NotifState extends State<Notif> {
   void showConfirmationDialog(BuildContext context, String notificationBody,
       String userId, dynamic notification) async {
     final receiverId = notification['receiver'];
+    final eventId = notification['eventId'];
     final username = await getUsernameById(receiverId);
 
     showDialog(
@@ -292,14 +354,16 @@ class _NotifState extends State<Notif> {
             TextButton(
               onPressed: () async {
                 // Handle accept logic here
-                updateJudgeConfirmationStatus(userId);
+                updateJudgeConfirmationStatus(userId, eventId);
                 await deleteNotification(userId);
                 await refreshNotifications();
                 // Get the receiver ID from the current notification
                 final receiverId = notification['userId'];
 
-                await sendNotificationWithoutType(
-                    receiverId, username, "accepted");
+                if (!notificationSent) {
+                  await sendNotificationWithoutType(
+                      receiverId, username, "accepted");
+                }
                 Navigator.of(context).pop(); // Close the dialog
               },
               child: Text('Accept'),
@@ -344,7 +408,7 @@ class _NotifState extends State<Notif> {
     double textSize = 14;
     return Container(
       child: Text(
-        'Message\n$body',
+        '$body',
         style: TextStyle(
           color: Colors.black,
           fontSize: textSize,
@@ -354,14 +418,32 @@ class _NotifState extends State<Notif> {
     );
   }
 
-  Widget timeAndDate(String formattedDate) {
+  Widget timeAndDate(DateTime formattedDate) {
+    final DateTime notificationDate = formattedDate;
+    final DateTime currentDate = DateTime.now();
+
+    final Duration difference = currentDate.difference(notificationDate);
+
+    String timeDifference = '';
+
+    if (difference.inDays > 0) {
+      timeDifference = '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      timeDifference = '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      timeDifference = '${difference.inMinutes}m ago';
+    } else if (difference.inSeconds > 0) {
+      timeDifference = '${difference.inSeconds}s ago';
+    } else {
+      timeDifference = 'Just now';
+    }
     return Container(
       margin: EdgeInsets.only(top: 5),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            formattedDate,
+            timeDifference,
             style: TextStyle(
               fontSize: 10,
               color: Colors.grey,
@@ -370,6 +452,40 @@ class _NotifState extends State<Notif> {
           // Include logic to format the time from the server response
           // For example: Text(formatTime(notification['date']), style: TextStyle(fontSize: 10, color: Colors.grey)),
         ],
+      ),
+    );
+  }
+}
+
+class ShimmerNotificationItem extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Shimmer.fromColors(
+        baseColor: Colors.grey[300]!,
+        highlightColor: Colors.grey[100]!,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10.0),
+              child: Container(
+                width: 100,
+                height: 30, // Adjust the height as needed
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10.0),
+              child: Container(
+                width: double.infinity,
+                height: 40,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

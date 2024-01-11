@@ -3,6 +3,7 @@ const User = require("../models/user.model");
 const router = express.Router();
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
+const validator = require("validator");
 const nodemailer = require("nodemailer");
 const Judge = require("../models/judges.model");
 const jwt = require("jsonwebtoken");
@@ -31,43 +32,116 @@ const verifyToken = (req, res, next) => {
 
 router.post("/signin", async (req, res) => {
   const { username, email, password } = req.body;
-
+  console.log(req.body);
   try {
     // Check if a user with the given email or username already exists
     const existingUser = await User.findOne({
       $or: [{ username: username }, { email: email }],
     });
 
-    if (existingUser) {
+    if (!validator.isEmail(email)) {
       return res
         .status(400)
-        .json({ message: "Username or Email already exists" });
+        .json({ message: "Invalid email address", error: "email" });
     }
+
+    if (existingUser) {
+      return res.status(400).json({
+        message: "Username or Email already exists",
+        error: "username",
+      });
+    }
+
+    const verificationCode = generateVerificationCode();
 
     // If the user doesn't exist, create a new user
     const newUser = new User({
       username: username,
       email: email,
       password: password,
+      verificationCode: verificationCode,
     });
- // Save the new user to the database
- await newUser.save();
+    // Save the new user to the database
+    newUser.isEmailVerified = false;
+    await newUser.save();
+
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
+      requireTLS: true,
+      auth: {
+        user: "avbreyrd@gmail.com",
+        pass: "dbde fhua iozz wxxy",
+      },
+      tls: {
+        ciphers: "SSLv3",
+        minVersion: "TLSv1.2",
+      },
+    });
+
+    const mailOptions = {
+      from: "avbreyrd@gmail.com",
+      to: email,
+      subject: "Email Verification Code",
+      text: `Your verification code is: ${verificationCode}`,
+    };
+
+    await transporter.sendMail(mailOptions);
 
     const user = await User.findOne({ username: username });
 
-   
     const token = jwt.sign(
       { userId: user._id, email: user.email, username: user.username },
       secretKey
     );
-    
 
-    res
-      .status(201)
-      .json({ message: "User registered successfully", user: user, token: token });
+    res.status(201).json({
+      message: "User registered successfully",
+      user: user,
+      token: token,
+      verificationCode: verificationCode,
+    });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Internal server error" });
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: error.message });
+  }
+});
+
+router.post("/verify-email", async (req, res) => {
+  const { email, verificationCode } = req.body;
+
+  try {
+    // Find the user by email
+    const user = await User.findOne({ email: email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({ message: "Email already verified" });
+    }
+
+    // Check if the verification code matches
+    if (user.verificationCode !== verificationCode) {
+      return res.status(400).json({ message: "Wrong verification code" });
+    }
+
+    // Update user's email verification status
+    user.isEmailVerified = true;
+    await user.save();
+
+    // You can also generate a JWT token here if needed
+
+    res.status(200).json({ message: "Email verified successfully" });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: error.message });
   }
 });
 
@@ -199,7 +273,7 @@ router.post("/reset-password", async (req, res) => {
     }
 
     // const hashedPassword = await bcrypt.hash(newPassword, 10);
-     user.password = newPassword;
+    user.password = newPassword;
 
     await UserVerification.deleteOne({ userId: resetToken });
 
@@ -215,7 +289,7 @@ router.post("/api-join-event", async (req, res) => {
   try {
     let userId = req.body.userId;
     let eventId = req.body.eventId;
-  
+
     // Check if the user is already a judge for this event
     const existingJudge = await Judge.findOne({
       eventId: eventId,
@@ -283,7 +357,7 @@ router.get("/event-judges/:eventId", async (req, res) => {
   }
 });
 
-router.get('/get-username/:userId', async (req, res) => {
+router.get("/get-username/:userId", async (req, res) => {
   try {
     // Assuming userId is the MongoDB ObjectId
     const userId = req.params.userId;
@@ -294,11 +368,11 @@ router.get('/get-username/:userId', async (req, res) => {
     if (user) {
       res.status(200).json({ username: user.username });
     } else {
-      res.status(404).json({ error: 'User not found' });
+      res.status(404).json({ error: "User not found" });
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
