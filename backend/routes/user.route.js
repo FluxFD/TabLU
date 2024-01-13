@@ -162,7 +162,12 @@ router.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign(
-      { userId: user._id, email: user.email, username: user.username },
+      {
+        userId: user._id,
+        email: user.email,
+        username: user.username,
+        profilePic: user.profilePic,
+      },
       secretKey
     );
 
@@ -366,7 +371,9 @@ router.get("/get-username/:userId", async (req, res) => {
     const user = await User.findById(userId);
 
     if (user) {
-      res.status(200).json({ username: user.username });
+      res
+        .status(200)
+        .json({ username: user.username, profilePic: user.profilePic });
     } else {
       res.status(404).json({ error: "User not found" });
     }

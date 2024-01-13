@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial/authstate.dart';
@@ -258,6 +259,7 @@ class _SearchEventsState extends State<SearchEvents> {
   String event_category = '';
   String event_organizer = '';
   String event_venue = '';
+  String? profilePic = '';
   List<String> contestants = [];
   List<String> criterias = [];
   int notificationCount = 0;
@@ -288,16 +290,74 @@ class _SearchEventsState extends State<SearchEvents> {
   }
 
   File? _image;
-  String defaultImagePath = 'assets/icons/aubrey.jpg';
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
+    Navigator.of(context).pop();
+    _showImageDialog();
     if (pickedFile != null) {
       setState(() {
         _image = File(pickedFile.path);
       });
+    }
+
+    if (_image != null) {
+      _uploadProfilePic(_image);
+    } else {
+      print('Image is null. Unable to upload.');
+    }
+  }
+
+  Future<void> _uploadProfilePic(File? imageFile) async {
+    if (imageFile == null) {
+      print('Image is null. Unable to upload.');
+      return;
+    }
+
+    final String serverUrl = 'https://tab-lu.vercel.app/upload-profilePic';
+    final Uri uri = Uri.parse(serverUrl);
+
+    try {
+      // Retrieve user information (userId) from token
+      String? token = await SharedPreferencesUtils.retrieveToken();
+      String userId;
+
+      // Check if the token is not null before decoding
+      if (token != null && token.isNotEmpty) {
+        // Decode the token to extract user information
+        Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+        userId = decodedToken['userId'];
+      } else {
+        print('Token is null or empty. Unable to retrieve userId.');
+        return;
+      }
+
+      // Create a multipart request
+      var request = http.MultipartRequest('POST', uri);
+
+      // Add the image file and userId to the request
+      var profilePic = await http.MultipartFile.fromPath(
+        'profilePic',
+        imageFile.path ?? '', // Provide a default value if path is null
+        contentType: MediaType('image', 'jpeg'),
+      );
+
+      request.files.add(profilePic);
+      request.fields['userId'] = userId; // Add userId as a field in the request
+
+      var response = await request.send();
+
+      // Check the response status
+      if (response.statusCode == 200) {
+        fetchProfilePic(userId);
+        print('Profile picture uploaded successfully');
+      } else {
+        print(
+            'Failed to upload profile picture. Status Code: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error uploading profile picture: $error');
     }
   }
 
@@ -408,7 +468,7 @@ class _SearchEventsState extends State<SearchEvents> {
       if (token != null && token.isNotEmpty) {
         // Decode the token
         Map<String, dynamic> jwtDecodedToken = JwtDecoder.decode(token);
-        print(jwtDecodedToken);
+        print("Jwt Token: ${jwtDecodedToken}");
 
         // Use the decoded token data as required
         setState(() {
@@ -417,6 +477,7 @@ class _SearchEventsState extends State<SearchEvents> {
           username =
               jwtDecodedToken['username']?.toString() ?? 'DefaultUsername';
         });
+        await fetchProfilePic(jwtDecodedToken['userId'].toString());
       } else {
         print('No token found');
         setState(() {
@@ -444,6 +505,169 @@ class _SearchEventsState extends State<SearchEvents> {
     } else {
       throw Exception('Failed to load notifications');
     }
+  }
+
+  Future<void> fetchProfilePic(String userId) async {
+    print("User id : ${userId}");
+    // Replace 'your-api-endpoint' with the actual API endpoint for fetching user data
+    Uri usersCollectionUri =
+        Uri.parse('https://tab-lu.vercel.app/get-username/$userId');
+    try {
+      // Make a GET request to the users collection
+      final response = await http.get(usersCollectionUri);
+      if (response.statusCode == 200) {
+        // Parse the response body
+        final users = json.decode(response.body);
+        print(users);
+        if (users != null) {
+          // Extract the profilePic from the user data
+          setState(() {
+            profilePic = users['profilePic'];
+          });
+          // Here you can use the profilePic as needed (e.g., display in an Image widget).
+        } else {
+          print('User not found with userId: $userId');
+        }
+      } else {
+        print('Failed to fetch user data. Status code: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error fetching user data: $error');
+    }
+  }
+
+  void _showImageDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          height: 500,
+          child: AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10.0),
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Container(
+                    height: 270,
+                    width: 200,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            _pickImage();
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 16.0),
+                            child: Container(
+                              height: 150,
+                              width: 150,
+                              child: ClipOval(
+                                child: _image == null
+                                    ? Image.network(
+                                        profilePic ??
+                                            'https://example.com/default-image.jpg',
+                                        fit: BoxFit.cover,
+                                        width: 64,
+                                        height: 64,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                          return Image.asset(
+                                            'assets/icons/408-4087421_person-svg-circle-icon-picture-charing-cross-tube.png',
+                                            fit: BoxFit.cover,
+                                            width: 64,
+                                            height: 64,
+                                          );
+                                        },
+                                      )
+                                    : Image.file(
+                                        _image!,
+                                        fit: BoxFit.fitWidth,
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 7),
+                        Container(
+                          height: 40,
+                          child: Center(
+                            child: Text(
+                              '${username}', // '${user.username}',
+                              style: const TextStyle(
+                                fontSize: 23,
+                                color: Color.fromARGB(255, 5, 70, 20),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                        // const SizedBox(height: 10),
+                        Center(
+                          child: Text(
+                            '${email}', // ${user.email}
+                            style: TextStyle(fontSize: 15, color: Colors.black),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10.0),
+                  Container(
+                    height: 70,
+                    width: 500,
+                    child: Card(
+                      child: Container(
+                        child: Column(
+                          children: [
+                            Align(
+                              alignment: Alignment.topLeft,
+                              child: Column(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 16.0),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.password),
+                                        TextButton(
+                                            onPressed: () {
+                                              Navigator.of(context).push(
+                                                  MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          Forgotpass()));
+                                            },
+                                            child: Text('Change Password')),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text(
+                  'Close',
+                  style: TextStyle(color: Colors.green),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -528,147 +752,41 @@ class _SearchEventsState extends State<SearchEvents> {
                 onTap: () {
                   /* AlertDialog(actions: [Widget],)
                  */
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return Container(
-                        height: 500,
-                        child: AlertDialog(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10.0),
-                          ),
-                          content: SingleChildScrollView(
-                            child: Column(
-                              children: [
-                                Container(
-                                  height: 270,
-                                  width: 200,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      GestureDetector(
-                                        onTap: () {
-                                          _pickImage();
-                                        },
-                                        child: Padding(
-                                          padding:
-                                              const EdgeInsets.only(top: 16.0),
-                                          child: Container(
-                                            height: 150,
-                                            width: 150,
-                                            child: ClipOval(
-                                              child: _image == null
-                                                  ? Image.asset(
-                                                      defaultImagePath,
-                                                      fit: BoxFit.fitWidth,
-                                                    )
-                                                  : Image.file(
-                                                      _image!,
-                                                      fit: BoxFit.fitWidth,
-                                                    ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 7),
-                                      Container(
-                                        height: 40,
-                                        child: Center(
-                                          child: Text(
-                                            '${username}', // '${user.username}',
-                                            style: const TextStyle(
-                                              fontSize: 23,
-                                              color: Color.fromARGB(
-                                                  255, 5, 70, 20),
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      // const SizedBox(height: 10),
-                                      Center(
-                                        child: Text(
-                                          '${email}', // ${user.email}
-                                          style: TextStyle(
-                                              fontSize: 15,
-                                              color: Colors.black),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 10.0),
-                                Container(
-                                  height: 70,
-                                  width: 500,
-                                  child: Card(
-                                    child: Container(
-                                      child: Column(
-                                        children: [
-                                          Align(
-                                            alignment: Alignment.topLeft,
-                                            child: Column(
-                                              children: [
-                                                Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                          left: 16.0),
-                                                  child: Row(
-                                                    children: [
-                                                      Icon(Icons.password),
-                                                      TextButton(
-                                                          onPressed: () {
-                                                            Navigator.of(
-                                                                    context)
-                                                                .push(MaterialPageRoute(
-                                                                    builder:
-                                                                        (context) =>
-                                                                            Forgotpass()));
-                                                          },
-                                                          child: Text(
-                                                              'Change Password')),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          )
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                              child: const Text(
-                                'Close',
-                                style: TextStyle(color: Colors.green),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
+                  _showImageDialog();
                 },
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     CircleAvatar(
-                      radius: 32, // Adjust the radius to your desired size
-                      backgroundImage: AssetImage(
-                        'assets/icons/408-4087421_person-svg-circle-icon-picture-charing-cross-tube.png',
-                      ),
+                      radius: 32,
                       backgroundColor: Color.fromARGB(255, 76, 152, 79),
-                    ),
+                      child: ClipOval(
+                        child: _image != null
+                            ? Image.file(
+                                _image!, // Assuming _image is of type File
+                                fit: BoxFit.cover,
+                                width: 64,
+                                height: 64,
+                              )
+                            : Image.network(
+                                profilePic ??
+                                    'https://example.com/default-image.jpg',
+                                fit: BoxFit.cover,
+                                width: 64,
+                                height: 64,
+                                errorBuilder: (context, error, stackTrace) {
+                                  // If the network image fails to load, display the asset image
+                                  return Image.asset(
+                                    'assets/icons/408-4087421_person-svg-circle-icon-picture-charing-cross-tube.png',
+                                    fit: BoxFit.cover,
+                                    width: 64,
+                                    height: 64,
+                                  );
+                                },
+                              ),
+                      ),
+                    )
                   ],
                 ),
               ),

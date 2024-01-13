@@ -40,23 +40,24 @@ class Event {
       eventId: json['eventId'] != null ? json['eventId'].toString() : '',
       eventName: json['eventName'] != null ? json['eventName'].toString() : '',
       eventCategory:
-      json['eventCategory'] != null ? json['eventCategory'].toString() : '',
+          json['eventCategory'] != null ? json['eventCategory'].toString() : '',
       eventVenue:
-      json['eventVenue'] != null ? json['eventVenue'].toString() : '',
+          json['eventVenue'] != null ? json['eventVenue'].toString() : '',
       eventOrganizer: json['eventOrganizer'] != null
           ? json['eventOrganizer'].toString()
           : '',
       eventDate: json['eventDate'] != null ? json['eventDate'].toString() : '',
       eventTime: json['eventTime'] != null ? json['eventTime'].toString() : '',
-      accessCode: json['accessCode'] != null ? json['accessCode'].toString() : '',
+      accessCode:
+          json['accessCode'] != null ? json['accessCode'].toString() : '',
       userId: json['user'] != null ? json['user'].toString() : '',
       contestants: (json['contestants'] as List<dynamic>?)
-          ?.map((contestant) => Contestant.fromJson(contestant))
-          .toList() ??
+              ?.map((contestant) => Contestant.fromJson(contestant))
+              .toList() ??
           [],
       criterias: (json['criterias'] as List<dynamic>?)
-          ?.map((criteria) => Criteria.fromJson(criteria))
-          .toList() ??
+              ?.map((criteria) => Criteria.fromJson(criteria))
+              .toList() ??
           [],
     );
   }
@@ -119,28 +120,28 @@ class Contestant {
       name: json['name'] != null ? json['name'].toString() : '',
       course: json['course'] != null ? json['course'].toString() : '',
       department:
-      json['department'] != null ? json['department'].toString() : '',
+          json['department'] != null ? json['department'].toString() : '',
       eventId: json['eventId'] != null ? json['eventId'].toString() : '',
       criterias: criteriaList != null
           ? List.unmodifiable(
-          criteriaList.map((criteria) => Criteria.fromJson(criteria)))
+              criteriaList.map((criteria) => Criteria.fromJson(criteria)))
           : [],
       profilePic:
-      json['profilePic'] != null ? json['profilePic'].toString() : '',
+          json['profilePic'] != null ? json['profilePic'].toString() : '',
       selectedImage:
-      json['selectedImage'] != null ? json['selectedImage'].toString() : '',
+          json['selectedImage'] != null ? json['selectedImage'].toString() : '',
       id: json['_id'] != null ? json['_id'].toString() : '',
       totalScore: json['totalScore'] != null ? json['totalScore'] : 0,
       criteriaScores: criteriaList != null && criteriaList.isNotEmpty
           ? List<int?>.from(
-          criteriaList.map((criteria) => criteria['score'] as int? ?? 0))
+              criteriaList.map((criteria) => criteria['score'] as int? ?? 0))
           : List<int?>.filled(criteriaList?.length ?? 0, null, growable: true),
     );
   }
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is Contestant && runtimeType == other.runtimeType && id == other.id;
+      other is Contestant && runtimeType == other.runtimeType && id == other.id;
 
   @override
   int get hashCode => id.hashCode;
@@ -179,13 +180,16 @@ class Criteria {
   factory Criteria.fromJson(Map<String, dynamic> json) {
     return Criteria(
       criteriaId: json['_id'] != null ? json['_id'].toString() : '',
-      criterianame: json['criterianame'] != null ? json['criterianame'].toString() : '',
-      percentage: json['percentage'] != null ? json['percentage'].toString() : '',
+      criterianame:
+          json['criterianame'] != null ? json['criterianame'].toString() : '',
+      percentage:
+          json['percentage'] != null ? json['percentage'].toString() : '',
       eventId: json['eventId'] != null ? json['eventId'].toString() : '',
       score: json['score'] != null ? int.parse(json['score'].toString()) : 0,
     );
   }
 }
+
 class Judge {
   String id;
   String name;
@@ -200,14 +204,13 @@ class Judge {
   factory Judge.fromJson(Map<String, dynamic> json) {
     return Judge(
       id: json['_id'] ?? 'No ID', // Fallback to 'No ID' if null
-      name: json['userId']?['username'] ?? 'No Name', // Fallback to 'No Name' if null
-      scoreSubmitted: json['scoreSubmitted'] ?? false, // Fallback to false if null
+      name: json['userId']?['username'] ??
+          'No Name', // Fallback to 'No Name' if null
+      scoreSubmitted:
+          json['scoreSubmitted'] ?? false, // Fallback to false if null
     );
   }
 }
-
-
-
 
 class JudgeScoreSheet extends StatefulWidget {
   late final String eventId;
@@ -221,15 +224,15 @@ class JudgeScoreSheet extends StatefulWidget {
   });
 
   void updateEventId(String newEventId) {
-    JudgeScoreSheet._judgeScoreSheetState.currentState?.updateEventId(newEventId);
+    JudgeScoreSheet._judgeScoreSheetState.currentState
+        ?.updateEventId(newEventId);
   }
 
   @override
   State<JudgeScoreSheet> createState() => _JudgeScoreSheetState();
   static final GlobalKey<_JudgeScoreSheetState> _judgeScoreSheetState =
-  GlobalKey<_JudgeScoreSheetState>();
+      GlobalKey<_JudgeScoreSheetState>();
 }
-
 
 String criterianame = "default_value";
 
@@ -256,6 +259,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     super.initState();
     fetchAll();
   }
+
   void checkCreator(Event event) async {
     // Assuming User has a userId property
     String? token = await SharedPreferencesUtils.retrieveToken();
@@ -264,15 +268,16 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     if (token != null && token.isNotEmpty) {
       // Decode the token to extract user information
       Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
-      userId = decodedToken['userId']?.toString(); // Ensure userId is of type String
+      userId =
+          decodedToken['userId']?.toString(); // Ensure userId is of type String
     }
     // 99
-    if(userId == event.userId){
+    if (userId == event.userId) {
       isCreator = false;
     }
   }
 
-  Future <void> fetchAll()async {
+  Future<void> fetchAll() async {
     initializeData();
     fetchEventDetails();
     calculateInitialTotalScores();
@@ -283,6 +288,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       });
     });
   }
+
   // Future<void> initializeControllers() async {
   //   controllers.clear();
   //   for (var contestant in _contestants) {
@@ -304,6 +310,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     }
     super.dispose();
   }
+
   bool areAllFieldsPopulated() {
     for (TextEditingController judgeControllers in judgeControllers.values) {
       if (judgeControllers.text.isEmpty) {
@@ -371,11 +378,13 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                     TextButton(
                       onPressed: () async {
                         try {
-                          String? token = await SharedPreferencesUtils.retrieveToken();
+                          String? token =
+                              await SharedPreferencesUtils.retrieveToken();
                           String? userId;
                           if (token != null && token.isNotEmpty) {
                             // Decode the token to extract user information
-                            Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+                            Map<String, dynamic> decodedToken =
+                                JwtDecoder.decode(token);
                             userId = decodedToken['userId'];
                           }
                           final Map<String, dynamic> requestBody = {
@@ -388,10 +397,12 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                             },
                             'type': 'feedback',
                           };
-                          final String requestBodyJson = jsonEncode(requestBody);
+                          final String requestBodyJson =
+                              jsonEncode(requestBody);
                           // Send server notification
                           final response = await http.post(
-                            Uri.parse('http://192.168.1.7:8080/notifications'),
+                            Uri.parse(
+                                'https://tab-lu.vercel.app/notifications'),
                             headers: {'Content-Type': 'application/json'},
                             body: requestBodyJson,
                           );
@@ -401,7 +412,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                             print('Server notification sent successfully');
                           } else {
                             // Handle server notification creation failure
-                            print('Failed to send server notification. Status code: ${response.statusCode}');
+                            print(
+                                'Failed to send server notification. Status code: ${response.statusCode}');
                           }
 
                           Navigator.of(context).pop(); // Close the dialog
@@ -423,13 +435,13 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     );
   }
 
-
   Future<void> handleSubmit() async {
     try {
-      if (!isCreator){
+      if (!isCreator) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("You are the creator of this event. Can't submit scores"),
+            content:
+                Text("You are the creator of this event. Can't submit scores"),
             backgroundColor: Colors.orange,
           ),
         );
@@ -468,11 +480,12 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
             var parsedValue = double.tryParse(controller.text);
 
             // Find the Criteria object in the criterias list based on criteriaId
-            var criteria = criterias.firstWhere(
-                    (criteria) => criteria.criteriaId == criteriaId
-            );
+            var criteria = criterias
+                .firstWhere((criteria) => criteria.criteriaId == criteriaId);
 
-            if (parsedValue != null && criteria != null && double.tryParse(criteria.percentage) != 0) {
+            if (parsedValue != null &&
+                criteria != null &&
+                double.tryParse(criteria.percentage) != 0) {
               // Access the percentage directly from the found criteria
               double percentage = double.parse(criteria.percentage) / 100;
 
@@ -481,7 +494,6 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
               rawScore = parsedValue;
             }
           }
-
 
           if (!contestantScores.containsKey(contestantId)) {
             contestantScores[contestantId] = {};
@@ -495,13 +507,14 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
         }
       });
 
-      List<Map<String, dynamic>> submissionData = contestantScores.entries.map((entry) {
+      List<Map<String, dynamic>> submissionData =
+          contestantScores.entries.map((entry) {
         var contestantId = entry.key;
         var scores = entry.value;
         var criteriaIds = scores.keys.toList();
         var rawScores = contestantRawScores[contestantId] ?? {};
         // Create a list of maps for criteriaScores
-        List <dynamic> criteriaScores = criteriaIds.map((criteriaId) {
+        List<dynamic> criteriaScores = criteriaIds.map((criteriaId) {
           return {
             "criteriaId": criteriaId,
             "scores": scores[criteriaId],
@@ -520,7 +533,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       print("Datas: ${submissionData}");
       // Step 3: Send Data to Server or Process Locally
       // Replace this URL with your actual endpoint
-      var url = Uri.parse('http://192.168.1.7:8080/scorecards');
+      var url = Uri.parse('https://tab-lu.vercel.app/scorecards');
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -543,15 +556,11 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
         print('Scores already submitted');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Scores already submitted'
-            ),
+            content: Text('Scores already submitted'),
             backgroundColor: Colors.orange,
           ),
         );
       }
-
-
     } catch (error) {
       // Handle exceptions here
       print('Error: $error');
@@ -563,10 +572,9 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     }
   }
 
-
-
   Future<List<Judge>> fetchJudges(String eventId) async {
-    final url = Uri.parse('http://192.168.1.7:8080/judges/$eventId/confirmed');
+    final url =
+        Uri.parse('https://tab-lu.vercel.app/judges/$eventId/confirmed');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -654,8 +662,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
     try {
       Criteria matchingCriteria = contestant.criterias.firstWhere(
-            (criteria) =>
-        criteria.criterianame.trim().toLowerCase() ==
+        (criteria) =>
+            criteria.criterianame.trim().toLowerCase() ==
             criteriaName.trim().toLowerCase(),
         orElse: () {
           print('Matching criteria not found for: $criteriaName');
@@ -726,7 +734,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
   Future<String?> fetchImagePath(Contestant contestant) async {
     final contestantId = contestant.id;
-    final url = Uri.parse('http://192.168.1.7:8080/uploads/${contestantId}'); // Replace with your server URL
+    final url = Uri.parse(
+        'https://tab-lu.vercel.app/uploads/${contestantId}'); // Replace with your server URL
     try {
       final response = await http.get(url, headers: {
         'Content-Type': 'application/json',
@@ -737,8 +746,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
         // Find the document that matches the contestant.id
         return data['filePaths'];
       } else {
-
-        print('Failed to fetch image path. Status code: ${response.statusCode}');
+        print(
+            'Failed to fetch image path. Status code: ${response.statusCode}');
         return "";
       }
     } catch (e) {
@@ -746,11 +755,10 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     }
   }
 
-
   void showContestantDetailsDialog(
-      BuildContext context,
-      Contestant contestant,
-      ) {
+    BuildContext context,
+    Contestant contestant,
+  ) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -775,7 +783,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                   height: 200,
                   width: 300,
                   child: FutureBuilder<String?>(
-                    future: fetchImagePath(contestant), // Assuming fetchImagePath returns a String
+                    future: fetchImagePath(
+                        contestant), // Assuming fetchImagePath returns a String
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.done) {
                         if (snapshot.hasError || snapshot.data == null) {
@@ -783,7 +792,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                           return Container(
                             width: 200,
                             height: 200,
-                            color: Colors.grey, // Set the color you want for the placeholder
+                            color: Colors
+                                .grey, // Set the color you want for the placeholder
                           );
                         } else {
                           // Check if snapshot.data is a valid URL
@@ -794,10 +804,12 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                             imageUrl = null;
                           }
 
-                          if (imageUrl != null && imageUrl.isScheme("http") || imageUrl != null && imageUrl.isScheme("https")) {
+                          if (imageUrl != null && imageUrl.isScheme("http") ||
+                              imageUrl != null && imageUrl.isScheme("https")) {
                             // Return the Image.network if there is no error and data is a valid URL
                             return Image.network(
-                              snapshot.data!, // Replace with your server URL and actual filename
+                              snapshot
+                                  .data!, // Replace with your server URL and actual filename
                               width: 200,
                               height: 200,
                               fit: BoxFit.cover,
@@ -807,7 +819,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                             return Container(
                               width: 200,
                               height: 200,
-                              color: Colors.grey, // Set the color you want for the placeholder
+                              color: Colors
+                                  .grey, // Set the color you want for the placeholder
                             );
                           }
                         }
@@ -932,7 +945,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     );
   }
 
-  Widget buildContestantList(List<Contestant> contestants, List<Criteria>? criterias) {
+  Widget buildContestantList(
+      List<Contestant> contestants, List<Criteria>? criterias) {
     if (isLoading) {
       return Padding(
         padding: const EdgeInsets.only(top: 150, right: 0),
@@ -949,8 +963,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
             List<Widget> scoreFields = [];
             if (criterias != null && criterias.isNotEmpty) {
               scoreFields = criterias.map((criteria) {
-                String uniqueKey = "${contestant.id}_${criteria.criteriaId ??
-                    ''}";
+                String uniqueKey =
+                    "${contestant.id}_${criteria.criteriaId ?? ''}";
                 return Expanded(
                   child: Container(
                     height: 30,
@@ -974,8 +988,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
             return Card(
               elevation: 5.0,
-              margin: const EdgeInsets.symmetric(
-                  vertical: 8.0, horizontal: 16.0),
+              margin:
+                  const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
               child: Row(
                 children: [
                   Expanded(
@@ -1001,7 +1015,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     }
   }
 
-  Widget buildJudgesList(List<Contestant> contestants, List<Criteria>? criterias) {
+  Widget buildJudgesList(
+      List<Contestant> contestants, List<Criteria>? criterias) {
     if (isLoading) {
       return Padding(
         padding: const EdgeInsets.only(top: 150, right: 0),
@@ -1018,8 +1033,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
             List<Widget> scoreFields = [];
             if (criterias != null && criterias.isNotEmpty) {
               scoreFields = criterias.map((criteria) {
-                String uniqueKey = "${contestant.id}_${criteria.criteriaId ??
-                    ''}";
+                String uniqueKey =
+                    "${contestant.id}_${criteria.criteriaId ?? ''}";
                 return Expanded(
                   child: Container(
                     height: 30,
@@ -1030,7 +1045,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                       textAlign: TextAlign.center,
                       inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(3), // Limit to 3 digits
+                        LengthLimitingTextInputFormatter(
+                            3), // Limit to 3 digits
                         TextInputFormatter.withFunction((oldValue, newValue) {
                           // Custom logic to restrict input to the range of 0-100
                           try {
@@ -1066,8 +1082,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
             return Card(
               elevation: 5.0,
-              margin: const EdgeInsets.symmetric(
-                  vertical: 8.0, horizontal: 16.0),
+              margin:
+                  const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
               child: Row(
                 children: [
                   Expanded(
@@ -1088,7 +1104,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   }
 
   Future<String> fetchEventId() async {
-    final String url = 'http://192.168.1.7:8080/latest-event-id';
+    final String url = 'https://tab-lu.vercel.app/latest-event-id';
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -1123,8 +1139,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       final String eventId = widget.eventId;
       print('Fetched Event ID: $eventId');
       if (eventId.isNotEmpty) {
-        final response =
-        await http.get(Uri.parse("http://192.168.1.7:8080/event/$eventId"));
+        final response = await http
+            .get(Uri.parse("https://tab-lu.vercel.app/event/$eventId"));
         print('Event Details Response Status Code: ${response.statusCode}');
         if (response.statusCode == 200) {
           dynamic eventData = jsonDecode(response.body);
@@ -1159,14 +1175,12 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
               isLoading = false;
             });
           }
-
         } else {
           setState(() {
             isLoading = false;
           });
           throw Exception(
               'Failed to load event details. Status code: ${response.statusCode}');
-
         }
       } else {
         setState(() {
@@ -1185,55 +1199,57 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   Future<void> fetchContestants(String eventId) async {
     try {
       final response = await http.get(
-        Uri.parse("http://192.168.1.7:8080/events/$eventId/contestants"),
+        Uri.parse("https://tab-lu.vercel.app/events/$eventId/contestants"),
       );
       if (response.statusCode == 200) {
         final dynamic contestantData = jsonDecode(response.body);
         print('Fetched Contestant Data: $contestantData');
         if (contestantData != null && contestantData is List) {
           List<Contestant> fetchedContestants =
-          contestantData.map((data) => Contestant.fromJson(data)).toList();
+              contestantData.map((data) => Contestant.fromJson(data)).toList();
           int index = 0;
           // Fetch existing scores for each contestant and criteria
           for (var contestant in fetchedContestants) {
             try {
               List<double> existingScores =
-              await fetchExistingScoresForContestant(contestant.id, eventId);
+                  await fetchExistingScoresForContestant(
+                      contestant.id, eventId);
               // Check if the fetch is successful
               if (existingScores.isNotEmpty) {
                 for (var criteria in criterias) {
-
                   String uniqueKey = "${contestant.id}_${criteria.criteriaId}";
 
                   controllers[uniqueKey] = TextEditingController(
-                    text: existingScores[index * 2].toStringAsFixed(2),  // Assuming raw scores are at even indices
+                    text: existingScores[index * 2].toStringAsFixed(
+                        2), // Assuming raw scores are at even indices
                   );
 
                   judgeControllers[uniqueKey] = TextEditingController(
-                    text: existingScores[index * 2 + 1].toString(),  // Assuming judge scores are at odd indices
+                    text: existingScores[index * 2 + 1]
+                        .toString(), // Assuming judge scores are at odd indices
                   );
                   index++;
                 }
               } else {
                 for (var contestant in fetchedContestants) {
                   for (var criteria in criterias) {
-                    String uniqueKey = "${contestant.id}_${criteria.criteriaId}"; // Assuming each criteria has a unique id
+                    String uniqueKey =
+                        "${contestant.id}_${criteria.criteriaId}"; // Assuming each criteria has a unique id
                     controllers[uniqueKey] = TextEditingController();
                     judgeControllers[uniqueKey] = TextEditingController();
                   }
                 }
-                print("Controllers populated after fetching contestants: ${controllers.length}");
+                print(
+                    "Controllers populated after fetching contestants: ${controllers.length}");
                 // Handle the case where fetch is not successful
 
                 print('Failed to fetch scores for contestant ${contestant.id}');
               }
             } catch (error) {
-
               // Handle any errors that occurred during the fetch operation
               print('Error fetching scores: $error');
             }
           }
-
 
           setState(() {
             updateContestants(
@@ -1258,7 +1274,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     }
   }
 
-  Future<List<double>> fetchExistingScoresForContestant(String? contestantId, String eventId) async {
+  Future<List<double>> fetchExistingScoresForContestant(
+      String? contestantId, String eventId) async {
     try {
       String? token = await SharedPreferencesUtils.retrieveToken();
       String? userId;
@@ -1268,7 +1285,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
         userId = decodedToken['userId'];
       }
       // Make a GET request to your server endpoint with contestantId and eventId as query parameters
-      final Uri uri = Uri.parse('http://192.168.1.7:8080/judge-scorecards'); // Update the URL accordingly
+      final Uri uri = Uri.parse(
+          'https://tab-lu.vercel.app/judge-scorecards'); // Update the URL accordingly
       final response = await http.get(
         uri.replace(queryParameters: {
           'contestantId': contestantId ?? '',
@@ -1301,7 +1319,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       } else {
         // Handle error responses
         print('Failed to fetch scores. Status code: ${response.statusCode}');
-        if(response.statusCode == 401 || response.statusCode == 404){
+        if (response.statusCode == 401 || response.statusCode == 404) {
           return [];
         }
         final Map<String, dynamic> responseBody = jsonDecode(response.body);
@@ -1325,12 +1343,11 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     }
   }
 
-
   Future<List<Criteria>> fetchCriteria(String eventId,
       {VoidCallback? onCriteriaFetched}) async {
     try {
       final response = await http
-          .get(Uri.parse("http://192.168.1.7:8080/events/$eventId/criteria"));
+          .get(Uri.parse("https://tab-lu.vercel.app/events/$eventId/criteria"));
       print('Fetch Criteria - Status Code: ${response.statusCode}');
       print('Fetch Criteria - Response Body: ${response.body}');
 
@@ -1344,7 +1361,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
               print('Criteria data is empty');
             } else {
               final List<Criteria> criteriaList =
-              criteriaData.map((data) => Criteria.fromJson(data)).toList();
+                  criteriaData.map((data) => Criteria.fromJson(data)).toList();
               // Initialize controllers here after contestants are fetched
               // Clear old controllers if any, and create new ones
 
@@ -1380,28 +1397,29 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   // Function to show the confirmation dialog
   Future<bool> showConfirmationDialog() async {
     return await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Confirmation'),
-          content: Text('Are you sure you want to submit?'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(false); // User cancelled
-              },
-              child: Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(true); // User confirmed
-              },
-              child: Text('Submit'),
-            ),
-          ],
-        );
-      },
-    ) ?? false; // Return false if the user dismissed the dialog
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Confirmation'),
+              content: Text('Are you sure you want to submit?'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(false); // User cancelled
+                  },
+                  child: Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(true); // User confirmed
+                  },
+                  child: Text('Submit'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false; // Return false if the user dismissed the dialog
   }
 
   Future<void> fetchData() async {
@@ -1428,7 +1446,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
   Future<Map<String, dynamic>> fetchEventData(String eventId) async {
     final response =
-    await http.get(Uri.parse('http://192.168.1.7:8080/events/$eventId'));
+        await http.get(Uri.parse('https://tab-lu.vercel.app/events/$eventId'));
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> eventData = json.decode(response.body);
@@ -1500,176 +1518,60 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
         ),
       ),
       body: Refresher(
-          onRefresh: fetchAll,  // Provide your refresh logic here
+          onRefresh: fetchAll, // Provide your refresh logic here
           child: SingleChildScrollView(
               scrollDirection: Axis.vertical,
               child: Container(
-                  child: Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Container(
-                            height: 80,
-                            child: Card(
-                              elevation: 1,
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: 0),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Center(
-                                      child: Text(
-                                        ' ${events.isNotEmpty ? events[0]?.eventName.toUpperCase() ?? '' : ''} live at ${events.isNotEmpty ? events[0]?.eventVenue.toUpperCase() ?? '' : ''} ',
-                                        style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w400,
-                                          color: Color.fromARGB(255, 5, 70, 20),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Container(
-                            height: 400,// Adjust the height as needed
-                            child: Card(
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: 8.0),
-                                child: SizedBox(
-                                  width: 600,
-                                  child: Column(
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Container(
-                                              height: 50,
-                                              padding: const EdgeInsets.only(top: 5),
-                                              color: Colors.green,
-                                              alignment: Alignment.topCenter,
-                                              child: const Text(
-                                                'Name',
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          ...criterias.map((criteria) {
-                                            double percentage =
-                                                double.tryParse(criteria.percentage) ?? 0.0;
-                                            return Expanded(
-                                              child: Container(
-                                                height: 50,
-                                                padding: const EdgeInsets.only(top: 5),
-                                                color: Colors.green,
-                                                alignment: Alignment.topCenter,
-                                                child: buildCriteriaRow(
-                                                  criteria.criterianame,
-                                                  percentage,
-                                                  style: TextStyle(
-                                                    fontSize: 14,
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                ),
-                                              ),
-                                            );
-                                          }),
-                                          Expanded(
-                                            child: Container(
-                                              height: 50,
-                                              padding: const EdgeInsets.only(top: 5),
-                                              color: Colors.green,
-                                              alignment: Alignment.topCenter,
-                                              child: const Text(
-                                                'Edit',
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      buildContestantList(_contestants, criterias),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Container(
-                          height: 35,
-                          padding: const EdgeInsets.only(top: 5, left: 5, right: 5),
-                          color: Colors.green,
-                          alignment: Alignment.topCenter,
-                          child: const Text(
-                            'Your Score',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 8.0, left: 5.0, right: 5.0),
+                  child: Column(children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
                   child: Container(
-                    height: 300,
-                    child: SizedBox(
-                      width: 600,
-                      child: Column(
-                      children: [
-                        Container(
-                          height: 50,
-                          padding: const EdgeInsets.only(top: 5),
-                          color: Colors.green,
-                          alignment: Alignment.topCenter,
-                          child: Row(
-                            children: [
-                              // Name Column
-                              Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5),
-                                  child: Center(
-                                    child: Text(
-                                      'Name',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
+                    height: 80,
+                    child: Card(
+                      elevation: 1,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Center(
+                              child: Text(
+                                ' ${events.isNotEmpty ? events[0]?.eventName.toUpperCase() ?? '' : ''} live at ${events.isNotEmpty ? events[0]?.eventVenue.toUpperCase() ?? '' : ''} ',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w400,
+                                  color: Color.fromARGB(255, 5, 70, 20),
                                 ),
                               ),
-                              // Criteria Columns
-                              ...criterias.map((criteria) {
-                                double percentage = double.tryParse(criteria.percentage) ?? 0.0;
-                                return Expanded(
-                                  child: Container(
-                                    height: 50,
-                                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                                    color: Colors.green,
-                                    alignment: Alignment.topCenter,
-                                    child: Center(
-                                      child: buildCriteriaRow(
-                                        criteria.criterianame,
-                                        percentage,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Container(
+                    height: 400, // Adjust the height as needed
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: SizedBox(
+                          width: 600,
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      height: 50,
+                                      padding: const EdgeInsets.only(top: 5),
+                                      color: Colors.green,
+                                      alignment: Alignment.topCenter,
+                                      child: const Text(
+                                        'Name',
                                         style: TextStyle(
                                           fontSize: 14,
                                           color: Colors.white,
@@ -1678,20 +1580,140 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                                       ),
                                     ),
                                   ),
-                                );
-                              }).toList(),
+                                  ...criterias.map((criteria) {
+                                    double percentage =
+                                        double.tryParse(criteria.percentage) ??
+                                            0.0;
+                                    return Expanded(
+                                      child: Container(
+                                        height: 50,
+                                        padding: const EdgeInsets.only(top: 5),
+                                        color: Colors.green,
+                                        alignment: Alignment.topCenter,
+                                        child: buildCriteriaRow(
+                                          criteria.criterianame,
+                                          percentage,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                  Expanded(
+                                    child: Container(
+                                      height: 50,
+                                      padding: const EdgeInsets.only(top: 5),
+                                      color: Colors.green,
+                                      alignment: Alignment.topCenter,
+                                      child: const Text(
+                                        'Edit',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              buildContestantList(_contestants, criterias),
                             ],
                           ),
                         ),
-                        buildJudgesList(_contestants, criterias),
-                      ],
-                    ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-
-                      ])))),
+                Container(
+                  height: 35,
+                  padding: const EdgeInsets.only(top: 5, left: 5, right: 5),
+                  color: Colors.green,
+                  alignment: Alignment.topCenter,
+                  child: const Text(
+                    'Your Score',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(top: 8.0, left: 5.0, right: 5.0),
+                    child: Container(
+                      height: 300,
+                      child: SizedBox(
+                        width: 600,
+                        child: Column(
+                          children: [
+                            Container(
+                              height: 50,
+                              padding: const EdgeInsets.only(top: 5),
+                              color: Colors.green,
+                              alignment: Alignment.topCenter,
+                              child: Row(
+                                children: [
+                                  // Name Column
+                                  Expanded(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 5),
+                                      child: Center(
+                                        child: Text(
+                                          'Name',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  // Criteria Columns
+                                  ...criterias.map((criteria) {
+                                    double percentage =
+                                        double.tryParse(criteria.percentage) ??
+                                            0.0;
+                                    return Expanded(
+                                      child: Container(
+                                        height: 50,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 5),
+                                        color: Colors.green,
+                                        alignment: Alignment.topCenter,
+                                        child: Center(
+                                          child: buildCriteriaRow(
+                                            criteria.criterianame,
+                                            percentage,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ],
+                              ),
+                            ),
+                            buildJudgesList(_contestants, criterias),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ])))),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.only(left: 16, right: 16, bottom: 10),
         child: Row(
@@ -1710,22 +1732,22 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                         child: AlertDialog(
                           title: const Center(
                               child: Text(
-                                'Event Information',
-                                style: TextStyle(fontSize: 18),
-                              )),
+                            'Event Information',
+                            style: TextStyle(fontSize: 18),
+                          )),
                           content: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Center(
                                   child: Text(
-                                    '${events.isNotEmpty ? events[0]?.eventName ?? '' : ''}'
-                                        .toUpperCase(),
-                                    style: const TextStyle(fontSize: 20),
-                                  )),
+                                '${events.isNotEmpty ? events[0]?.eventName ?? '' : ''}'
+                                    .toUpperCase(),
+                                style: const TextStyle(fontSize: 20),
+                              )),
                               Row(
                                 mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     'ACCESS CODE: ${events.isNotEmpty ? events[0]?.accessCode ?? '' : ''}',
@@ -1737,10 +1759,9 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                                       size: 22,
                                     ),
                                     onPressed: () {
-
                                       Clipboard.setData(new ClipboardData(
                                           text:
-                                          '${events.isNotEmpty ? events[0]?.accessCode ?? '' : ''}'));
+                                              '${events.isNotEmpty ? events[0]?.accessCode ?? '' : ''}'));
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         const SnackBar(
@@ -1779,23 +1800,30 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                                   onPressed: () async {
                                     try {
                                       // Fetch judges
-                                      List<Judge> judges = await fetchJudges(widget.eventId);
+                                      List<Judge> judges =
+                                          await fetchJudges(widget.eventId);
 
                                       // Check if all judges have submitted scores
-                                      bool allScoresSubmitted = judges.every((judge) => judge.scoreSubmitted == true);
+                                      bool allScoresSubmitted = judges.every(
+                                          (judge) =>
+                                              judge.scoreSubmitted == true);
 
                                       if (allScoresSubmitted) {
                                         // If all judges have submitted scores, do something
                                         // For example, navigate to a new screen or perform another action
                                         Navigator.push(
                                           context,
-                                          MaterialPageRoute(builder: (context) => Winner(eventId: widget.eventId)),
+                                          MaterialPageRoute(
+                                              builder: (context) => Winner(
+                                                  eventId: widget.eventId)),
                                         );
                                       } else {
                                         // If not all judges have submitted scores, show a Snackbar
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
                                           SnackBar(
-                                            content: Text('Please wait for all judges to submit their scores'),
+                                            content: Text(
+                                                'Please wait for all judges to submit their scores'),
                                             backgroundColor: Colors.orange,
                                           ),
                                         );
@@ -1803,9 +1831,11 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                                     } catch (e) {
                                       // Handle any errors that occur during the fetchJudges function
                                       print('Error fetching judges: $e');
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
                                         SnackBar(
-                                          content: Text('Failed to load judges'),
+                                          content:
+                                              Text('Failed to load judges'),
                                           backgroundColor: Colors.red,
                                         ),
                                       );
@@ -1847,11 +1877,12 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
             ElevatedButton(
               onPressed: () async {
                 bool confirmed = await showConfirmationDialog();
-                if (confirmed){
+                if (confirmed) {
                   try {
                     await handleSubmit();
                     // The rest of your code goes here
-                    final String? token = await SharedPreferencesUtils.retrieveToken();
+                    final String? token =
+                        await SharedPreferencesUtils.retrieveToken();
                     // Navigator.of(context).push(
                     //   MaterialPageRoute(
                     //     builder: (context) =>  SearchEvents(token: token),
@@ -1862,7 +1893,6 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                     print('An error occurred: $error');
                   }
                 }
-
               },
               style: ElevatedButton.styleFrom(
                 primary: Colors.green,
@@ -1893,7 +1923,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       child: ListTile(
         title: Text('Number: $number'),
         subtitle:
-        Text('Name: ${contestant.name}\nCourse: ${contestant.course}'),
+            Text('Name: ${contestant.name}\nCourse: ${contestant.course}'),
         trailing: IconButton(
           icon: const Icon(Icons.edit),
           onPressed: () {},
