@@ -25,6 +25,7 @@ Future<List<dynamic>> fetchNotifications(String userId) async {
   if (response.statusCode == 200) {
     // Decode the JSON response
     List<dynamic> notifications = json.decode(response.body);
+
     // Sort the notifications based on the 'date' field
     notifications.sort((a, b) {
       DateTime dateTimeA = DateTime.parse(a['date']);
@@ -32,7 +33,6 @@ Future<List<dynamic>> fetchNotifications(String userId) async {
       return dateTimeB
           .compareTo(dateTimeA); // Descending order, modify if needed
     });
-
     return notifications;
   } else {
     throw Exception('Failed to load notifications');
@@ -173,16 +173,20 @@ class _NotifState extends State<Notif> {
         } else if (snapshot.hasData) {
           final String? username = snapshot.data;
           final DateTime date = DateTime.parse(notification['date']);
-          final String formattedDate = '${date.day}-${date.month}-${date.year}';
+          // final String formattedDate = '${date.day}-${date.month}-${date.year}';
           final String userId = notification['userId'];
-          final String rating = notification['body']['rating'];
-          final String feedback = notification['body']['feedback'];
-          final String eventName = notification['body']['eventName'];
-          final String body = notification['body'] is Map<String, dynamic>
-              ? "$username rate the $eventName $rating\nFeedback: $feedback"
-              : notification['body'];
           final String notificationType = notification['type'];
+          String body;
+          if (notification['body'] is Map<String, dynamic>) {
+            final Map<String, dynamic> bodyData = notification['body'];
+            final String rating = bodyData['rating'];
+            final String feedback = bodyData['feedback'];
+            final String eventName = bodyData['eventName'];
 
+            body = "$username rate the $eventName $rating\nFeedback: $feedback";
+          } else {
+            body = notification['body'];
+          }
           return GestureDetector(
             onTap: () {
               if (notificationType == 'confirmation') {
