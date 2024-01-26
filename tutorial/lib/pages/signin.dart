@@ -34,7 +34,7 @@ class _LoginPageState extends State<Signin> {
   }
 
   Future<void> signIn() async {
-    final Uri url = Uri.parse("https://tab-lu.vercel.app/signin");
+    final Uri url = Uri.parse("https://tab-lu.onrender.com/signin");
 
     if (username.text.isEmpty || email.text.isEmpty || password.text.isEmpty) {
       // Handle empty fields
@@ -158,7 +158,7 @@ class _LoginPageState extends State<Signin> {
                 // Validate the entered verification code and send it to the server
                 try {
                   final response = await http.post(
-                    Uri.parse("https://tab-lu.vercel.app/verify-email"),
+                    Uri.parse("https://tab-lu.onrender.com/verify-email"),
                     headers: <String, String>{
                       'Content-Type': 'application/json; charset=UTF-8',
                     },

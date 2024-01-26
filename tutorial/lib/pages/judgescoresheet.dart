@@ -402,7 +402,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                           // Send server notification
                           final response = await http.post(
                             Uri.parse(
-                                'https://tab-lu.vercel.app/notifications'),
+                                'https://tab-lu.onrender.com/notifications'),
                             headers: {'Content-Type': 'application/json'},
                             body: requestBodyJson,
                           );
@@ -533,7 +533,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       print("Datas: ${submissionData}");
       // Step 3: Send Data to Server or Process Locally
       // Replace this URL with your actual endpoint
-      var url = Uri.parse('https://tab-lu.vercel.app/scorecards');
+      var url = Uri.parse('https://tab-lu.onrender.com/scorecards');
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -574,7 +574,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
   Future<List<Judge>> fetchJudges(String eventId) async {
     final url =
-        Uri.parse('https://tab-lu.vercel.app/judges/$eventId/confirmed');
+        Uri.parse('https://tab-lu.onrender.com/judges/$eventId/confirmed');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -735,7 +735,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   Future<String?> fetchImagePath(Contestant contestant) async {
     final contestantId = contestant.id;
     final url = Uri.parse(
-        'https://tab-lu.vercel.app/uploads/${contestantId}'); // Replace with your server URL
+        'https://tab-lu.onrender.com/uploads/${contestantId}'); // Replace with your server URL
     try {
       final response = await http.get(url, headers: {
         'Content-Type': 'application/json',
@@ -1104,7 +1104,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   }
 
   Future<String> fetchEventId() async {
-    final String url = 'https://tab-lu.vercel.app/latest-event-id';
+    final String url = 'https://tab-lu.onrender.com/latest-event-id';
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -1140,7 +1140,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       print('Fetched Event ID: $eventId');
       if (eventId.isNotEmpty) {
         final response = await http
-            .get(Uri.parse("https://tab-lu.vercel.app/event/$eventId"));
+            .get(Uri.parse("https://tab-lu.onrender.com/event/$eventId"));
         print('Event Details Response Status Code: ${response.statusCode}');
         if (response.statusCode == 200) {
           dynamic eventData = jsonDecode(response.body);
@@ -1199,7 +1199,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   Future<void> fetchContestants(String eventId) async {
     try {
       final response = await http.get(
-        Uri.parse("https://tab-lu.vercel.app/events/$eventId/contestants"),
+        Uri.parse("https://tab-lu.onrender.com/events/$eventId/contestants"),
       );
       if (response.statusCode == 200) {
         final dynamic contestantData = jsonDecode(response.body);
@@ -1286,7 +1286,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       }
       // Make a GET request to your server endpoint with contestantId and eventId as query parameters
       final Uri uri = Uri.parse(
-          'https://tab-lu.vercel.app/judge-scorecards'); // Update the URL accordingly
+          'https://tab-lu.onrender.com/judge-scorecards'); // Update the URL accordingly
       final response = await http.get(
         uri.replace(queryParameters: {
           'contestantId': contestantId ?? '',
@@ -1346,8 +1346,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   Future<List<Criteria>> fetchCriteria(String eventId,
       {VoidCallback? onCriteriaFetched}) async {
     try {
-      final response = await http
-          .get(Uri.parse("https://tab-lu.vercel.app/events/$eventId/criteria"));
+      final response = await http.get(
+          Uri.parse("https://tab-lu.onrender.com/events/$eventId/criteria"));
       print('Fetch Criteria - Status Code: ${response.statusCode}');
       print('Fetch Criteria - Response Body: ${response.body}');
 
@@ -1445,8 +1445,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   //------------------------------------------------------------
 
   Future<Map<String, dynamic>> fetchEventData(String eventId) async {
-    final response =
-        await http.get(Uri.parse('https://tab-lu.vercel.app/events/$eventId'));
+    final response = await http
+        .get(Uri.parse('https://tab-lu.onrender.com/events/$eventId'));
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> eventData = json.decode(response.body);

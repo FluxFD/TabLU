@@ -317,7 +317,7 @@ class _WinnerState extends State<Winner> {
   Future<void> fetchScoreCards() async {
     final eventId = widget.eventId;
     print(eventId);
-    final url = Uri.parse('https://tab-lu.vercel.app/winners/$eventId');
+    final url = Uri.parse('https://tab-lu.onrender.com/winners/$eventId');
 
     try {
       final response = await http.get(url);

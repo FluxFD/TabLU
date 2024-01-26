@@ -20,7 +20,7 @@ class _ForgotpassState extends State<Forgotpass> {
       });
 
       var response = await http.post(
-        Uri.parse('https://tab-lu.vercel.app/send-verification-code'),
+        Uri.parse('https://tab-lu.onrender.com/send-verification-code'),
         body: {'email': email},
       );
 
@@ -333,7 +333,7 @@ class _ResetPassState extends State<ResetPass> {
   Future<void> resetPassword(
       String resetToken, String newPassword, String accessCode) async {
     try {
-      final Uri url = Uri.parse("https://tab-lu.vercel.app/reset-password");
+      final Uri url = Uri.parse("https://tab-lu.onrender.com/reset-password");
 
       final Map<String, dynamic> requestBody = {
         'resetToken': resetToken,

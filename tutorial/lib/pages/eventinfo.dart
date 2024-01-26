@@ -645,7 +645,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     print(eventData["accessCode"]);
     final response = await http.post(
       Uri.parse(
-          'https://tab-lu.vercel.app/events'), // Use Uri.parse to convert the string to Uri
+          'https://tab-lu.onrender.com/events'), // Use Uri.parse to convert the string to Uri
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $authToken',
@@ -684,8 +684,8 @@ class _EditEventScreen extends State<EditEventScreen> {
   Future<List<Event>> fetchEventData(String? eventId) async {
     token = await SharedPreferencesUtils.retrieveToken();
     try {
-      final response =
-          await http.get(Uri.parse('https://tab-lu.vercel.app/event/$eventId'));
+      final response = await http
+          .get(Uri.parse('https://tab-lu.onrender.com/event/$eventId'));
 
       if (response.statusCode == 200) {
         final dynamic eventData = json.decode(response.body);
@@ -1343,7 +1343,7 @@ class _EditEventScreen extends State<EditEventScreen> {
       Map<String, dynamic> eventData, String authToken, String eventId) async {
     final response = await http.put(
       Uri.parse(
-          'https://tab-lu.vercel.app/events/$eventId'), // Include eventId in the URL
+          'https://tab-lu.onrender.com/events/$eventId'), // Include eventId in the URL
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $authToken',

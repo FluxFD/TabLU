@@ -62,7 +62,7 @@ class _LoginPageState extends State<Login> {
   }
 
   try {
-    final Uri url = Uri.parse("https://tab-lu.vercel.app/login");
+    final Uri url = Uri.parse("https://tab-lu.onrender.com/login");
     var res = await http.post(
       url,
       headers: <String, String>{
@@ -142,7 +142,7 @@ class _LoginPageState extends State<Login> {
     }
 
     try {
-      final Uri url = Uri.parse("https://tab-lu.vercel.app/login");
+      final Uri url = Uri.parse("https://tab-lu.onrender.com/login");
       var res = await http.post(
         url,
         headers: <String, String>{

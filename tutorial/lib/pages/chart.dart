@@ -27,7 +27,8 @@ class _MyHomePageState extends State<ChartData> {
   late ChartSeriesController _chartSeriesController;
   // late Timer _timer;
   List<String> contestantNames = [];
-  final io.Socket socket = io.io('https://tab-lu.vercel.app', <String, dynamic>{
+  final io.Socket socket =
+      io.io('https://tab-lu.onrender.com', <String, dynamic>{
     'transports': ['websocket'],
     'autoConnect': false,
   });
@@ -157,7 +158,7 @@ class _MyHomePageState extends State<ChartData> {
 
   Future<void> fetchScoreCards() async {
     final eventId = widget.eventId;
-    final url = Uri.parse('https://tab-lu.vercel.app/winners/$eventId');
+    final url = Uri.parse('https://tab-lu.onrender.com/winners/$eventId');
 
     try {
       final response = await http.get(url);

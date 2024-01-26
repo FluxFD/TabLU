@@ -315,7 +315,7 @@ class _SearchEventsState extends State<SearchEvents> {
       return;
     }
 
-    final String serverUrl = 'https://tab-lu.vercel.app/upload-profilePic';
+    final String serverUrl = 'https://tab-lu.onrender.com/upload-profilePic';
     final Uri uri = Uri.parse(serverUrl);
 
     try {
@@ -388,13 +388,15 @@ class _SearchEventsState extends State<SearchEvents> {
 
         // Make the API request with the userId
         final response = await http.get(
-            Uri.parse('https://tab-lu.vercel.app/get-notifications/$userId'));
+            Uri.parse('https://tab-lu.onrender.com/get-notifications/$userId'));
 
         if (response.statusCode == 200) {
           List<dynamic> notifications = json.decode(response.body);
           setState(() {
             notificationCount = notifications.length;
           });
+
+          print('Test Notif');
 
           saveNotificationCount(notificationCount);
         } else {
@@ -419,7 +421,7 @@ class _SearchEventsState extends State<SearchEvents> {
         return [];
       }
 
-      final url = Uri.parse("https://tab-lu.vercel.app/events/$accessCode");
+      final url = Uri.parse("https://tab-lu.onrender.com/events/$accessCode");
       final response = await http.get(
         url,
         headers: {
@@ -497,7 +499,7 @@ class _SearchEventsState extends State<SearchEvents> {
   TextEditingController searchController = TextEditingController();
   Future<List<dynamic>> fetchNotifications(String userId) async {
     final response = await http.get(
-      Uri.parse('https://tab-lu.vercel.app/get-notifications/$userId'),
+      Uri.parse('https://tab-lu.onrender.com/get-notifications/$userId'),
     );
 
     if (response.statusCode == 200) {
@@ -511,7 +513,7 @@ class _SearchEventsState extends State<SearchEvents> {
     print("User id : ${userId}");
     // Replace 'your-api-endpoint' with the actual API endpoint for fetching user data
     Uri usersCollectionUri =
-        Uri.parse('https://tab-lu.vercel.app/get-username/$userId');
+        Uri.parse('https://tab-lu.onrender.com/get-username/$userId');
     try {
       // Make a GET request to the users collection
       final response = await http.get(usersCollectionUri);
@@ -1328,7 +1330,7 @@ class EventApi {
       String userId = decodedToken['userId'];
 
       final response = await http.post(
-        Uri.parse("https://tab-lu.vercel.app/api-join-event"),
+        Uri.parse("https://tab-lu.onrender.com/api-join-event"),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -1376,7 +1378,7 @@ class NotificationApi {
         final String username = decodedToken['username'];
         // Fetch event information before sending the notification
         final eventInfoResponse = await http.get(
-          Uri.parse("https://tab-lu.vercel.app/notifications/$eventId"),
+          Uri.parse("https://tab-lu.onrender.com/notifications/$eventId"),
           headers: {
             'Content-Type': 'application/json',
           },
@@ -1396,7 +1398,7 @@ class NotificationApi {
               'User $username has requested access to event $eventName';
           // Send the join notification
           final response = await http.post(
-            Uri.parse("https://tab-lu.vercel.app/notifications"),
+            Uri.parse("https://tab-lu.onrender.com/notifications"),
             headers: {
               'Content-Type': 'application/json',
             },

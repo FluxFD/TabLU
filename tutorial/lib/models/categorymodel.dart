@@ -35,7 +35,7 @@ class _PageantsScreenState extends State<PageantsScreen> {
       // Use the token in the Authorization header for your HTTP request
       final response = await http.get(
         Uri.parse(
-            'https://tab-lu.vercel.app/pageant-events'), // Replace with your API URL
+            'https://tab-lu.onrender.com/pageant-events'), // Replace with your API URL
         headers: {
           'Authorization': 'Bearer $token', // Using the token in the header
         },
@@ -89,7 +89,7 @@ class _PageantsScreenState extends State<PageantsScreen> {
         showLoadingIndicator(context);
 
         final response = await http
-            .delete(Uri.parse('https://tab-lu.vercel.app/event/$eventId'));
+            .delete(Uri.parse('https://tab-lu.onrender.com/event/$eventId'));
 
         Navigator.of(context).pop();
         print('DELETE Request Status Code: ${response.statusCode}');
@@ -340,7 +340,7 @@ class _TalentShowsScreenState extends State<TalentShowsScreen> {
       // Use the token in the Authorization header for your HTTP request
       final response = await http.get(
         Uri.parse(
-            'https://tab-lu.vercel.app/talent-events'), // Replace with your API URL
+            'https://tab-lu.onrender.com/talent-events'), // Replace with your API URL
         headers: {
           'Authorization': 'Bearer $token', // Using the token in the header
         },
@@ -394,7 +394,7 @@ class _TalentShowsScreenState extends State<TalentShowsScreen> {
         showLoadingIndicator(context);
 
         final response = await http
-            .delete(Uri.parse('https://tab-lu.vercel.app/event/$eventId'));
+            .delete(Uri.parse('https://tab-lu.onrender.com/event/$eventId'));
 
         Navigator.of(context).pop();
         print('DELETE Request Status Code: ${response.statusCode}');
@@ -645,7 +645,7 @@ class _DebatesScreenState extends State<DebatesScreen> {
       // Use the token in the Authorization header for your HTTP request
       final response = await http.get(
         Uri.parse(
-            'https://tab-lu.vercel.app/debate-events'), // Replace with your API URL
+            'https://tab-lu.onrender.com/debate-events'), // Replace with your API URL
         headers: {
           'Authorization': 'Bearer $token', // Using the token in the header
         },
@@ -699,7 +699,7 @@ class _DebatesScreenState extends State<DebatesScreen> {
         showLoadingIndicator(context);
 
         final response = await http
-            .delete(Uri.parse('https://tab-lu.vercel.app/event/$eventId'));
+            .delete(Uri.parse('https://tab-lu.onrender.com/event/$eventId'));
 
         Navigator.of(context).pop();
         print('DELETE Request Status Code: ${response.statusCode}');
@@ -949,7 +949,7 @@ class _ArtContestScreenState extends State<ArtContestScreen> {
       // Use the token in the Authorization header for your HTTP request
       final response = await http.get(
         Uri.parse(
-            'https://tab-lu.vercel.app/artcontest-events'), // Replace with your API URL
+            'https://tab-lu.onrender.com/artcontest-events'), // Replace with your API URL
         headers: {
           'Authorization': 'Bearer $token', // Using the token in the header
         },
@@ -1003,7 +1003,7 @@ class _ArtContestScreenState extends State<ArtContestScreen> {
         showLoadingIndicator(context);
 
         final response = await http
-            .delete(Uri.parse('https://tab-lu.vercel.app/event/$eventId'));
+            .delete(Uri.parse('https://tab-lu.onrender.com/event/$eventId'));
 
         Navigator.of(context).pop();
         print('DELETE Request Status Code: ${response.statusCode}');
