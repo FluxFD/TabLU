@@ -256,7 +256,7 @@ router.get("/winners/:eventId", async (req, res) => {
         $group: {
           _id: "$contestantId",
           averageScore: {
-            $sum: { $divide: ["$criteria.criteriascore", judges.length] },
+            $sum: { $divide: ["$criteria.rawScore", criterias.length] },
           },
         },
       },
