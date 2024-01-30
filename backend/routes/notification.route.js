@@ -17,10 +17,11 @@ router.post("/notifications", async (req, res) => {
       receiver = event.user;
       body.eventName = event.event_name;
     }
+    const event = await Event.findOne({ _id: eventId });
 
     // Create a new notification document
     const newNotification = new Notification({
-      eventId: eventId,
+      eventId: event.id,
       userId: userId,
       body: body,
       receiver: receiver,
