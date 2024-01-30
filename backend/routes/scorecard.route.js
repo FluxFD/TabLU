@@ -245,6 +245,8 @@ router.get("/winners/:eventId", async (req, res) => {
       .populate("criteria.criteriaId");
 
     const criterias = await Criteria.find({ eventId });
+    const judges = await Judge.find({ eventId: eventId }).populate("userId");
+
     // Aggregate to calculate average score for each contestant
     const contestants = await ScoreCard.aggregate([
       {
@@ -253,7 +255,9 @@ router.get("/winners/:eventId", async (req, res) => {
       {
         $group: {
           _id: "$contestantId",
-          averageScore: { $sum: "$criteria.criteriascore" },
+          averageScore: {
+            $sum: { $divide: ["$criteria.criteriascore", judges.length] },
+          },
         },
       },
       {
@@ -280,8 +284,6 @@ router.get("/winners/:eventId", async (req, res) => {
     ]);
     io.emit("chartUpdate", { contestants });
     // Respond with the top three winners and their average scores
-
-    const judges = await Judge.find({ eventId: eventId }).populate("userId");
 
     const response = {
       eventName: event.event_name,
