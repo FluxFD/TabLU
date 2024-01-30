@@ -21,13 +21,13 @@ router.post("/notifications", async (req, res) => {
 
     // Create a new notification document
     const newNotification = new Notification({
-      eventId: event.id,
+      eventId: eventId,
       userId: userId,
       body: body,
       receiver: receiver,
       type: type,
     });
-    console.log(newNotification);
+    console.log("Event ID;", eventId);
 
     // Save the notification to the database
     const savedNotification = await newNotification.save();
