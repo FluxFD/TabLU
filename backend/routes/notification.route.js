@@ -26,10 +26,10 @@ router.post("/notifications", async (req, res) => {
       receiver: receiver,
       type: type,
     });
+    console.log(newNotification);
 
     // Save the notification to the database
     const savedNotification = await newNotification.save();
-
     // Respond with the created notification
     res.status(201).json({
       message: "Notification created successfully",
@@ -37,7 +37,7 @@ router.post("/notifications", async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Internal server error", newNotification });
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
