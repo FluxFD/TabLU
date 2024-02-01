@@ -46,7 +46,7 @@ router.post("/signin", async (req, res) => {
     }
 
     if (existingUser) {
-      return res.status(400).json({
+      return res.status(401).json({
         message: "Username or Email already exists",
         error: "username",
       });
@@ -54,7 +54,6 @@ router.post("/signin", async (req, res) => {
 
     const verificationCode = generateVerificationCode();
 
-    // If the user doesn't exist, create a new user
     const newUser = new User({
       username: username,
       email: email,
