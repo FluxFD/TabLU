@@ -82,6 +82,9 @@ class _LoginPageState extends State<Signin> {
       var jsonResponse = json.decode(response.body);
       if (response.statusCode == 201) {
         print('Sign-up successful');
+        setState(() {
+          emailBorderColor = Color.fromARGB(255, 9, 175, 51);
+        });
         var jsonResponse = json.decode(response.body);
         var myToken = jsonResponse['token'];
         print(jsonResponse);
@@ -98,7 +101,7 @@ class _LoginPageState extends State<Signin> {
           // If email is not verified, show verification dialog
           showEmailVerificationDialog();
         }
-      } else if (response.statusCode == 400) {
+      } else if (response.statusCode == 401) {
         print(jsonResponse);
         if (jsonResponse["error"] == "email") {
           showLoginErrorToast(jsonResponse["message"]);
@@ -168,7 +171,7 @@ class _LoginPageState extends State<Signin> {
                     }),
                   );
 
-                  var jsonResponse = json.decode(response.body);
+                  // var jsonResponse = json.decode(response.body);
                   if (response.statusCode == 200) {
                     print('Email verification successful');
                     setState(() {
@@ -188,11 +191,11 @@ class _LoginPageState extends State<Signin> {
                         ),
                       );
                     }
-                  } else if (response.statusCode == 400) {
-                    print(jsonResponse);
-                    showLoginErrorToast(jsonResponse["message"]);
-                  } else {
-                    print('HTTP Error: ${response.statusCode}');
+                    // } else if (response.statusCode == 400) {
+                    //   print(jsonResponse);
+                    //   // showLoginErrorToast(jsonResponse["message"]);
+                    // } else {
+                    //   print('HTTP Error: ${response.statusCode}');
                   }
                 } catch (e) {
                   print('Error: $e');

@@ -190,22 +190,19 @@ class Criteria {
 }
 
 class Judge {
-  final String id; // Assuming each judge has an ID
-  final String name; // And a name
+  final String id;
+  final String name;
 
   Judge({required this.id, required this.name});
 
   factory Judge.fromJson(Map<String, dynamic> json) {
-    // Debug: Print the raw JSON to see what data is received.
     print("Judge JSON: $json");
 
     var judge = Judge(
-      id: json['_id'] ?? 'No ID', // Fallback to 'No ID' if null
-      name: json['userId']?['username'] ??
-          'No Name', // Fallback to 'No Name' if null
+      id: json['_id'] ?? 'No ID',
+      name: json['userId']?['username'] ?? 'No Name',
     );
 
-    // Debug: Print the created Judge object.
     print("Created Judge: id=${judge.id}, name=${judge.name}");
 
     return judge;
@@ -233,7 +230,6 @@ class ScoreCard extends StatefulWidget {
 String criterianame = "default_value";
 
 class _ScoreCardState extends State<ScoreCard> {
-  //----------------------------------------------------------------------
   late List<Contestant> contestants = [];
 
   late List<Criteria> criteria;
@@ -247,8 +243,6 @@ class _ScoreCardState extends State<ScoreCard> {
 
   VoidCallback? onCriteriaFetched;
 
-  //----------------------------------------------------------------------
-//   String? criteriaName;
   @override
   void initState() {
     super.initState();
@@ -256,17 +250,13 @@ class _ScoreCardState extends State<ScoreCard> {
   }
 
   void checkCreator(Event event) async {
-    // Assuming User has a userId property
     String? token = await SharedPreferencesUtils.retrieveToken();
     String? userId;
 
     if (token != null && token.isNotEmpty) {
-      // Decode the token to extract user information
       Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
-      userId =
-          decodedToken['userId']?.toString(); // Ensure userId is of type String
+      userId = decodedToken['userId']?.toString();
     }
-    // 99
     if (userId == event.userId) {
       isCreator = false;
     }
@@ -297,7 +287,6 @@ class _ScoreCardState extends State<ScoreCard> {
   }
 
   void dispose() {
-    // Dispose of each controller in the 'controllers' map.
     for (var controller in controllers.values) {
       controller.dispose();
     }
@@ -307,11 +296,9 @@ class _ScoreCardState extends State<ScoreCard> {
   bool areAllFieldsPopulated() {
     for (TextEditingController controller in controllers.values) {
       if (controller.text.isEmpty) {
-        // If any controller's text is empty, return false
         return false;
       }
     }
-    // If all controllers have non-empty text, return true
     return true;
   }
 
@@ -327,7 +314,6 @@ class _ScoreCardState extends State<ScoreCard> {
         );
       }
       if (!areAllFieldsPopulated()) {
-        // Handle the case where not all fields are populated
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Please fill in all the fields before submitting.'),
@@ -410,8 +396,6 @@ class _ScoreCardState extends State<ScoreCard> {
       }).toList();
 
       print("Datas: ${submissionData}");
-      // Step 3: Send Data to Server or Process Locally
-      // Replace this URL with your actual endpoint
       var url = Uri.parse('https://tab-lu.onrender.com/scorecards');
       var response = await http.post(
         url,
@@ -428,23 +412,7 @@ class _ScoreCardState extends State<ScoreCard> {
           ),
         );
       }
-      //
-      // if (response.statusCode == 403) {
-      //   final Map<String, dynamic> responseBody = jsonDecode(response.body);
-      //
-      //   if (responseBody.containsKey('error')) {
-      //     final errorMessage = responseBody['error'] as String;
-      //
-      //     ScaffoldMessenger.of(context).showSnackBar(
-      //       SnackBar(
-      //         content: Text(errorMessage),
-      //         backgroundColor: Colors.orange,
-      //       ),
-      //     );
-      //   }
-      // }
     } catch (error) {
-      // Handle exceptions here
       print('Error: $error');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -607,10 +575,6 @@ class _ScoreCardState extends State<ScoreCard> {
     });
 
     print('Updated Contestants List: $_contestants');
-
-    // setState(() {
-    //   isLoading = false;
-    // });
   }
 
   Future<String?> fetchImagePath(Contestant contestant) async {
@@ -624,7 +588,6 @@ class _ScoreCardState extends State<ScoreCard> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        // Find the document that matches the contestant.id
         return data['filePaths'];
       } else {
         print(
@@ -664,20 +627,16 @@ class _ScoreCardState extends State<ScoreCard> {
                   height: 200,
                   width: 300,
                   child: FutureBuilder<String?>(
-                    future: fetchImagePath(
-                        contestant), // Assuming fetchImagePath returns a String
+                    future: fetchImagePath(contestant),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.done) {
                         if (snapshot.hasError || snapshot.data == null) {
-                          // Handle error or missing data, return a placeholder
                           return Container(
                             width: 200,
                             height: 200,
-                            color: Colors
-                                .grey, // Set the color you want for the placeholder
+                            color: Colors.grey,
                           );
                         } else {
-                          // Check if snapshot.data is a valid URL
                           Uri? imageUrl;
                           try {
                             imageUrl = Uri.parse(snapshot.data!);
@@ -687,26 +646,21 @@ class _ScoreCardState extends State<ScoreCard> {
 
                           if (imageUrl != null && imageUrl.isScheme("http") ||
                               imageUrl != null && imageUrl.isScheme("https")) {
-                            // Return the Image.network if there is no error and data is a valid URL
                             return Image.network(
-                              snapshot
-                                  .data!, // Replace with your server URL and actual filename
+                              snapshot.data!,
                               width: 200,
                               height: 200,
                               fit: BoxFit.cover,
                             );
                           } else {
-                            // Handle invalid URL, return a placeholder
                             return Container(
                               width: 200,
                               height: 200,
-                              color: Colors
-                                  .grey, // Set the color you want for the placeholder
+                              color: Colors.grey,
                             );
                           }
                         }
                       } else {
-                        // Handle loading state
                         return CircularProgressIndicator();
                       }
                     },
@@ -986,7 +940,6 @@ class _ScoreCardState extends State<ScoreCard> {
                 'eventDate': event.eventDate,
                 'eventTime': event.eventTime,
                 'accessCode': event.accessCode,
-                // Add other data as needed
               };
             });
             widget.updateEventId(eventId);
@@ -1040,28 +993,23 @@ class _ScoreCardState extends State<ScoreCard> {
           List<Contestant> fetchedContestants =
               contestantData.map((data) => Contestant.fromJson(data)).toList();
 
-          // Fetch existing scores for each contestant and criteria
           for (var contestant in fetchedContestants) {
             try {
               List<double> existingScores =
                   await fetchExistingScoresForContestant(
                       contestant.id, eventId);
 
-              // Check if the fetch is successful
               if (existingScores.isNotEmpty) {
                 int criteriaLength = criterias.length;
-                // Split the scores into chunks based on criteria length
                 List<List<double>> splitScores = List.generate(
                   criteriaLength - 1,
                   (index) {
                     int start = index * criteriaLength;
                     int end = (index + 1) * criteriaLength;
-                    // print('Index: $index, Start: $start, End: $end');
                     return existingScores.sublist(start, end);
                   },
                 );
 
-                // Calculate the averages for each criterion across all judges
                 List<double> criterionAverages = List.generate(
                   criteriaLength,
                   (index) =>
@@ -1070,7 +1018,6 @@ class _ScoreCardState extends State<ScoreCard> {
                       splitScores.length,
                 );
 
-                // Now, set up the text controllers with the averages
                 for (var criteria in criterias) {
                   String uniqueKey = "${contestant.id}_${criteria.criteriaId}";
                   controllers[uniqueKey] = TextEditingController(
@@ -1082,18 +1029,15 @@ class _ScoreCardState extends State<ScoreCard> {
                 for (var contestant in fetchedContestants) {
                   for (var criteria in criterias) {
                     String uniqueKey =
-                        "${contestant.id}_${criteria.criteriaId}"; // Assuming each criteria has a unique id
+                        "${contestant.id}_${criteria.criteriaId}";
                     controllers[uniqueKey] = TextEditingController();
                   }
                 }
                 print(
                     "Controllers populated after fetching contestants: ${controllers.length}");
-                // Handle the case where fetch is not successful
-
                 print('Failed to fetch scores for contestant ${contestant.id}');
               }
             } catch (error) {
-              // Handle any errors that occurred during the fetch operation
               print('Error fetching scores: $error');
             }
           }
@@ -1127,13 +1071,10 @@ class _ScoreCardState extends State<ScoreCard> {
       String? token = await SharedPreferencesUtils.retrieveToken();
       String? userId;
       if (token != null && token.isNotEmpty) {
-        // Decode the token to extract user information
         Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
         userId = decodedToken['userId'];
       }
-      // Make a GET request to your server endpoint with contestantId and eventId as query parameters
-      final Uri uri = Uri.parse(
-          'https://tab-lu.onrender.com/scorecards'); // Update the URL accordingly
+      final Uri uri = Uri.parse('https://tab-lu.onrender.com/scorecards');
       final response = await http.get(
         uri.replace(queryParameters: {
           'contestantId': contestantId ?? '',
@@ -1143,18 +1084,14 @@ class _ScoreCardState extends State<ScoreCard> {
       );
 
       if (response.statusCode == 200) {
-        // Parse the response body as JSON
         final Map<String, dynamic> responseBody = jsonDecode(response.body);
-        // Extract the scores from the response
         final List<dynamic> scoresData = responseBody['scores'];
         final List<double> scores = scoresData.map<double>((score) {
-          // Assuming the criteriascore is the value you want to extract
           return score['criteria']['criteriascore'].toDouble();
         }).toList();
 
         print("Contestant scores: $scores");
 
-        // Optionally, you might want to update the UI or perform other actions here
         return scores;
       } else {
         // Handle error responses
@@ -1174,13 +1111,10 @@ class _ScoreCardState extends State<ScoreCard> {
           // }
         }
         print('Response body: ${response.body}');
-        // You might want to throw an exception or handle the error accordingly
         return [];
       }
     } catch (e) {
-      // Handle exceptions
       print('Error fetching scores: $e');
-      // You might want to throw an exception or handle the error accordingly
       return [];
     }
   }
@@ -1188,8 +1122,8 @@ class _ScoreCardState extends State<ScoreCard> {
   Future<List<Criteria>> fetchCriteria(String eventId,
       {VoidCallback? onCriteriaFetched}) async {
     try {
-      final response = await http
-          .get(Uri.parse("https://tab-lu.onrender.com/events/$eventId/criteria"));
+      final response = await http.get(
+          Uri.parse("https://tab-lu.onrender.com/events/$eventId/criteria"));
       print('Fetch Criteria - Status Code: ${response.statusCode}');
       print('Fetch Criteria - Response Body: ${response.body}');
 
@@ -1204,8 +1138,6 @@ class _ScoreCardState extends State<ScoreCard> {
             } else {
               final List<Criteria> criteriaList =
                   criteriaData.map((data) => Criteria.fromJson(data)).toList();
-              // Initialize controllers here after contestants are fetched
-              // Clear old controllers if any, and create new ones
 
               setState(() {
                 updateCriterias(criteriaList);
@@ -1252,15 +1184,9 @@ class _ScoreCardState extends State<ScoreCard> {
     }
   }
 
-  //----------------------------------------------------------------------
-// i added this line for the categories
-// i have issues here.
-
-  //------------------------------------------------------------
-
   Future<Map<String, dynamic>> fetchEventData(String eventId) async {
-    final response =
-        await http.get(Uri.parse('https://tab-lu.onrender.com/events/$eventId'));
+    final response = await http
+        .get(Uri.parse('https://tab-lu.onrender.com/events/$eventId'));
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> eventData = json.decode(response.body);
@@ -1270,27 +1196,13 @@ class _ScoreCardState extends State<ScoreCard> {
     }
   }
 
-//------------------------------------------------------------
-  /*List<Criteria> extractCriteria(Map<String, dynamic> eventData) {
-    final List<dynamic> criteriaData = eventData['criterias'];
-    return criteriaData.map((c) => Criteria.fromJson(c)).toList();
-  }
-  List<Contestant> extractContestants(Map<String, dynamic> eventData) {
-    final List<dynamic> contestantsData = eventData['contestant'];
-    return contestantsData.map((c) => Contestant.fromJson(c)).toList();
-  }
-  */
-  //----------------------------------------------------------------------
-
   @override
   Widget build(BuildContext context) {
-    //--------------------------------------------------
     if (eventData == null) {
       return const CircularProgressIndicator();
     }
     final eventName = eventData['event_name'] ?? '';
     final eventVenue = eventData['event_venue'] ?? '';
-    //---------------------------------------------------
 
     return Scaffold(
       appBar: AppBar(
@@ -1340,7 +1252,7 @@ class _ScoreCardState extends State<ScoreCard> {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Container(
-                    height: 80,
+                    height: 100,
                     width: 500,
                     child: Card(
                       elevation: 1,
@@ -1350,6 +1262,7 @@ class _ScoreCardState extends State<ScoreCard> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            SizedBox(height: 10),
                             Center(
                               child: Text(
                                 ' ${events.isNotEmpty ? events[0]?.eventName.toUpperCase() ?? '' : ''} live at ${events.isNotEmpty ? events[0]?.eventVenue.toUpperCase() ?? '' : ''} ',
@@ -1366,48 +1279,29 @@ class _ScoreCardState extends State<ScoreCard> {
                     ),
                   ),
                 ),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Container(
-                    height: 400, // Adjust the height as needed
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
-                        child: SizedBox(
-                          width: 600,
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Container(
-                                      height: 70,
-                                      padding: const EdgeInsets.only(top: 5),
-                                      color: Colors.green,
-                                      alignment: Alignment.topCenter,
-                                      child: const Text(
-                                        'Name',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  ...criterias.map((criteria) {
-                                    double percentage =
-                                        double.tryParse(criteria.percentage) ??
-                                            0.0;
-                                    return Expanded(
+                Visibility(
+                  visible: false,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Container(
+                      height: 400,
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: SizedBox(
+                            width: 600,
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
                                       child: Container(
                                         height: 70,
                                         padding: const EdgeInsets.only(top: 5),
                                         color: Colors.green,
                                         alignment: Alignment.topCenter,
-                                        child: buildCriteriaRow(
-                                          criteria.criterianame,
-                                          percentage,
+                                        child: const Text(
+                                          'Name',
                                           style: TextStyle(
                                             fontSize: 14,
                                             color: Colors.white,
@@ -1415,28 +1309,51 @@ class _ScoreCardState extends State<ScoreCard> {
                                           ),
                                         ),
                                       ),
-                                    );
-                                  }),
-                                  Expanded(
-                                    child: Container(
-                                      height: 70,
-                                      padding: const EdgeInsets.only(top: 5),
-                                      color: Colors.green,
-                                      alignment: Alignment.topCenter,
-                                      child: const Text(
-                                        'Edit',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w500,
+                                    ),
+                                    ...criterias.map((criteria) {
+                                      double percentage = double.tryParse(
+                                              criteria.percentage) ??
+                                          0.0;
+                                      return Expanded(
+                                        child: Container(
+                                          height: 70,
+                                          padding:
+                                              const EdgeInsets.only(top: 5),
+                                          color: Colors.green,
+                                          alignment: Alignment.topCenter,
+                                          child: buildCriteriaRow(
+                                            criteria.criterianame,
+                                            percentage,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                    Expanded(
+                                      child: Container(
+                                        height: 70,
+                                        padding: const EdgeInsets.only(top: 5),
+                                        color: Colors.green,
+                                        alignment: Alignment.topCenter,
+                                        child: const Text(
+                                          'Edit',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              buildContestantList(_contestants, criterias),
-                            ],
+                                  ],
+                                ),
+                                buildContestantList(_contestants, criterias),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -1450,7 +1367,6 @@ class _ScoreCardState extends State<ScoreCard> {
                     height: 500,
                     child: Column(
                       children: [
-                        // Header Row
                         Container(
                           height: 35,
                           padding:
@@ -1466,6 +1382,16 @@ class _ScoreCardState extends State<ScoreCard> {
                             ),
                           ),
                         ),
+                        Center(
+                          child: Text(
+                            'Instructions: Judges can only enter scores from 1 to 100',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w200,
+                              color: Color.fromARGB(255, 128, 127, 127),
+                            ),
+                          ),
+                        ),
                         Container(
                           height: 50,
                           padding: const EdgeInsets.only(top: 5),
@@ -1473,7 +1399,6 @@ class _ScoreCardState extends State<ScoreCard> {
                           alignment: Alignment.topCenter,
                           child: Row(
                             children: [
-                              // Name Column
                               Expanded(
                                 child: Container(
                                   padding:
@@ -1490,7 +1415,6 @@ class _ScoreCardState extends State<ScoreCard> {
                                   ),
                                 ),
                               ),
-                              // Criteria Columns
                               Expanded(
                                 child: Container(
                                   height: 50,
@@ -1512,7 +1436,6 @@ class _ScoreCardState extends State<ScoreCard> {
                             ],
                           ),
                         ),
-
                         buildJudgesList(judges, criterias),
                       ],
                     ),
@@ -1629,8 +1552,6 @@ class _ScoreCardState extends State<ScoreCard> {
             ElevatedButton(
               onPressed: () async {
                 try {
-                  // await handleSubmit();
-                  // The rest of your code goes here
                   final String? token =
                       await SharedPreferencesUtils.retrieveToken();
                   Navigator.of(context).push(
@@ -1639,7 +1560,6 @@ class _ScoreCardState extends State<ScoreCard> {
                     ),
                   );
                 } catch (error) {
-                  // Handle the error here, you can log it or show a user-friendly message
                   print('An error occurred: $error');
                 }
               },
@@ -1709,110 +1629,6 @@ class _ScoreCardState extends State<ScoreCard> {
       style: finalStyle,
     );
   }
-// Widget buildCriteriaRow(String criterianame, String percentage) {
-//   TextEditingController _scoreController = TextEditingController();
-//   return Row(
-//     children: [
-//       Padding(
-//         padding: const EdgeInsets.only(left: 20),
-//         child: Text(
-//           criterianame,
-//           style: const TextStyle(
-//             fontWeight: FontWeight.w500,
-//             color: Colors.green,
-//           ),
-//         ),
-//       ),
-//       const SizedBox(width: 10), // Adjust the spacing as needed
-//       Container(
-//         width: 50, // Adjust the width as needed
-//         child: Padding(
-//           padding: const EdgeInsets.only(left: 20),
-//           child: Text(
-//             percentage, // Display the actual percentage value
-//             style: const TextStyle(
-//               color: Colors.green,
-//             ),
-//           ),
-//         ),
-//       ),
-
-//       const SizedBox(width: 30),
-//       Expanded(
-//         child: Container(
-//           height: 50,
-//           width: 90,
-//           child: TextField(
-//             controller: _scoreController,
-//             keyboardType: TextInputType.number,
-//             onChanged: (score) {
-//               print('onChanged - criteriaName: $criterianame');
-//               setState(() {
-//                 criteriaScore = int.tryParse(score) ?? 9;
-
-//                 if (contestant != null) {
-//                   if (criterianame != null) {
-//                     getCriteriaScore(
-//                       contestant!,
-//                       criterianame,
-//                       criteriaScore!,
-//                     );
-//                     int index = contestant.criterias.indexWhere(
-//                       (criteria) =>
-//                           criteria.criterianame.trim().toLowerCase() ==
-//                           criterianame.trim().toLowerCase(),
-//                     );
-
-//                     if (index != -1) {
-//                       contestant.criterias[index].score = criteriaScore!;
-//                     } else {
-//                       print(
-//                         'Warning: No matching criteria found in the contestant\'s list.',
-//                       );
-//                       print(
-//                         'List of criteria names in the contestant: ${contestant.criterias.map((c) => c.criterianame).toList()}',
-//                       );
-//                     }
-//                     updateTotalScore(contestant!);
-//                   } else {
-//                     print(
-//                       'Warning: criteriaName is null. Set a default value or handle this case.',
-//                     );
-//                   }
-//                 } else {
-//                   print('Warning: Contestant is null.');
-//                 }
-//               });
-//             },
-//             decoration: InputDecoration(
-//               hintStyle: const TextStyle(
-//                 color: Colors.grey,
-//               ),
-//               contentPadding: const EdgeInsets.symmetric(
-//                 vertical: 10.0,
-//                 horizontal: 15.0,
-//               ),
-//               focusedBorder: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(30),
-//                 borderSide: const BorderSide(
-//                   color: Color.fromARGB(255, 5, 70, 20),
-//                   width: 2.0,
-//                 ),
-//               ),
-//               enabledBorder: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(10),
-//                 borderSide: BorderSide(
-//                   color: Colors.grey.withOpacity(0.5),
-//                   width: 1.0,
-//                 ),
-//               ),
-//             ),
-//           ),
-//         ),
-//       ),
-//     ],
-//   );
-// }
 }
 
 extension IndexedIterable<E> on Iterable<E> {

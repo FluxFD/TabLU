@@ -674,7 +674,13 @@ class _SearchEventsState extends State<SearchEvents> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return WillPopScope(
+      onWillPop: () async {
+        // Handle back button press as per your requirements
+        // Return false to disable the back button press
+        return false;
+      },
+      child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         elevation: 0.3,
@@ -1008,6 +1014,7 @@ class _SearchEventsState extends State<SearchEvents> {
         // i just added this
         // Text('This is the email' + email),
       ]),
+    ),
     );
   }
 

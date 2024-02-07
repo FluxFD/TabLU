@@ -297,19 +297,23 @@ class _NotifState extends State<Notif> {
     }
   }
 
-  Future<void> sendNotificationWithoutType(
-      String receiverId, String? username, String status) async {
+  Future<void> sendNotificationWithoutType(String receiverId, String? username,
+      String status, String eventId) async {
     try {
       notificationSent = true;
+      print("Event ID:" + eventId);
       // Make an HTTP POST request to send a notification without specifying the type
       final response = await http.post(
         Uri.parse('https://tab-lu.onrender.com/notifications'),
         body: {
+          'eventId': eventId,
           'userId': widget.userId,
           'receiver': receiverId,
           'body': '${username} has ${status} your request',
         },
       );
+
+      print("Event IDs:" + eventId);
 
       if (response.statusCode == 200) {
         print('Notification sent successfully');
@@ -366,7 +370,7 @@ class _NotifState extends State<Notif> {
 
                 if (!notificationSent) {
                   await sendNotificationWithoutType(
-                      receiverId, username, "accepted");
+                      receiverId, username, "accepted", eventId);
                 }
                 Navigator.of(context).pop(); // Close the dialog
               },
@@ -380,7 +384,7 @@ class _NotifState extends State<Notif> {
                 await refreshNotifications();
                 final receiverId = notification['userId'];
                 await sendNotificationWithoutType(
-                    receiverId, username, "rejected");
+                    receiverId, username, "rejected", eventId);
                 Navigator.of(context).pop(); // Close the dialog
               },
               child: Text('Reject'),

@@ -561,7 +561,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     DateTime? _picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
+      firstDate: DateTime.now(),
       lastDate: DateTime(2100),
     );
     if (_picked != null) {
@@ -587,7 +587,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     DateTime? _picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
+      firstDate: DateTime.now(),
       lastDate: DateTime(2100),
     );
     if (_picked != null) {
@@ -596,6 +596,25 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       });
     }
   }
+
+  // Future<void> _selectEndDate() async {
+  //   DateTime now = DateTime.now();
+  //   DateTime initialDate = DateTime(now.year, now.month, now.day);
+  //   DateTime firstAllowedDate = initialDate.add(Duration(days: 1));
+
+  //   DateTime? picked = await showDatePicker(
+  //     context: context,
+  //     initialDate: initialDate,
+  //     firstDate: firstAllowedDate,
+  //     lastDate: DateTime(2100),
+  //   );
+
+  //   if (picked != null) {
+  //     setState(() {
+  //       _endDateController.text = picked.toString().split(" ")[0];
+  //     });
+  //   }
+  // }
 
   Future<void> _selectEndTime() async {
     TimeOfDay? picked = await showTimePicker(
@@ -766,7 +785,7 @@ class _EditEventScreen extends State<EditEventScreen> {
     DateTime? _picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
+      firstDate: DateTime.now(),
       lastDate: DateTime(2100),
     );
     if (_picked != null) {
@@ -775,6 +794,25 @@ class _EditEventScreen extends State<EditEventScreen> {
       });
     }
   }
+
+  // Future<void> _selectEndDate() async {
+  //   DateTime now = DateTime.now();
+  //   DateTime initialDate = DateTime(now.year, now.month, now.day);
+  //   DateTime firstAllowedDate = initialDate.add(Duration(days: 1));
+
+  //   DateTime? picked = await showDatePicker(
+  //     context: context,
+  //     initialDate: initialDate,
+  //     firstDate: firstAllowedDate,
+  //     lastDate: DateTime(2100),
+  //   );
+
+  //   if (picked != null) {
+  //     setState(() {
+  //       _endDateController.text = picked.toString().split(" ")[0];
+  //     });
+  //   }
+  // }
 
   Future<void> _selectEndTime() async {
     TimeOfDay? picked = await showTimePicker(
@@ -1289,7 +1327,7 @@ class _EditEventScreen extends State<EditEventScreen> {
     DateTime? _picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
+      firstDate: DateTime.now(),
       lastDate: DateTime(2100),
     );
     if (_picked != null) {

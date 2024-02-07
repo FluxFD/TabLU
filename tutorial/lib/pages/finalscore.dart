@@ -398,13 +398,13 @@ class _WinnerState extends State<Winner> {
           },
         ),
         actions: [
-          IconButton(
-            onPressed: () async {
-              Uint8List? imageBytes = await screenshotController.capture();
-              saveScreenshot(imageBytes);
-            },
-            icon: Icon(Icons.camera),
-          ),
+          // IconButton(
+          //   onPressed: () async {
+          //     Uint8List? imageBytes = await screenshotController.capture();
+          //     saveScreenshot(imageBytes);
+          //   },
+          //   icon: Icon(Icons.camera),
+          // ),
           IconButton(
             icon: Icon(Icons.document_scanner),
             onPressed: () async {

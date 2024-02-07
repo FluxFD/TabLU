@@ -572,7 +572,7 @@ class _CriteriasState extends State<Criterias> {
                     },
                   );
                 },
-                child: Text('Your Button Text'), // Add the child parameter here
+                child: Text('Clear'), // Add the child parameter here
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 50),
                   shape: RoundedRectangleBorder(
@@ -585,30 +585,30 @@ class _CriteriasState extends State<Criterias> {
                   ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              OutlinedButton(
-                onPressed: () {
-                  // Add your cancel button action here
-                },
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 14,
-                    letterSpacing: 2.2,
-                    color: Colors.black,
-                  ),
-                ),
-                child:
-                    const Text('CLEAR', style: TextStyle(color: Colors.green)),
-              ),
+              //   ],
+              // ),
+              // const SizedBox(height: 10),
+              // Row(
+              //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              //   children: [
+              // OutlinedButton(
+              //   onPressed: () {
+              //     // Add your cancel button action here
+              //   },
+              //   style: OutlinedButton.styleFrom(
+              //     padding: const EdgeInsets.symmetric(horizontal: 50),
+              //     shape: RoundedRectangleBorder(
+              //       borderRadius: BorderRadius.circular(10),
+              //     ),
+              //     textStyle: const TextStyle(
+              //       fontSize: 14,
+              //       letterSpacing: 2.2,
+              //       color: Colors.black,
+              //     ),
+              //   ),
+              //   child:
+              //       const Text('CLEAR', style: TextStyle(color: Colors.green)),
+              // ),
               const SizedBox(width: 10),
               ElevatedButton(
                 onPressed: () async {

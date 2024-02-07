@@ -510,7 +510,7 @@ class _LoginPageState extends State<Login> {
                                   );
                                 },
                                 child: const Text(
-                                  ' Sign in',
+                                  ' Sign up',
                                   style: TextStyle(
                                     color: Colors.green,
                                     fontWeight: FontWeight.bold,

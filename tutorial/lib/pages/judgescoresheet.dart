@@ -1642,6 +1642,16 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                     ),
                   ),
                 ),
+                Center(
+                  child: Text(
+                    'Instructions: Judges can only enter scores from 1 to 100',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w200,
+                      color: Color.fromARGB(255, 128, 127, 127),
+                    ),
+                  ),
+                ),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Padding(

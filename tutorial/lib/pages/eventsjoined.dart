@@ -5,6 +5,7 @@ import 'package:tutorial/pages/judgescoresheet.dart';
 import 'package:tutorial/pages/scorecard.dart';
 import 'package:tutorial/utility/sharedPref.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 
 class Event {
   final String eventName;
@@ -16,13 +17,41 @@ class Event {
   final String judgeId;
   late String status = '';
 
-  Event(this.eventName, this.eventDate, this.eventTime, this.eventEndDate,
-      this.eventEndTime, this.eventId, this.judgeId) {
-    // Initialize status based on the current date and event end date
-    DateTime currentDate = DateTime.now();
-    DateTime endDate = DateTime.parse(
-        (eventEndDate != '') ? eventEndDate : DateTime.now().toString());
-    status = endDate.isAfter(currentDate) ? 'Active' : 'Inactive';
+  Event(
+    this.eventName,
+    this.eventDate,
+    this.eventTime,
+    this.eventEndDate,
+    this.eventEndTime,
+    this.eventId,
+    this.judgeId,
+  ) {
+    // Initialize status based on the current date, time, and event end date, time
+    DateTime currentDateTime = DateTime.now();
+    DateTime endDateTime = _parseDateTime(eventEndDate, eventEndTime);
+
+    status = endDateTime.isAfter(currentDateTime) ? 'Active' : 'Inactive';
+  }
+
+  DateTime _parseDateTime(String date, String time) {
+    // Parse date and time manually
+    List<String> dateParts = date.split('-');
+    List<String> timeParts = time.split(':');
+
+    int year = int.parse(dateParts[0]);
+    int month = int.parse(dateParts[1]);
+    int day = int.parse(dateParts[2].substring(0, 2));
+
+    int hour = int.parse(timeParts[0]);
+    int minute = int.parse(timeParts[1].split(' ')[0]);
+
+    String period = timeParts[1].split(' ')[1];
+
+    if (period == 'PM' && hour < 12) {
+      hour += 12;
+    }
+
+    return DateTime(year, month, day, hour, minute);
   }
 }
 
@@ -265,21 +294,21 @@ class _EventsJoinedState extends State<EventsJoined> {
                                 style: TextStyle(color: Colors.white),
                               ),
                             ),
-                            ElevatedButton(
-                              onPressed: () {
-                                _showCancelConfirmationDialog(event);
-                              },
-                              style: ElevatedButton.styleFrom(
-                                primary: Colors.red,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                              ),
-                              child: Text(
-                                'Delete Event',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
+                            // ElevatedButton(
+                            //   onPressed: () {
+                            //     _showCancelConfirmationDialog(event);
+                            //   },
+                            //   style: ElevatedButton.styleFrom(
+                            //     primary: Colors.red,
+                            //     shape: RoundedRectangleBorder(
+                            //       borderRadius: BorderRadius.circular(20),
+                            //     ),
+                            //   ),
+                            //   child: Text(
+                            //     'Delete Event',
+                            //     style: TextStyle(color: Colors.white),
+                            //   ),
+                            // ),
                           ],
                         ),
                       ],
