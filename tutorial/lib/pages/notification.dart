@@ -322,7 +322,6 @@ class _NotifState extends State<Notif> {
                         rejectJudgeRequest(userId);
                       }
                       await deleteNotification(snapshot.data![index]['userId']);
-                      await refreshNotifications();
                     },
                     background: Container(
                       color: Colors.red,

@@ -330,14 +330,17 @@ class _CriteriasState extends State<Criterias> {
     if (criteriaData.containsKey('subCriteriaList')) {
       List<Map<String, dynamic>> subCriteriaList = criteriaData['subCriteriaList'];
 
+      double subPercentage = 0.0; // Initialize subPercentage outside the loop
+
       for (final subCriteria in subCriteriaList) {
-        final double subPercentage = double.tryParse(subCriteria['percentage'] ?? '0.0') ?? 0.0;
-        if (subPercentage != 100.0) {
-          _showErrorSnackBar('Total percentage of sub-criteria is not 100', Colors.orange);
-          allSubCriteriaPercentagesAre100 = false;
-          break;
-        }
+        subPercentage += double.tryParse(subCriteria['percentage'] ?? '0.0') ?? 0.0;
       }
+
+      if (subPercentage != 100.0) {
+        _showErrorSnackBar('Total percentage of sub-criteria is not 100', Colors.orange);
+        allSubCriteriaPercentagesAre100 = false;
+      }
+
     }
 
     if (!allSubCriteriaPercentagesAre100) {
