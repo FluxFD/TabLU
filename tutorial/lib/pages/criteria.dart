@@ -135,7 +135,7 @@ class _CriteriasState extends State<Criterias> {
   Future<void> _fetchCriterias(String eventId) async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.101.6:8080/criteria/$eventId'),
+        Uri.parse('https://tab-lu.onrender.com/criteria/$eventId'),
       );
 
       if (response.statusCode == 200) {
@@ -157,7 +157,7 @@ class _CriteriasState extends State<Criterias> {
 
   Future<void> deleteCriteria(String eventId, String criteriaName) async {
     final url = Uri.parse(
-        "http://192.168.101.6:8080/criteria?eventId=$eventId&criteriaName=$criteriaName");
+        "https://tab-lu.onrender.com/criteria?eventId=$eventId&criteriaName=$criteriaName");
     updateTotalPercentage();
     try {
       final response = await http.delete(url);
@@ -364,7 +364,7 @@ class _CriteriasState extends State<Criterias> {
         criteria.percentage = (currentPercentage + adjustmentPerCriteria).toString();
       }
     } else {
-      final url = Uri.parse("http://192.168.101.6:8080/criteria");
+      final url = Uri.parse("https://tab-lu.onrender.com/criteria");
 
       try {
         print(criteriaData);
@@ -659,7 +659,7 @@ class _CriteriasState extends State<Criterias> {
                         print('Fetching event with ID: $eventId');
                         final response = await http.get(
                           Uri.parse(
-                              'http://192.168.101.6:8080/event/$eventId'),
+                              'https://tab-lu.onrender.com/event/$eventId'),
                         );
 
                         if (response.statusCode == 200) {

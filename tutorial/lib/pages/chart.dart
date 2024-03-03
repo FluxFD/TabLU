@@ -28,7 +28,7 @@ class _MyHomePageState extends State<ChartData> {
   // late Timer _timer;
   List<String> contestantNames = [];
   final io.Socket socket =
-      io.io('http://192.168.101.6:8080', <String, dynamic>{
+      io.io('https://tab-lu.onrender.com', <String, dynamic>{
     'transports': ['websocket'],
     'autoConnect': false,
   });
@@ -158,7 +158,7 @@ class _MyHomePageState extends State<ChartData> {
 
   Future<void> fetchScoreCards() async {
     final eventId = widget.eventId;
-    final url = Uri.parse('http://192.168.101.6:8080/winners/$eventId');
+    final url = Uri.parse('https://tab-lu.onrender.com/winners/$eventId');
 
     try {
       final response = await http.get(url);
