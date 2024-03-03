@@ -1,53 +1,263 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'dart:convert';
-
 import 'package:tutorial/pages/dashboard.dart';
 import 'package:tutorial/refresher.dart';
 import 'package:tutorial/utility/sharedPref.dart';
 
+
+
 class Notif extends StatefulWidget {
-  final String userId;
+  final String? userId;
 
   const Notif({Key? key, required this.userId}) : super(key: key);
 
+
   @override
   State<Notif> createState() => _NotifState();
-}
-
-Future<List<dynamic>> fetchNotifications(String userId) async {
-  final response = await http.get(
-    Uri.parse('https://tab-lu.onrender.com/get-notifications/$userId'),
-  );
-
-  if (response.statusCode == 200) {
-    // Decode the JSON response
-    List<dynamic> notifications = json.decode(response.body);
-
-    // Sort the notifications based on the 'date' field
-    notifications.sort((a, b) {
-      DateTime dateTimeA = DateTime.parse(a['date']);
-      DateTime dateTimeB = DateTime.parse(b['date']);
-      return dateTimeB
-          .compareTo(dateTimeA); // Descending order, modify if needed
-    });
-    return notifications;
-  } else {
-    throw Exception('Failed to load notifications');
-  }
 }
 
 class _NotifState extends State<Notif> {
   late Future<List<dynamic>> notifications;
   bool notificationSent = false;
 
+
+
   @override
   void initState() {
     super.initState();
     // Fetch notifications when the widget is initialized
     notifications = fetchNotifications(widget.userId);
+
+      socket.on('newNotification', (data) {
+        print('Notification received');
+        refreshNotifications();
+      });
+
+      socket.onDisconnect((_) {
+        print('Socket disconnected');
+      });
+      socket.onError((error) {
+        print('Socket error: $error');
+      });
+
+  }
+  void dispose() {
+    // Clean up resources here
+    super.dispose();
+  }
+
+
+  Future<List<dynamic>> fetchNotifications(String? userId) async {
+    final response = await http.get(
+      Uri.parse('http://192.168.101.6:8080/get-notifications/$userId'),
+    );
+
+    if (response.statusCode == 200) {
+      // Decode the JSON response
+      List<dynamic> notifications = json.decode(response.body);
+
+      // Sort the notifications based on the 'date' field
+      notifications.sort((a, b) {
+        DateTime dateTimeA = DateTime.parse(a['date']);
+        DateTime dateTimeB = DateTime.parse(b['date']);
+        return dateTimeB
+            .compareTo(dateTimeA); // Descending order, modify if needed
+      });
+      return notifications;
+    } else {
+      throw Exception('Failed to load notifications');
+    }
+  }
+
+
+  Future<void> refreshNotifications() async {
+    try {
+      final List<dynamic>? fetchedNotifications = await notifications;
+
+      if (!mounted) {
+        // If the widget is disposed, return without updating state
+        return;
+      }
+
+      setState(() {
+        notifications = fetchNotifications(widget.userId);
+      });
+
+      if (fetchedNotifications != null) {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        int notificationCount = fetchedNotifications.length;
+        // Update the notification count in SharedPreferences
+        prefs.setInt('notificationCount', notificationCount);
+      }
+    } catch (error) {
+      print('Error refreshing notifications: $error');
+    }
+  }
+
+
+  Future<void> updateJudgeConfirmationStatus(
+      String userId, String eventId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://192.168.101.6:8080/update-confirmation'),
+        body: {
+          'userId': userId,
+          'eventId': eventId,
+          'isConfirm': true.toString(),
+        },
+      );
+
+      if (response.statusCode == 200) {
+        print('Judge confirmation status updated successfully');
+      } else {
+        print('Failed to update judge confirmation status');
+      }
+    } catch (error) {
+      print('Error updating judge confirmation status: $error');
+    }
+  }
+
+  Future<void> rejectJudgeRequest(String userId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('http://192.168.101.6:8080/reject-request/$userId'),
+      );
+
+      if (response.statusCode == 200) {
+        print('Judge request rejected successfully');
+      } else {
+        print('Failed to reject judge request');
+      }
+    } catch (error) {
+      print('Error rejecting judge request: $error');
+    }
+  }
+
+  Future<void> deleteNotification(String userId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('http://192.168.101.6:8080/delete-notification/$userId'),
+      );
+
+      if (response.statusCode == 200) {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        List<dynamic> notificationList = await notifications;
+        int notificationCount = notificationList.length - 1;
+        // Update the notification count in SharedPreferences
+        prefs.setInt('notificationCount', notificationCount);
+
+        print('Notification deleted successfully');
+      } else {
+        print('Failed to delete notification');
+      }
+    } catch (error) {
+      print('Error deleting notification: $error');
+    }
+  }
+
+
+  Future<void> sendNotificationWithoutType(String receiverId, String? username,
+      String status, String eventId) async {
+    try {
+      notificationSent = true;
+      print("Event ID:" + eventId);
+      // Make an HTTP POST request to send a notification without specifying the type
+      final response = await http.post(
+        Uri.parse('http://192.168.101.6:8080/notifications'),
+        body: {
+          'eventId': eventId,
+          'userId': widget.userId,
+          'receiver': receiverId,
+          'body': '${username} has ${status} your request',
+        },
+      );
+
+      print("Event IDs:" + eventId);
+
+      if (response.statusCode == 200) {
+        print('Notification sent successfully');
+      } else {
+        notificationSent = false;
+        print('Failed to send notification');
+      }
+    } catch (error) {
+      notificationSent = false;
+      print('Error sending notification: $error');
+    }
+  }
+
+  Future<String?> getUsernameById(String userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://192.168.101.6:8080/get-username/$userId'),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> userData = json.decode(response.body);
+        return userData['username'];
+      } else {
+        print('Failed to get username');
+        return null;
+      }
+    } catch (error) {
+      print('Error getting username: $error');
+      return null;
+    }
+  }
+
+  void showConfirmationDialog(BuildContext context, String notificationBody,
+      String userId, dynamic notification) async {
+    final receiverId = notification['receiver'];
+    final eventId = notification['eventId'];
+    final username = await getUsernameById(receiverId);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirmation Notification'),
+          content: Text('Do you want to accept or reject this notification?\n'),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                // Handle accept logic here
+                updateJudgeConfirmationStatus(userId, eventId);
+                await deleteNotification(userId);
+                await refreshNotifications();
+                // Get the receiver ID from the current notification
+                final receiverId = notification['userId'];
+
+                if (!notificationSent) {
+                  await sendNotificationWithoutType(
+                      receiverId, username, "accepted", eventId);
+                }
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text('Accept'),
+            ),
+            TextButton(
+              onPressed: () async {
+                // Handle reject logic here
+                rejectJudgeRequest(userId);
+                await deleteNotification(userId);
+                await refreshNotifications();
+                final receiverId = notification['userId'];
+                await sendNotificationWithoutType(
+                    receiverId, username, "rejected", eventId);
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text('Reject'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -225,175 +435,7 @@ class _NotifState extends State<Notif> {
     );
   }
 
-  Future<void> refreshNotifications() async {
-    try {
-      setState(() {
-        notifications = fetchNotifications(widget.userId);
-      });
-    } catch (error) {
-      print('Error refreshing notifications: $error');
-    }
-  }
 
-  Future<void> updateJudgeConfirmationStatus(
-      String userId, String eventId) async {
-    try {
-      final response = await http.post(
-        Uri.parse('https://tab-lu.onrender.com/update-confirmation'),
-        body: {
-          'userId': userId,
-          'eventId': eventId,
-          'isConfirm': true.toString(),
-        },
-      );
-
-      if (response.statusCode == 200) {
-        print('Judge confirmation status updated successfully');
-      } else {
-        print('Failed to update judge confirmation status');
-      }
-    } catch (error) {
-      print('Error updating judge confirmation status: $error');
-    }
-  }
-
-  Future<void> rejectJudgeRequest(String userId) async {
-    try {
-      final response = await http.delete(
-        Uri.parse('https://tab-lu.onrender.com/reject-request/$userId'),
-      );
-
-      if (response.statusCode == 200) {
-        print('Judge request rejected successfully');
-      } else {
-        print('Failed to reject judge request');
-      }
-    } catch (error) {
-      print('Error rejecting judge request: $error');
-    }
-  }
-
-  Future<void> deleteNotification(String userId) async {
-    try {
-      final response = await http.delete(
-        Uri.parse('https://tab-lu.onrender.com/delete-notification/$userId'),
-      );
-
-      if (response.statusCode == 200) {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        int notificationCount = prefs.getInt('notificationCount') ?? 0;
-
-        // Check if the notificationCount is greater than 0 before reducing it
-        if (notificationCount > 0) {
-          notificationCount--;
-          prefs.setInt('notificationCount', notificationCount);
-        }
-        print('Notification deleted successfully');
-      } else {
-        print('Failed to delete notification');
-      }
-    } catch (error) {
-      print('Error deleting notification: $error');
-    }
-  }
-
-  Future<void> sendNotificationWithoutType(String receiverId, String? username,
-      String status, String eventId) async {
-    try {
-      notificationSent = true;
-      print("Event ID:" + eventId);
-      // Make an HTTP POST request to send a notification without specifying the type
-      final response = await http.post(
-        Uri.parse('https://tab-lu.onrender.com/notifications'),
-        body: {
-          'eventId': eventId,
-          'userId': widget.userId,
-          'receiver': receiverId,
-          'body': '${username} has ${status} your request',
-        },
-      );
-
-      print("Event IDs:" + eventId);
-
-      if (response.statusCode == 200) {
-        print('Notification sent successfully');
-      } else {
-        notificationSent = false;
-        print('Failed to send notification');
-      }
-    } catch (error) {
-      notificationSent = false;
-      print('Error sending notification: $error');
-    }
-  }
-
-  Future<String?> getUsernameById(String userId) async {
-    try {
-      final response = await http.get(
-        Uri.parse('https://tab-lu.onrender.com/get-username/$userId'),
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> userData = json.decode(response.body);
-        return userData['username'];
-      } else {
-        print('Failed to get username');
-        return null;
-      }
-    } catch (error) {
-      print('Error getting username: $error');
-      return null;
-    }
-  }
-
-  void showConfirmationDialog(BuildContext context, String notificationBody,
-      String userId, dynamic notification) async {
-    final receiverId = notification['receiver'];
-    final eventId = notification['eventId'];
-    final username = await getUsernameById(receiverId);
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Confirmation Notification'),
-          content: Text('Do you want to accept or reject this notification?\n'),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                // Handle accept logic here
-                updateJudgeConfirmationStatus(userId, eventId);
-                await deleteNotification(userId);
-                await refreshNotifications();
-                // Get the receiver ID from the current notification
-                final receiverId = notification['userId'];
-
-                if (!notificationSent) {
-                  await sendNotificationWithoutType(
-                      receiverId, username, "accepted", eventId);
-                }
-                Navigator.of(context).pop(); // Close the dialog
-              },
-              child: Text('Accept'),
-            ),
-            TextButton(
-              onPressed: () async {
-                // Handle reject logic here
-                rejectJudgeRequest(userId);
-                await deleteNotification(userId);
-                await refreshNotifications();
-                final receiverId = notification['userId'];
-                await sendNotificationWithoutType(
-                    receiverId, username, "rejected", eventId);
-                Navigator.of(context).pop(); // Close the dialog
-              },
-              child: Text('Reject'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   Widget prefixIcon() {
     return Container(

@@ -10,14 +10,7 @@ const Judge = require("../models/judges.model");
 const User = require("../models/user.model");
 const { io } = require("./socket");
 
-io.on("connection", (socket) => {
-  console.log(`Number of connected sockets: ${io.sockets.sockets.size}`);
-  // Your socket.io event handlers here
-  socket.on("disconnect", () => {
-    console.log("A user disconnected");
-    // Your actions on user disconnect here
-  });
-});
+
 
 router.post("/scorecards", async (req, res) => {
   try {
@@ -25,7 +18,7 @@ router.post("/scorecards", async (req, res) => {
     let judge;
     // Iterate over each object in the array
     for (const scoreData of req.body) {
-      const { eventId, contestantId, criterias, userId } = scoreData;
+      const { eventId, contestantId, criterias, userId, subCriteriaList } = scoreData;
       // console.log(criterias.length);
       console.log(
         "Event Id:",
@@ -90,6 +83,7 @@ router.post("/scorecards", async (req, res) => {
             criteriaId: criteriaObj._id,
             criteriascore: criteria["scores"],
             rawScore: criteria["rawScore"],
+            subCriteriaList: criteria["subCriteriaList"]
           },
           contestantId: contestant._id,
         });
@@ -288,6 +282,7 @@ router.get("/winners/:eventId", async (req, res) => {
         },
       },
     ]);
+
     io.emit("chartUpdate", { contestants });
     // Respond with the top three winners and their average scores
 

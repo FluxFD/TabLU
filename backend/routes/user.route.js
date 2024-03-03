@@ -111,6 +111,7 @@ router.post("/signin", async (req, res) => {
 
 router.post("/verify-email", async (req, res) => {
   const { email, verificationCode } = req.body;
+  console.log(email, verificationCode);
 
   try {
     // Find the user by email
@@ -145,8 +146,7 @@ router.post("/verify-email", async (req, res) => {
 });
 
 router.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-
+  const { username, password, fcmToken } = req.body;
   try {
     const user = await User.findOne({ username: username });
 
@@ -165,6 +165,7 @@ router.post("/login", async (req, res) => {
         userId: user._id,
         email: user.email,
         username: user.username,
+        fcmToken: user.fcmToken,
         profilePic: user.profilePic,
       },
       secretKey
@@ -173,6 +174,9 @@ router.post("/login", async (req, res) => {
     const refreshToken = jwt.sign({ userId: user._id }, secretKey, {
       expiresIn: "7d",
     });
+
+    user.fcmToken = fcmToken;
+    user.save();
     res
       .status(200)
       .json({ message: "Successful login", user: user, token: token });

@@ -18,6 +18,9 @@ const userSchema = new mongoose.Schema({
   resetTokenExpiration: {
     type: Date,
   },
+  fcmToken: {
+    type: String,
+  }
 });
 
 userSchema.pre("save", async function (next) {

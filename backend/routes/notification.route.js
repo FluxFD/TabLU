@@ -5,19 +5,81 @@ const httpStatus = require("http-status-codes");
 const mongoose = require("mongoose");
 const Notification = require("../models/notification.model");
 const { Event } = require("../models/event.model");
+const { io } = require("./socket");
+const admin = require("firebase-admin");
+const serviceAccount = require("./firebase-config");
+const User = require("../models/user.model");
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+  });
+}
+
+io.on("connection", (socket) => {
+  console.log(`Number of connected sockets: ${io.sockets.sockets.size}`);
+  // Your socket.io event handlers here
+  socket.on("disconnect", () => {
+    console.log("A user disconnected");
+    // Your actions on user disconnect here
+  });
+});
 
 // POST route for creating a notification
 router.post("/notifications", async (req, res) => {
   try {
     // Extract necessary information from the request body
-    const { body, userId, type, eventId } = req.body;
+    const { userId, type, eventId } = req.body;
+    console.log(req.body);
+    let body = req.body.body;
     let receiver = req.body.receiver;
-    if (type == "feedback") {
-      const event = await Event.findOne({ _id: eventId });
-      receiver = event.user;
-      body.eventName = event.event_name;
+
+    let userReceiver;
+    if (mongoose.Types.ObjectId.isValid(receiver)) {
+      userReceiver = await User.findById( receiver );
     }
-    const event = await Event.findOne({ _id: eventId });
+    const userSender = await User.findById( userId );
+
+    let fcmToken;
+
+    if(userReceiver){
+      fcmToken =  userReceiver.fcmToken;
+    }
+    
+
+
+    //handle if notification type feedback deconstruct body
+    if (type == "feedback") {
+      const {rating, feedback} = body;
+      const event = await Event.findOne({ _id: eventId });
+      const user = await User.findById( event.user );
+      fcmToken = user.fcmToken;
+      receiver = event.user;
+      body = `${userSender.username} rate the ${event.event_name} ${rating}\n Feedback: ${feedback}`;
+    }
+
+    if (type == "scoreSubmitted"){
+      const event = await Event.findOne({ _id: eventId });
+      const user = await User.findById( event.user );
+      fcmToken = user.fcmToken;
+      receiver = user._id;
+      const username = user.username;
+      const eventName = event.event_name;
+      body = `Judge ${username} has already submitted scores to event ${eventName}`;
+    }
+
+    // Compose notification Message
+    const message = {
+      notification: {
+        title: "TabLU",
+        body: body,
+        // Add other data as needed
+      },
+      token: fcmToken
+    };
+
+
+    const response = await admin.messaging().send(message);
 
     // Create a new notification document
     const newNotification = new Notification({
@@ -27,10 +89,12 @@ router.post("/notifications", async (req, res) => {
       receiver: receiver,
       type: type,
     });
-    console.log("Event ID;", eventId);
+    console.log("Event ID:", eventId);
 
     // Save the notification to the database
     const savedNotification = await newNotification.save();
+    io.emit('newNotification', savedNotification);
+
     // Respond with the created notification
     res.status(201).json({
       message: "Notification created successfully",

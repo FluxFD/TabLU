@@ -8,6 +8,7 @@ import 'package:tutorial/pages/criteria.dart';
 import 'package:http_parser/http_parser.dart';
 
 class Contestant {
+  int contestantNumber;
   String name;
   String course;
   String department;
@@ -19,7 +20,9 @@ class Contestant {
   // final List<Criterias> criterias;
 
   Contestant(
-      {required this.name,
+      {
+        required this.contestantNumber,
+        required this.name,
       required this.course,
       required this.department,
       required this.eventId,
@@ -31,6 +34,7 @@ class Contestant {
   // map
   factory Contestant.fromJson(Map<String, dynamic> json) {
     return Contestant(
+      contestantNumber: json['contestantNumber'] ?? 0,
       name: json['name'] ?? '',
       course: json['course'] ?? '',
       department: json['department'] ?? '',
@@ -42,6 +46,7 @@ class Contestant {
 
   Map<String, dynamic> toJson() {
     return {
+      'contestantNumber': contestantNumber.toString(),
       'id': id,
       'name': name,
       'course': course,
@@ -81,6 +86,8 @@ class Contestants extends StatefulWidget {
 class _ContestantsState extends State<Contestants> {
   late ImagePicker _picker;
   File? _addSelectImage;
+  int _lastContestantNumber = 0; // State for contestant number
+
 
   @override
   void initState() {
@@ -93,11 +100,12 @@ class _ContestantsState extends State<Contestants> {
 
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   List<Contestant> contestants = [];
-
   TextEditingController _nameController = TextEditingController();
   TextEditingController _courseController = TextEditingController();
   TextEditingController _departmentController = TextEditingController();
   File? _selectedImage;
+
+
   void insertItem(Contestant contestant) {
     final newIndex = 0;
     contestants ??= []; // Ensure contestants is not null
@@ -109,7 +117,7 @@ class _ContestantsState extends State<Contestants> {
     try {
       String eventId = widget.eventId;
       final url =
-          Uri.parse("https://tab-lu.onrender.com/get-contestants/$eventId");
+          Uri.parse("http://192.168.101.6:8080/get-contestants/$eventId");
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -121,7 +129,6 @@ class _ContestantsState extends State<Contestants> {
               : null; // Load profilePic as File
           return contestant;
         }).toList();
-
         setState(() {
           contestants = fetchedContestants;
         });
@@ -140,9 +147,9 @@ class _ContestantsState extends State<Contestants> {
     }
   }
 
-  Future<void> deleteContestant(String? contestantId) async {
+  Future<void> deleteContestant(int index, String? contestantId) async {
     final url = Uri.parse(
-        "https://tab-lu.onrender.com/delete-contestant/$contestantId");
+        "http://192.168.101.6:8080/delete-contestant/$contestantId");
 
     try {
       final response = await http.delete(url);
@@ -159,13 +166,14 @@ class _ContestantsState extends State<Contestants> {
     }
   }
 
+
   void removeItem(int index) {
     if (index >= 0 && index < contestants.length) {
       final removedItem = contestants[index];
       contestants.removeAt(index);
       _listKey.currentState!.removeItem(
         index,
-        (context, animation) => ListItemWidget(
+            (context, animation) => ListItemWidget(
           contestant: removedItem,
           animation: animation,
           changeProfilePicture: () => changeProfilePicture(removedItem),
@@ -174,15 +182,59 @@ class _ContestantsState extends State<Contestants> {
             contestants[index].selectedImage = newImage;
           },
           onClicked: () {
-            removeItem(index);
+            // Call deleteContestant function here instead of onPressed
+            deleteContestant(index, contestants[index].id);
           },
           onEdit: () => _editContestant(removedItem),
         ),
         duration: const Duration(milliseconds: 300),
       );
+
+      // Update contestant numbers
+      updateContestantNumbers();
     }
   }
 
+  Future<void> removeAllItems() async {
+    for (int i = contestants.length - 1; i >= 0; i--) {
+      await deleteContestant(i, contestants[i].id);
+      removeItem(i);
+    }
+  }
+
+  void showDeleteConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Confirm Deletion"),
+          content: Text("Are you sure you want to delete all contestants?"),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+                removeAllItems(); // Call removeAllItems function if confirmed
+              },
+              child: Text("Confirm"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text("Cancel"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+  void updateContestantNumbers() {
+    for (int i = 0; i < contestants.length; i++) {
+      contestants[i].contestantNumber = i + 1;
+    }
+  }
   Future<void> addProfilePicture(Contestant contestant) async {
     bool galleryPermission = await _requestGalleryPermission();
     if (!galleryPermission) {
@@ -234,7 +286,7 @@ class _ContestantsState extends State<Contestants> {
 
   Future<void> createContestant(
       String eventId, Map<String, dynamic> contestantData) async {
-    final url = Uri.parse("https://tab-lu.onrender.com/contestants");
+    final url = Uri.parse("http://192.168.101.6:8080/contestants");
     try {
       // Read the image file
 
@@ -247,6 +299,7 @@ class _ContestantsState extends State<Contestants> {
         // Add other fields to the request
         request.fields['contestantId'] =
             contestantData['id'] != null ? contestantData['id'] : "";
+        request.fields['contestantNumber'] = contestantData['contestantNumber'] ?? "";
         request.fields['eventId'] = eventId;
         request.fields['name'] = contestantData['name'];
         request.fields['course'] = contestantData['course'];
@@ -279,6 +332,7 @@ class _ContestantsState extends State<Contestants> {
         // Add JSON fields to the request
         request.body = jsonEncode({
           'contestantId': contestantData['id'],
+          'contestantNumber': contestantData['contestantNumber'],
           'eventId': eventId,
           'name': contestantData['name'],
           'course': contestantData['course'],
@@ -334,7 +388,7 @@ class _ContestantsState extends State<Contestants> {
 // Function to update the contestant information in the database
   Future<void> updateContestant(String eventId, Contestant contestant) async {
     final url =
-        Uri.parse("https://tab-lu.onrender.com/contestants/${contestant.id}");
+        Uri.parse("http://192.168.101.6:8080/contestants/${contestant.id}");
 
     try {
       final response = await http.put(
@@ -419,6 +473,7 @@ class _ContestantsState extends State<Contestants> {
             );
             return Center(child: Text('No contestants available.'));
           } else {
+            contestants.sort((a, b) => a.contestantNumber.compareTo(b.contestantNumber));
             contestants = snapshot.data!;
             return AnimatedList(
               key: _listKey,
@@ -435,7 +490,7 @@ class _ContestantsState extends State<Contestants> {
                   changeProfilePicture: () =>
                       changeProfilePicture(contestants[index]),
                   onClicked: () async {
-                    await deleteContestant(contestants[index].id);
+                    await deleteContestant(index, contestants[index].id);
                     removeItem(index);
                   },
                   onEdit: () => _editContestant(contestants[index]),
@@ -463,9 +518,13 @@ class _ContestantsState extends State<Contestants> {
                   });
                 },
                 onContestantAdded: (Contestant newContestant) {
-                  // Insert the new contestant into the list
+                  // Increment the contestant number and then add the contestant
+                  _lastContestantNumber++;
+                  newContestant.contestantNumber = _lastContestantNumber;
                   insertItem(newContestant);
+                  updateContestantNumbers();
                 },
+                lastContestantNumber: _lastContestantNumber, // Pass contestant number
               );
             },
           );
@@ -478,7 +537,7 @@ class _ContestantsState extends State<Contestants> {
           children: [
             OutlinedButton(
               onPressed: () {
-                // Add your cancel button action here
+                showDeleteConfirmationDialog();
               },
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 50),
@@ -566,7 +625,7 @@ class ListItemWidget extends StatelessWidget {
 
   Future<void> deleteContestant(String contestantId) async {
     final url = Uri.parse(
-        "https://tab-lu.onrender.com/delete-contestant/$contestantId");
+        "http://192.168.101.6:8080/delete-contestant/$contestantId");
 
     try {
       final response = await http.delete(url);
@@ -606,7 +665,7 @@ class ListItemWidget extends StatelessWidget {
                       : null as ImageProvider<Object>?,
 
               // ? NetworkImage(
-              //     "https://tab-lu.onrender.com/uploads/${contestant.profilePic?.path}")
+              //     "http://192.168.101.6:8080/uploads/${contestant.profilePic?.path}")
               // : null as ImageProvider<Object>?,
             ),
           ),
@@ -616,7 +675,7 @@ class ListItemWidget extends StatelessWidget {
                 fontSize: 16, color: Colors.black, fontWeight: FontWeight.w500),
           ),
           subtitle: Text(
-            'Age: ${contestant.course}\nAddress: ${contestant.department}',
+            'Contestant #: ${contestant.contestantNumber}\nAge: ${contestant.course}\nAddress: ${contestant.department}',
             style: const TextStyle(
                 fontSize: 14, color: Colors.grey, fontStyle: FontStyle.italic),
           ),
@@ -656,9 +715,9 @@ class ProfilePictureDialog extends StatefulWidget {
 
 class _ProfilePictureDialogState extends State<ProfilePictureDialog> {
   File? _selectedImage;
-  TextEditingController _nameController = TextEditingController();
-  TextEditingController _courseController = TextEditingController();
-  TextEditingController _departmentController = TextEditingController();
+  late TextEditingController _nameController;
+  late TextEditingController _courseController;
+  late TextEditingController _departmentController;
 
   @override
   void initState() {
@@ -667,9 +726,9 @@ class _ProfilePictureDialogState extends State<ProfilePictureDialog> {
     _selectedImage = widget.contestant.selectedImage != null
         ? File(widget.contestant.selectedImage!.path)
         : null;
-    _nameController.text = widget.contestant.name;
-    _courseController.text = widget.contestant.course;
-    _departmentController.text = widget.contestant.department;
+    _nameController = TextEditingController(text: widget.contestant.name);
+    _courseController = TextEditingController(text: widget.contestant.course);
+    _departmentController = TextEditingController(text: widget.contestant.department);
   }
 
   @override
@@ -695,8 +754,8 @@ class _ProfilePictureDialogState extends State<ProfilePictureDialog> {
               backgroundImage: _selectedImage != null
                   ? FileImage(_selectedImage!)
                   : widget.contestant.profilePic != null
-                      ? NetworkImage("${widget.contestant.profilePic?.path}")
-                      : null as ImageProvider<Object>?,
+                  ? NetworkImage("${widget.contestant.profilePic?.path}")
+                  : null as ImageProvider<Object>?,
             ),
             SizedBox(height: 20),
             ElevatedButton(
@@ -714,20 +773,27 @@ class _ProfilePictureDialogState extends State<ProfilePictureDialog> {
               ),
               child: Text('Change Profile Picture'),
             ),
-            // TextField(
-            //   controller: _ageController,
-            //   decoration: InputDecoration(
-            //     labelText: 'Age',
-            //     labelStyle: TextStyle(fontSize: 15, color: Colors.green),
-            //   ),
-            // ),
-            // TextField(
-            //   controller: _addressController,
-            //   decoration: InputDecoration(
-            //     labelText: 'Address',
-            //     labelStyle: TextStyle(fontSize: 15, color: Colors.green),
-            //   ),
-            // ),
+            TextField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                labelText: 'Name',
+                labelStyle: TextStyle(fontSize: 15, color: Colors.green),
+              ),
+            ),
+            TextField(
+              controller: _courseController,
+              decoration: InputDecoration(
+                labelText: 'Course',
+                labelStyle: TextStyle(fontSize: 15, color: Colors.green),
+              ),
+            ),
+            TextField(
+              controller: _departmentController,
+              decoration: InputDecoration(
+                labelText: 'Department',
+                labelStyle: TextStyle(fontSize: 15, color: Colors.green),
+              ),
+            ),
           ],
         ),
       ),
@@ -788,14 +854,19 @@ class _ProfilePictureDialogState extends State<ProfilePictureDialog> {
   }
 }
 
+
 class AddContestantDialog extends StatefulWidget {
   final Function(File?) onImageChanged;
   final Function(Contestant) onContestantAdded;
+  late int lastContestantNumber; // Add a field to receive the last contestant number
+
   String eventId;
   AddContestantDialog(
       {required this.onImageChanged,
       required this.onContestantAdded,
-      required this.eventId});
+      required this.eventId,
+      required this.lastContestantNumber,
+      });
 
   @override
   _AddContestantDialogState createState() => _AddContestantDialogState();
@@ -804,9 +875,12 @@ class AddContestantDialog extends StatefulWidget {
 class _AddContestantDialogState extends State<AddContestantDialog> {
   File? _selectedImage;
 
+
   TextEditingController _nameController = TextEditingController();
   TextEditingController _courseController = TextEditingController();
   TextEditingController _departmentController = TextEditingController();
+  int _lastContestantNumber = 0;
+
 
   @override
   Widget build(BuildContext context) {
@@ -862,13 +936,24 @@ class _AddContestantDialogState extends State<AddContestantDialog> {
               labelStyle: TextStyle(fontSize: 15, color: Colors.green),
             ),
           ),
-          TextField(
-            controller: _courseController,
-            decoration: const InputDecoration(
-              labelText: 'Age',
-              labelStyle: TextStyle(fontSize: 15, color: Colors.green),
-            ),
+        TextField(
+          controller: _courseController,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            labelText: 'Age',
+            labelStyle: TextStyle(fontSize: 15, color: Colors.green),
           ),
+          onChanged: (value) {
+            // Ensure the entered age is a valid integer
+            if (value.isNotEmpty) {
+              int age = int.tryParse(value) ?? 0; // Default to 0 if parsing fails
+              if (age < 0 || age > 150) {
+                // If the age is not within the valid range, clear the text field
+                _courseController.clear();
+              }
+            }
+          },
+        ),
           TextField(
             controller: _departmentController,
             decoration: const InputDecoration(
@@ -890,7 +975,9 @@ class _AddContestantDialogState extends State<AddContestantDialog> {
         ),
         TextButton(
           onPressed: () async {
+            widget.lastContestantNumber++;
             Contestant newContestant = Contestant(
+              contestantNumber: widget.lastContestantNumber, // Assign the new contestant number
               name: _nameController.text,
               course: _courseController.text,
               department: _departmentController.text,

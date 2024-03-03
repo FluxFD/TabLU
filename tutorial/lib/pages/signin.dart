@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tutorial/constant.dart';
+import 'package:tutorial/pages/emailverification.dart';
+import 'package:tutorial/pages/forgotpassword.dart';
 import 'package:tutorial/pages/login.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -18,24 +20,24 @@ class _LoginPageState extends State<Signin> {
   TextEditingController username = TextEditingController();
   TextEditingController email = TextEditingController();
   TextEditingController password = TextEditingController();
-  TextEditingController verificationCodeController = TextEditingController();
+  TextEditingController confirmPassword = TextEditingController(); // New controller for confirm password
 
   bool showPassword = false;
   bool isSelected = true;
   bool isPasswordTextField = true;
-  bool isEmailVerified = false;
 
   Color usernameBorderColor = Colors.grey.withOpacity(0.5);
   Color passwordBorderColor = Colors.grey.withOpacity(0.5);
   Color emailBorderColor = Colors.grey.withOpacity(0.5);
+  Color confirmPasswordBorderColor = Colors.grey.withOpacity(0.5); // New color for confirm password border
+
 
   bool isEmailValid(String email) {
     return email.contains('@');
   }
 
-  Future<void> signIn() async {
-    final Uri url = Uri.parse("https://tab-lu.onrender.com/signin");
-
+  Future<void> signIn({bool isEmailVerified = false}) async {
+    final Uri url = Uri.parse("http://192.168.101.6:8080/signin");
     if (username.text.isEmpty || email.text.isEmpty || password.text.isEmpty) {
       // Handle empty fields
       // Set border colors to indicate the error
@@ -67,6 +69,24 @@ class _LoginPageState extends State<Signin> {
       return;
     }
 
+    if (!isPasswordValid(password.text)) {
+      setState(() {
+        passwordBorderColor = Colors.red;
+      });
+      showLoginErrorToast('Password must contain both alphabetic and numeric characters');
+      return;
+    }
+
+    if (password.text != confirmPassword.text) {
+      // Check if password and confirm password fields match
+      setState(() {
+        passwordBorderColor = Colors.red;
+        confirmPasswordBorderColor = Colors.red;
+      });
+      showLoginErrorToast('Passwords do not match');
+      return;
+    }
+
     try {
       final response = await http.post(
         url,
@@ -90,16 +110,15 @@ class _LoginPageState extends State<Signin> {
         print(jsonResponse);
         await SharedPreferencesUtils.saveToken(myToken);
         // Check if email is verified before navigating to SearchEvents
-        if (isEmailVerified) {
+        if (!isEmailVerified) {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => SearchEvents(token: "myToken"),
+              builder: (context) => VerifyAccount(
+                emailController: email,
+              ),
             ),
           );
-        } else {
-          // If email is not verified, show verification dialog
-          showEmailVerificationDialog();
         }
       } else if (response.statusCode == 401) {
         print(jsonResponse);
@@ -131,83 +150,12 @@ class _LoginPageState extends State<Signin> {
     );
   }
 
-  void showEmailVerificationDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Email Verification'),
-          contentPadding: EdgeInsets.symmetric(
-              vertical: 10), // Adjust the vertical padding as needed
-          content: Container(
-            width: 300, // Adjust the width as needed
-            child: Column(
-              mainAxisSize: MainAxisSize.min, // Make the dialog compact
-              children: [
-                Text('A verification code has been sent to your email.'),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: verificationCodeController,
-                  decoration: InputDecoration(
-                    labelText: 'Verification Code',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () async {
-                // Validate the entered verification code and send it to the server
-                try {
-                  final response = await http.post(
-                    Uri.parse("https://tab-lu.onrender.com/verify-email"),
-                    headers: <String, String>{
-                      'Content-Type': 'application/json; charset=UTF-8',
-                    },
-                    body: jsonEncode({
-                      'email': email.text,
-                      'verificationCode': verificationCodeController.text,
-                    }),
-                  );
-
-                  // var jsonResponse = json.decode(response.body);
-                  if (response.statusCode == 200) {
-                    print('Email verification successful');
-                    setState(() {
-                      isEmailVerified = true;
-                    });
-                    Navigator.pop(context); // Close the dialog
-
-                    // Proceed with sign-up if email is verified
-                    if (isEmailVerified) {
-                      signIn();
-
-                      // Navigate to SearchEvents page
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SearchEvents(token: "myToken"),
-                        ),
-                      );
-                    }
-                    // } else if (response.statusCode == 400) {
-                    //   print(jsonResponse);
-                    //   // showLoginErrorToast(jsonResponse["message"]);
-                    // } else {
-                    //   print('HTTP Error: ${response.statusCode}');
-                  }
-                } catch (e) {
-                  print('Error: $e');
-                }
-              },
-              child: Text('Verify'),
-            ),
-          ],
-        );
-      },
-    );
+  bool isPasswordValid(String password) {
+    // Regular expression to check if the password contains both alphabetic and numeric characters
+    RegExp regExp = RegExp(r'^(?=.*[a-zA-Z])(?=.*\d)');
+    return regExp.hasMatch(password);
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -433,6 +381,48 @@ class _LoginPageState extends State<Signin> {
                       const SizedBox(
                         height: 10,
                       ),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              blurRadius: 10,
+                              spreadRadius: 7,
+                              offset: const Offset(1, 1),
+                              color: Colors.grey.withOpacity(0.2),
+                            ),
+                          ],
+                        ),
+                        child: TextField(
+                          controller: confirmPassword,
+                          obscureText: isPasswordTextField ? !showPassword : false,
+                          decoration: InputDecoration(
+                            hintText: 'Confirm Password',
+                            hintStyle: const TextStyle(
+                              color: Colors.grey,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 10.0,
+                              horizontal: 15.0,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(30),
+                              borderSide: const BorderSide(
+                                color: Color.fromARGB(255, 5, 70, 20),
+                                width: 2.0,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(30),
+                              borderSide: BorderSide(
+                                color: confirmPasswordBorderColor,
+                                width: 1.0,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                       Row(
                         children: [
                           Expanded(
@@ -460,7 +450,7 @@ class _LoginPageState extends State<Signin> {
                         ),
                       ),
                       child: Text(
-                        'Sign Up',
+                        'Sign up',
                         style: TextStyle(
                           color: isSelected ? Colors.white : Colors.black,
                           fontSize: 18,

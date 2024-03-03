@@ -317,7 +317,7 @@ class _WinnerState extends State<Winner> {
   Future<void> fetchScoreCards() async {
     final eventId = widget.eventId;
     print(eventId);
-    final url = Uri.parse('https://tab-lu.onrender.com/winners/$eventId');
+    final url = Uri.parse('http://192.168.101.6:8080/winners/$eventId');
 
     try {
       final response = await http.get(url);
@@ -464,17 +464,13 @@ class _WinnerState extends State<Winner> {
                                     height: 50,
                                     width: 50,
                                   ),
-                                  const SizedBox(
-                                    width: 25,
-                                  ),
-                                  Text(scoreCards.isNotEmpty
-                                      ? scoreCards[0].contestantName
+                                  const SizedBox(width: 25),
+                                  Text(scoreCards.length > 2
+                                      ? scoreCards[2].contestantName
                                       : "No Scores"),
-                                  const SizedBox(
-                                    width: 25,
-                                  ),
-                                  Text(scoreCards.isNotEmpty
-                                      ? scoreCards[0].score.toStringAsFixed(2)
+                                  const SizedBox(width: 25),
+                                  Text(scoreCards.length > 2
+                                      ? scoreCards[2].score.toStringAsFixed(2)
                                       : ""),
                                 ],
                               ),
@@ -492,19 +488,16 @@ class _WinnerState extends State<Winner> {
                                     height: 50,
                                     width: 50,
                                   ),
-                                  const SizedBox(
-                                    width: 25,
-                                  ),
-                                  Text(scoreCards.isNotEmpty
-                                      ? scoreCards[1].contestantName
+                                  const SizedBox(width: 25),
+                                  Text(scoreCards.length > 2
+                                      ? scoreCards[2].contestantName
                                       : "No Scores"),
-                                  const SizedBox(
-                                    width: 25,
-                                  ),
-                                  Text(scoreCards.isNotEmpty
-                                      ? scoreCards[1].score.toStringAsFixed(2)
+                                  const SizedBox(width: 25),
+                                  Text(scoreCards.length > 2
+                                      ? scoreCards[2].score.toStringAsFixed(2)
                                       : ""),
                                 ],
+
                               ),
                             ),
                           ),
@@ -520,19 +513,16 @@ class _WinnerState extends State<Winner> {
                                     height: 50,
                                     width: 50,
                                   ),
-                                  const SizedBox(
-                                    width: 25,
-                                  ),
-                                  Text(scoreCards.isNotEmpty
+                                  const SizedBox(width: 25),
+                                  Text(scoreCards.length > 2
                                       ? scoreCards[2].contestantName
                                       : "No Scores"),
-                                  const SizedBox(
-                                    width: 25,
-                                  ),
-                                  Text(scoreCards.isNotEmpty
+                                  const SizedBox(width: 25),
+                                  Text(scoreCards.length > 2
                                       ? scoreCards[2].score.toStringAsFixed(2)
                                       : ""),
                                 ],
+
                               ),
                             ),
                           ),
@@ -587,6 +577,8 @@ class _WinnerState extends State<Winner> {
     );
   }
 }
+
+
 
 class PdfViewerPage extends StatelessWidget {
   final String filePath;

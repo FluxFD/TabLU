@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:tutorial/pages/scorecard.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -10,14 +12,14 @@ class Criteria {
   String criterianame;
   String percentage;
   String eventId; // Event ID
-  //String contestantId; // Contestant ID
+  List<SubCriteria> subCriteriaList; // List of subcriteria
 
   Criteria({
     this.criteriaId,
     required this.criterianame,
     required this.percentage,
     required this.eventId,
-    //required this.contestantId,
+    required this.subCriteriaList,
   });
 
   factory Criteria.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,9 @@ class Criteria {
       criterianame: json['criterianame'] ?? '',
       percentage: json['percentage'] ?? '',
       eventId: json['eventId'] ?? '',
+      subCriteriaList: (json['subCriteriaList'] as List<dynamic>?)
+          ?.map((subCriteriaJson) => SubCriteria.fromJson(subCriteriaJson))
+          .toList() ?? [],
     );
   }
 
@@ -35,9 +40,35 @@ class Criteria {
       'criterianame': criterianame,
       'percentage': percentage,
       'eventId': eventId,
+      'subCriteriaList': subCriteriaList.map((subCriteria) => subCriteria.toJson()).toList(),
     };
   }
 }
+
+class SubCriteria {
+  String subCriteriaName;
+  String percentage;
+
+  SubCriteria({
+    required this.subCriteriaName,
+    required this.percentage,
+  });
+
+  factory SubCriteria.fromJson(Map<String, dynamic> json) {
+    return SubCriteria(
+      subCriteriaName: json['subCriteriaName'] ?? '',
+      percentage: json['percentage'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'subCriteriaName': subCriteriaName,
+      'percentage': percentage,
+    };
+  }
+}
+
 
 class Event {
   String event_name;
@@ -104,17 +135,17 @@ class _CriteriasState extends State<Criterias> {
   Future<void> _fetchCriterias(String eventId) async {
     try {
       final response = await http.get(
-        Uri.parse('https://tab-lu.onrender.com/criteria/$eventId'),
+        Uri.parse('http://192.168.101.6:8080/criteria/$eventId'),
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> criteriaList = jsonDecode(response.body);
-        // print("Critieria List ${criteriaList}");
         final List<Criteria> fetchedCriterias = criteriaList
             .map((criteriaJson) => Criteria.fromJson(criteriaJson))
             .toList();
         setState(() {
           criterias = fetchedCriterias;
+          print(criterias[0].subCriteriaList);
         });
       } else {
         print('Failed to fetch criteria. Status code: ${response.statusCode}');
@@ -126,7 +157,7 @@ class _CriteriasState extends State<Criterias> {
 
   Future<void> deleteCriteria(String eventId, String criteriaName) async {
     final url = Uri.parse(
-        "https://tab-lu.onrender.com/criteria?eventId=$eventId&criteriaName=$criteriaName");
+        "http://192.168.101.6:8080/criteria?eventId=$eventId&criteriaName=$criteriaName");
     updateTotalPercentage();
     try {
       final response = await http.delete(url);
@@ -252,6 +283,7 @@ class _CriteriasState extends State<Criterias> {
           animation: animation,
           onClicked: () => removeItem(index),
           onEdit: () {},
+          onAdd: () {},
         ),
         duration: const Duration(milliseconds: 300),
       );
@@ -280,12 +312,12 @@ class _CriteriasState extends State<Criterias> {
     );
   }
 
-  Future<void> createCriteria(
-      String eventId, Map<String, dynamic> criteriaData) async {
+  Future<void> createCriteria(String eventId, Map<String, dynamic> criteriaData) async {
     if (eventId == null) {
       print('Error: Event ID is null');
       return;
     }
+
     if (criteriaData == null ||
         !criteriaData.containsKey('criterianame') ||
         !criteriaData.containsKey('percentage')) {
@@ -293,46 +325,50 @@ class _CriteriasState extends State<Criterias> {
       return;
     }
 
+    bool allSubCriteriaPercentagesAre100 = true;
+
+    if (criteriaData.containsKey('subCriteriaList')) {
+      List<Map<String, dynamic>> subCriteriaList = criteriaData['subCriteriaList'];
+
+      for (final subCriteria in subCriteriaList) {
+        final double subPercentage = double.tryParse(subCriteria['percentage'] ?? '0.0') ?? 0.0;
+        if (subPercentage != 100.0) {
+          _showErrorSnackBar('Total percentage of sub-criteria is not 100', Colors.orange);
+          allSubCriteriaPercentagesAre100 = false;
+          break;
+        }
+      }
+    }
+
+    if (!allSubCriteriaPercentagesAre100) {
+      throw Exception('One or more criteria have a total sub-criteria percentage not equal to 100');
+    }
+
     final double totalPercentage = calculateTotalPercentage();
-    print(totalPercentage);
-    final double newPercentage =
-        double.tryParse(criteriaData['percentage'] ?? '0.0') ?? 0.0;
+    final double newPercentage = double.tryParse(criteriaData['percentage'] ?? '0.0') ?? 0.0;
     print(newPercentage);
+
     if (totalPercentage > 100.0) {
-      _showErrorSnackBar(
-          'Total percentage exceeds 100%. Adjusting percentages.',
-          Colors.orange);
-
+      _showErrorSnackBar('Total percentage exceeds 100%. Adjusting percentages.', Colors.orange);
       final double adjustment = 100.0 - totalPercentage;
-
       final double adjustedPercentage = newPercentage - adjustment;
-
       criteriaData['percentage'] = adjustedPercentage.toString();
-
       final int criteriaCount = criterias.length;
       final double adjustmentPerCriteria = adjustment / criteriaCount;
 
       for (final criteria in criterias) {
-        final double currentPercentage =
-            double.tryParse(criteria.percentage) ?? 0.0;
-        criteria.percentage =
-            (currentPercentage + adjustmentPerCriteria).toString();
+        final double currentPercentage = double.tryParse(criteria.percentage ?? '0.0') ?? 0.0;
+        criteria.percentage = (currentPercentage + adjustmentPerCriteria).toString();
       }
     } else {
-      final url = Uri.parse("https://tab-lu.onrender.com/criteria");
+      final url = Uri.parse("http://192.168.101.6:8080/criteria");
 
       try {
         print(criteriaData);
-        // Check if criteria with the same name already exists
         final response = await http.post(
           url,
-          headers: <String, String>{
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode({
-            ...criteriaData,
-            "eventId": eventId,
-          }),
+          headers: <String, String>{'Content-Type': 'application/json'},
+          body: jsonEncode({...criteriaData, "eventId": eventId}),
         );
 
         if (response.statusCode == 201) {
@@ -340,10 +376,6 @@ class _CriteriasState extends State<Criterias> {
         } else {
           final Map<String, dynamic> responseData = jsonDecode(response.body);
           final String errorMessage = responseData['error'];
-          // _showErrorSnackBar(
-          //     'Failed to create criteria: ${errorMessage}',
-          //     Colors.red);
-          // Check for null response body
           final responseBody = response.body;
           if (responseBody != null && responseBody.isNotEmpty) {
             print('Response body: $responseBody');
@@ -356,6 +388,8 @@ class _CriteriasState extends State<Criterias> {
       }
     }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -405,6 +439,7 @@ class _CriteriasState extends State<Criterias> {
             animation: animation,
             onClicked: () => removeItem(index),
             onEdit: () => _editCriteria(context, criterias[index]),
+            onAdd: () => (),
           );
         },
       ),
@@ -497,6 +532,7 @@ class _CriteriasState extends State<Criterias> {
                                     _criteriaNameController.text ?? '',
                                 percentage: newPercentage.toString(),
                                 eventId: widget.eventId,
+                                subCriteriaList: [], // Pass the current criteria's subcriteria list
                               );
 
                               insertItem(newCriterias);
@@ -585,30 +621,6 @@ class _CriteriasState extends State<Criterias> {
                   ),
                 ),
               ),
-              //   ],
-              // ),
-              // const SizedBox(height: 10),
-              // Row(
-              //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              //   children: [
-              // OutlinedButton(
-              //   onPressed: () {
-              //     // Add your cancel button action here
-              //   },
-              //   style: OutlinedButton.styleFrom(
-              //     padding: const EdgeInsets.symmetric(horizontal: 50),
-              //     shape: RoundedRectangleBorder(
-              //       borderRadius: BorderRadius.circular(10),
-              //     ),
-              //     textStyle: const TextStyle(
-              //       fontSize: 14,
-              //       letterSpacing: 2.2,
-              //       color: Colors.black,
-              //     ),
-              //   ),
-              //   child:
-              //       const Text('CLEAR', style: TextStyle(color: Colors.green)),
-              // ),
               const SizedBox(width: 10),
               ElevatedButton(
                 onPressed: () async {
@@ -644,7 +656,7 @@ class _CriteriasState extends State<Criterias> {
                         print('Fetching event with ID: $eventId');
                         final response = await http.get(
                           Uri.parse(
-                              'https://tab-lu.onrender.com/event/$eventId'),
+                              'http://192.168.101.6:8080/event/$eventId'),
                         );
 
                         if (response.statusCode == 200) {
@@ -712,75 +724,261 @@ class _CriteriasState extends State<Criterias> {
   }
 }
 
-class ListItemWidget extends StatelessWidget {
+class ListItemWidget extends StatefulWidget {
   final Criteria criteria;
   final Animation<double> animation;
   final VoidCallback onClicked;
   final VoidCallback onEdit;
+  final VoidCallback onAdd;
 
   ListItemWidget({
     required this.criteria,
     required this.animation,
     required this.onClicked,
     required this.onEdit,
+    required this.onAdd,
   });
+
+  @override
+  _ListItemWidgetState createState() => _ListItemWidgetState();
+}
+
+class _ListItemWidgetState extends State<ListItemWidget> {
+  bool isDropdownOpen = false;
 
   @override
   Widget build(BuildContext context) {
     return SizeTransition(
-      sizeFactor: animation,
+      sizeFactor: widget.animation,
       child: buildItem(context),
     );
   }
 
+
   Widget buildItem(BuildContext context) {
     return SizeTransition(
-      sizeFactor: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+      sizeFactor: CurvedAnimation(
+        parent: widget.animation,
+        curve: Curves.easeInOut,
+      ),
       child: Card(
         margin: const EdgeInsets.all(8),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
         color: Colors.white,
-        child: ListTile(
-          contentPadding: const EdgeInsets.all(10),
-          leading: Container(
-            width: 16, // Set a fixed width for the leading widget
-            child: GestureDetector(
-              onTap: () {},
-            ),
-          ),
-          title: Text(
-            criteria.criterianame,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Colors.black,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          subtitle: Text(
-            'Percentage: ${criteria.percentage}',
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.edit, color: Colors.blue, size: 25),
-                onPressed: onEdit,
+        child: Column(
+          children: [
+            ListTile(
+              contentPadding: const EdgeInsets.all(10),
+              leading: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        isDropdownOpen = !isDropdownOpen;
+                      });
+                    },
+                    child: Transform.rotate(
+                      angle: isDropdownOpen ? pi / -75 : pi / -2,
+                      child: Icon(
+                        Icons.arrow_drop_down_circle_outlined,
+                        color: Colors.green,
+                        size: 30,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              IconButton(
-                icon: const Icon(Icons.delete, color: Colors.red, size: 25),
-                onPressed: onClicked,
+              title: Text(
+                widget.criteria.criterianame,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.black,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ],
-          ),
+              subtitle: Text(
+                'Percentage: ${widget.criteria.percentage}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.blue, size: 25),
+                    onPressed: widget.onEdit,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red, size: 25),
+                    onPressed: widget.onClicked,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add, color: Colors.grey, size: 25),
+                    onPressed: () {
+                      _showAddSubCriteriaModal(context);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            if (isDropdownOpen) buildDropdownList(),
+          ],
         ),
       ),
     );
   }
+
+  void _showAddSubCriteriaModal(BuildContext context) {
+    TextEditingController subCriteriaNameController = TextEditingController();
+    TextEditingController percentageController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return SingleChildScrollView(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return Container(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: subCriteriaNameController,
+                      decoration: InputDecoration(
+                        hintText: 'Enter sub criteria name',
+                      ),
+                    ),
+                    SizedBox(height: 16.0),
+                    TextField(
+                      controller: percentageController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        hintText: 'Enter percentage',
+                      ),
+                    ),
+                    SizedBox(height: 16.0),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                      ),
+                      onPressed: () {
+                        // Calculate total percentage including the new subcriteria
+                        double totalPercentage = widget.criteria.subCriteriaList
+                            .map((subCriteria) => double.parse(subCriteria.percentage))
+                            .fold(0, (previousValue, element) => previousValue + element);
+
+                        // Parse the new subcriteria's percentage
+                        double newPercentage = double.parse(percentageController.text);
+
+                        // Check if the new total percentage will exceed 100%
+                        if (totalPercentage + newPercentage <= 100.0) {
+                          final newSubCriteria = SubCriteria(
+                            subCriteriaName: subCriteriaNameController.text,
+                            percentage: percentageController.text,
+                          );
+                          setState(() {
+                            widget.criteria.subCriteriaList.add(newSubCriteria);
+                          });
+                          Navigator.pop(context);
+                        } else {
+                          // Display an error message if adding the new subcriteria exceeds 100%
+                          Fluttertoast.showToast(
+                            msg: 'Sub-criteria percentage exceeds 100%',
+                            toastLength: Toast.LENGTH_SHORT,
+                            gravity: ToastGravity.CENTER,
+                            backgroundColor: Colors.orange,
+                            textColor: Colors.white,
+                          );
+                        }
+                      },
+                      child: Text(
+                        'Add',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+
+  Widget buildDropdownList() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child:
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Divider( // This creates the horizontal line
+            color: Colors.grey,
+            thickness: 1, // Adjust thickness as needed
+          ),
+          if (widget.criteria.subCriteriaList.isNotEmpty)
+            Text("Sub-criteria"),
+          for (int index = 0; index < widget.criteria.subCriteriaList.length; index++)
+            Row(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: Text(
+                      widget.criteria.subCriteriaList[index].subCriteriaName,
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 16.0,
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: Text(
+                    '${widget.criteria.subCriteriaList[index].percentage} %',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 16.0,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.delete, color: Colors.red),
+                  onPressed: () {
+                    setState(() {
+                      widget.criteria.subCriteriaList.removeAt(index);
+                    });
+                  },
+                ),
+              ],
+            ),
+          if (widget.criteria.subCriteriaList.isEmpty)
+            Text("No Sub-criteria"),
+        ],
+      ),
+    );
+  }
+
 }
+
+
+
+
+
+
+

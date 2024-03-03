@@ -22,6 +22,15 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:tutorial/utility/sharedPref.dart';
+import 'package:socket_io_client/socket_io_client.dart' as io;
+// import 'package:firebase_messaging/firebase_messaging.dart';
+
+
+final io.Socket socket =
+io.io('http://192.168.101.6:8080', <String, dynamic>{
+  'transports': ['websocket'],
+  'autoConnect': false,
+});
 
 TextEditingController searchController = TextEditingController();
 
@@ -263,13 +272,35 @@ class _SearchEventsState extends State<SearchEvents> {
   List<String> contestants = [];
   List<String> criterias = [];
   int notificationCount = 0;
+  File? _image;
+
+
   @override
   void initState() {
     super.initState();
     _getInitialInfo();
     _decodeToken();
-    fetchAndCountNotifications();
     loadNotificationCount();
+    fetchAndCountNotifications();
+    // Connect to socket only if it's not already connected
+    if (!socket.connected) {
+      socket.connect();
+      socket.onConnect((_) {
+        print('Socket connected');
+      });
+    }
+
+    socket.on('newNotification', (data) {
+      fetchAndCountNotifications();
+    });
+
+    socket.onDisconnect((_) {
+      print('Socket disconnected');
+    });
+    socket.onError((error) {
+      print('Socket error: $error');
+    });
+
     authState = Provider.of<AuthState>(context, listen: false);
   }
 
@@ -289,7 +320,29 @@ class _SearchEventsState extends State<SearchEvents> {
     );
   }
 
-  File? _image;
+
+  void sendPushNotification() async {
+    try {
+      // Prepare the notification message
+      String notificationTitle = 'New Notification';
+      String notificationBody = 'You have a new notification';
+
+      // Send the notification to the user's device
+      // await _firebaseMessaging.send(
+      //   RemoteMessage(
+      //     notification: Notification(
+      //       title: notificationTitle,
+      //       body: notificationBody,
+      //     ),
+      //     // Add any additional data if needed
+      //   ),
+      // );
+
+      print('Push notification sent successfully');
+    } catch (error) {
+      print('Error sending push notification: $error');
+    }
+  }
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
@@ -315,7 +368,7 @@ class _SearchEventsState extends State<SearchEvents> {
       return;
     }
 
-    final String serverUrl = 'https://tab-lu.onrender.com/upload-profilePic';
+    final String serverUrl = 'http://192.168.101.6:8080/upload-profilePic';
     final Uri uri = Uri.parse(serverUrl);
 
     try {
@@ -364,11 +417,14 @@ class _SearchEventsState extends State<SearchEvents> {
   Future<void> loadNotificationCount() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     int savedCount = prefs.getInt('notificationCount') ?? 0;
-
-    setState(() {
-      notificationCount = savedCount;
-    });
+    // Compare the saved count with the current count
+    if (savedCount != notificationCount) {
+      setState(() {
+        notificationCount = savedCount;
+      });
+    }
   }
+
 
   Future<void> saveNotificationCount(int count) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -388,16 +444,13 @@ class _SearchEventsState extends State<SearchEvents> {
 
         // Make the API request with the userId
         final response = await http.get(
-            Uri.parse('https://tab-lu.onrender.com/get-notifications/$userId'));
+            Uri.parse('http://192.168.101.6:8080/get-notifications/$userId'));
 
         if (response.statusCode == 200) {
           List<dynamic> notifications = json.decode(response.body);
           setState(() {
             notificationCount = notifications.length;
           });
-
-          print('Test Notif');
-
           saveNotificationCount(notificationCount);
         } else {
           // Handle server errors (e.g., 404, 500)
@@ -421,7 +474,7 @@ class _SearchEventsState extends State<SearchEvents> {
         return [];
       }
 
-      final url = Uri.parse("https://tab-lu.onrender.com/events/$accessCode");
+      final url = Uri.parse("http://192.168.101.6:8080/events/$accessCode");
       final response = await http.get(
         url,
         headers: {
@@ -499,7 +552,7 @@ class _SearchEventsState extends State<SearchEvents> {
   TextEditingController searchController = TextEditingController();
   Future<List<dynamic>> fetchNotifications(String userId) async {
     final response = await http.get(
-      Uri.parse('https://tab-lu.onrender.com/get-notifications/$userId'),
+      Uri.parse('http://192.168.101.6:8080/get-notifications/$userId'),
     );
 
     if (response.statusCode == 200) {
@@ -513,7 +566,7 @@ class _SearchEventsState extends State<SearchEvents> {
     print("User id : ${userId}");
     // Replace 'your-api-endpoint' with the actual API endpoint for fetching user data
     Uri usersCollectionUri =
-        Uri.parse('https://tab-lu.onrender.com/get-username/$userId');
+        Uri.parse('http://192.168.101.6:8080/get-username/$userId');
     try {
       // Make a GET request to the users collection
       final response = await http.get(usersCollectionUri);
@@ -570,7 +623,7 @@ class _SearchEventsState extends State<SearchEvents> {
                                 child: _image == null
                                     ? Image.network(
                                         profilePic ??
-                                            'https://example.com/default-image.jpg',
+                                            'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png',
                                         fit: BoxFit.cover,
                                         width: 64,
                                         height: 64,
@@ -867,7 +920,7 @@ class _SearchEventsState extends State<SearchEvents> {
                   ),
                 );*/
 
-                authState.logout(); // This will clear the app state
+                authState.logout(context); // This will clear the app state
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(
                     builder: (context) => const getStarted(),
@@ -1193,7 +1246,7 @@ class _SearchEventsState extends State<SearchEvents> {
         const Padding(
           padding: EdgeInsets.only(left: 20),
           child: Text(
-            'Your Events',
+            'Event Categories',
             style: TextStyle(
               color: Color.fromARGB(255, 5, 70, 20),
               fontSize: 18,
@@ -1337,7 +1390,7 @@ class EventApi {
       String userId = decodedToken['userId'];
 
       final response = await http.post(
-        Uri.parse("https://tab-lu.onrender.com/api-join-event"),
+        Uri.parse("http://192.168.101.6:8080/api-join-event"),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -1385,7 +1438,7 @@ class NotificationApi {
         final String username = decodedToken['username'];
         // Fetch event information before sending the notification
         final eventInfoResponse = await http.get(
-          Uri.parse("https://tab-lu.onrender.com/notifications/$eventId"),
+          Uri.parse("http://192.168.101.6:8080/notifications/$eventId"),
           headers: {
             'Content-Type': 'application/json',
           },
@@ -1405,7 +1458,7 @@ class NotificationApi {
               'User $username has requested access to event $eventName';
           // Send the join notification
           final response = await http.post(
-            Uri.parse("https://tab-lu.onrender.com/notifications"),
+            Uri.parse("http://192.168.101.6:8080/notifications"),
             headers: {
               'Content-Type': 'application/json',
             },
@@ -1437,6 +1490,30 @@ class NotificationApi {
     } catch (e) {
       print('Error sending notification: $e');
       throw Exception('Failed to send notification. Please try again.');
+    }
+  }
+
+  static Future<void> sendNotificationScoresSubmitted(String eventId, String userId) async {
+    try {
+      // Make an HTTP POST request to send a notification without specifying the type
+      final response = await http.post(
+        Uri.parse('http://192.168.101.6:8080/notifications'),
+        body: {
+          'eventId': eventId,
+          'userId': userId,
+          'type': "scoreSubmitted"
+        },
+      );
+
+      print("Event IDs:" + eventId);
+
+      if (response.statusCode == 200) {
+        print('Notification sent successfully');
+      } else {
+        print('Failed to send notification');
+      }
+    } catch (error) {
+      print('Error sending notification: $error');
     }
   }
 }

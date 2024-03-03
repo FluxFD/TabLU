@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 // Define the possible values for the 'type' field
-const notificationTypes = ['normal', 'confirmation', 'feedback'];
+const notificationTypes = ['normal', 'confirmation', 'feedback', 'scoreSubmitted'];
 
 const notificationSchema = new mongoose.Schema({
   eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Event', required: true },

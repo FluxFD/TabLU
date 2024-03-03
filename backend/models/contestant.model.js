@@ -2,6 +2,7 @@
 const mongoose = require('mongoose');
 
 const contestantSchema = new mongoose.Schema({
+  contestantNumber: Number,
   name: String,
   course: String,
   department: String,

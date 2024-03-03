@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial/pages/forgotpassword.dart';
@@ -7,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:convert';
 import 'package:tutorial/pages/eventinfo.dart';
+import 'package:tutorial/pushnotifications.dart';
 import 'package:provider/provider.dart';
 import 'package:tutorial/utility/sharedPref.dart';
 
@@ -62,7 +64,7 @@ class _LoginPageState extends State<Login> {
   }
 
   try {
-    final Uri url = Uri.parse("https://tab-lu.onrender.com/login");
+    final Uri url = Uri.parse("http://192.168.101.6:8080/login");
     var res = await http.post(
       url,
       headers: <String, String>{
@@ -142,7 +144,9 @@ class _LoginPageState extends State<Login> {
     }
 
     try {
-      final Uri url = Uri.parse("https://tab-lu.onrender.com/login");
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      print("fcm token: $fcmToken");
+      final Uri url = Uri.parse("http://192.168.101.6:8080/login");
       var res = await http.post(
         url,
         headers: <String, String>{
@@ -151,6 +155,7 @@ class _LoginPageState extends State<Login> {
         body: jsonEncode({
           'username': username.text,
           'password': password.text,
+          'fcmToken': '$fcmToken'
         }),
       );
 

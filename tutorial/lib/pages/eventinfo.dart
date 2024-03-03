@@ -31,12 +31,12 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   bool isCopied = false;
   bool isButtonDisabled = false;
 
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   if (isAdding == false) {}
-  //   //print('Generated Access Code: $accessCode');
-  // }
+  @override
+  void initState() {
+    super.initState();
+    if (isAdding == false) {}
+    _attachListenersToControllers();
+  }
 
   String generateRandomAccessCode(int length) {
     const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -51,8 +51,41 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     return await SharedPreferencesUtils.retrieveToken();
   }
 
+
+// Define a method to check if all fields are filled
+  bool areAllFieldsFilled() {
+    return _eventNameController.text.isNotEmpty &&
+        selectedCategory != null &&
+        _venueController.text.isNotEmpty &&
+        _organizerController.text.isNotEmpty &&
+        _dateController.text.isNotEmpty &&
+        _timeController.text.isNotEmpty &&
+        _endDateController.text.isNotEmpty &&
+        _endTimeController.text.isNotEmpty;
+  }
+
+// Attach listener callbacks to each controller to track changes
+  void _attachListenersToControllers() {
+    _eventNameController.addListener(_updateButtonState);
+    _venueController.addListener(_updateButtonState);
+    _organizerController.addListener(_updateButtonState);
+    _dateController.addListener(_updateButtonState);
+    _timeController.addListener(_updateButtonState);
+    _endDateController.addListener(_updateButtonState);
+    _endTimeController.addListener(_updateButtonState);
+  }
+
+  void _updateButtonState() {
+    setState(() {
+      // Check if all fields are filled, then enable the button, otherwise disable it
+      isButtonDisabled = !areAllFieldsFilled();
+    });
+  }
+
+
   @override
   Widget build(BuildContext context) {
+    _updateButtonState(); // Call _updateButtonState() to update button state
     return Scaffold(
       appBar: AppBar(
         elevation: 0.0,
@@ -506,35 +539,46 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
               onPressed: isButtonDisabled
                   ? null
                   : () async {
-                      setState(() {
-                        isButtonDisabled = true; // Disable the button
-                      });
-                      final String? authToken = await retrieveToken();
-                      if (authToken != null) {
-                        final event = createEventFromControllers();
-                        final createdEventId =
-                            await createEvent(event, authToken);
-                        if (createdEventId != null) {
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (BuildContext context) {
-                              // Use a separate StatefulWidget to manage state within the dialog
-                              return EventCreatedDialog(
-                                  accessCode: accessCode,
-                                  eventId: createdEventId);
-                            },
-                          );
-                        }
-                      } else {
-                        // Handle the case where login fails
-                        print('Failed to create an Event');
-                      }
-                      setState(() {
-                        isButtonDisabled =
-                            false; // Re-enable the button after the operation is complete
-                      });
-                    },
+                setState(() {
+                  isButtonDisabled = true; // Disable the button
+                });
+
+                // Perform validation
+                if (!areAllFieldsFilled()) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Please fill in all fields.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                } else {
+                  final String? authToken = await retrieveToken();
+                  if (authToken != null) {
+                    final event = createEventFromControllers();
+                    final createdEventId = await createEvent(event, authToken);
+                    if (createdEventId != null) {
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (BuildContext context) {
+                          // Use a separate StatefulWidget to manage state within the dialog
+                          return EventCreatedDialog(
+                              accessCode: accessCode,
+                              eventId: createdEventId);
+                        },
+                      );
+                    }
+                  } else {
+                    // Handle the case where login fails
+                    print('Failed to create an Event');
+                  }
+                }
+
+                setState(() {
+                  isButtonDisabled =
+                  false; // Re-enable the button after the operation is complete
+                });
+              },
               style: ElevatedButton.styleFrom(
                 primary: Colors.green,
                 onPrimary: Colors.white,
@@ -550,7 +594,27 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 ),
               ),
               child: const Text('APPLY'),
+              // Disable the button if isButtonDisabled is true
+              // This prevents the button from being pressed again until the operation is complete
+              // You can also change the appearance of the button to indicate that it's disabled
+              // by using the onPressed parameter as null
+              // onPressed: isButtonDisabled ? null : () {},
+              // style: ElevatedButton.styleFrom(
+              //   primary: isButtonDisabled ? Colors.grey : Colors.green,
+              //   onPrimary: Colors.white,
+              //   padding: const EdgeInsets.symmetric(horizontal: 50),
+              //   elevation: 2,
+              //   shape: RoundedRectangleBorder(
+              //     borderRadius: BorderRadius.circular(10),
+              //   ),
+              //   textStyle: const TextStyle(
+              //     fontSize: 14,
+              //     letterSpacing: 2.2,
+              //     color: Colors.white,
+              //   ),
+              // ),
             ),
+
           ],
         ),
       ),
@@ -664,7 +728,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     print(eventData["accessCode"]);
     final response = await http.post(
       Uri.parse(
-          'https://tab-lu.onrender.com/events'), // Use Uri.parse to convert the string to Uri
+          'http://192.168.101.6:8080/events'), // Use Uri.parse to convert the string to Uri
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $authToken',
@@ -704,7 +768,7 @@ class _EditEventScreen extends State<EditEventScreen> {
     token = await SharedPreferencesUtils.retrieveToken();
     try {
       final response = await http
-          .get(Uri.parse('https://tab-lu.onrender.com/event/$eventId'));
+          .get(Uri.parse('http://192.168.101.6:8080/event/$eventId'));
 
       if (response.statusCode == 200) {
         final dynamic eventData = json.decode(response.body);
@@ -773,7 +837,7 @@ class _EditEventScreen extends State<EditEventScreen> {
       fetchEventData(widget.eventId);
     }
 
-    if (isAdding == false) {}
+
     //print('Generated Access Code: $accessCode');
   }
 
@@ -1381,7 +1445,7 @@ class _EditEventScreen extends State<EditEventScreen> {
       Map<String, dynamic> eventData, String authToken, String eventId) async {
     final response = await http.put(
       Uri.parse(
-          'https://tab-lu.onrender.com/events/$eventId'), // Include eventId in the URL
+          'http://192.168.101.6:8080/events/$eventId'), // Include eventId in the URL
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $authToken',

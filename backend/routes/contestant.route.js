@@ -136,8 +136,20 @@ router.get("/uploads/:contestantId", async (req, res) => {
 
 router.post("/contestants", uploads.single("profilePic"), async (req, res) => {
   try {
-    const { name, course, department, eventId, contestantId } = req.body;
-    console.log(req.file);
+    const {
+      name,
+      course,
+      department,
+      eventId,
+      contestantId,
+      contestantNumber,
+    } = req.body;
+    console.log("Name:", name);
+    console.log("Course:", course);
+    console.log("Department:", department);
+    console.log("Event ID:", eventId);
+    console.log("Contestant ID:", contestantId);
+    console.log("Contestant Number:", contestantNumber);
     // Ensure that eventId is a valid ObjectId
     if (!mongoose.Types.ObjectId.isValid(eventId)) {
       return res.status(400).json({ error: "Invalid eventId" });
@@ -159,6 +171,7 @@ router.post("/contestants", uploads.single("profilePic"), async (req, res) => {
         existingContestant.name = name;
         existingContestant.course = course;
         existingContestant.department = department;
+        existingContestant.contestantNumber = contestantNumber; // Add contestNumber here
 
         // Change the image on the uploads
         let existingUpload = await Upload.findOne({
@@ -229,6 +242,7 @@ router.post("/contestants", uploads.single("profilePic"), async (req, res) => {
         existingContestant.name = name;
         existingContestant.course = course;
         existingContestant.department = department;
+        existingContestant.contestantNumber = contestantNumber; // Add contestNumber here
 
         const updatedContestant = await existingContestant.save();
         return res.status(200).json(updatedContestant);
@@ -242,6 +256,7 @@ router.post("/contestants", uploads.single("profilePic"), async (req, res) => {
       department,
       profilePic: null, // Set to null initially
       eventId,
+      contestantNumber,
     });
 
     // Save the contestant to get the _id
