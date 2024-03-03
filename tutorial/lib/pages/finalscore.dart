@@ -465,12 +465,12 @@ class _WinnerState extends State<Winner> {
                                     width: 50,
                                   ),
                                   const SizedBox(width: 25),
-                                  Text(scoreCards.length > 2
-                                      ? scoreCards[2].contestantName
+                                  Text(scoreCards.length > 0
+                                      ? scoreCards[0].contestantName
                                       : "No Scores"),
                                   const SizedBox(width: 25),
-                                  Text(scoreCards.length > 2
-                                      ? scoreCards[2].score.toStringAsFixed(2)
+                                  Text(scoreCards.length > 0
+                                      ? scoreCards[0].score.toStringAsFixed(2)
                                       : ""),
                                 ],
                               ),
@@ -490,11 +490,11 @@ class _WinnerState extends State<Winner> {
                                   ),
                                   const SizedBox(width: 25),
                                   Text(scoreCards.length > 2
-                                      ? scoreCards[2].contestantName
+                                      ? scoreCards[1].contestantName
                                       : "No Scores"),
                                   const SizedBox(width: 25),
                                   Text(scoreCards.length > 2
-                                      ? scoreCards[2].score.toStringAsFixed(2)
+                                      ? scoreCards[1].score.toStringAsFixed(2)
                                       : ""),
                                 ],
 
