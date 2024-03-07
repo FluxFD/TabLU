@@ -192,12 +192,15 @@ class Criteria {
   factory Criteria.fromJson(Map<String, dynamic> json) {
     return Criteria(
       criteriaId: json['_id'] != null ? json['_id'].toString() : '',
-      criterianame: json['criterianame'] != null ? json['criterianame'].toString() : '',
-      percentage: json['percentage'] != null ? json['percentage'].toString() : '',
+      criterianame:
+          json['criterianame'] != null ? json['criterianame'].toString() : '',
+      percentage:
+          json['percentage'] != null ? json['percentage'].toString() : '',
       eventId: json['eventId'] != null ? json['eventId'].toString() : '',
       subCriteriaList: (json['subCriteriaList'] as List<dynamic>?)
-          ?.map((subCriteriaJson) => SubCriteria.fromJson(subCriteriaJson))
-          .toList() ?? [],
+              ?.map((subCriteriaJson) => SubCriteria.fromJson(subCriteriaJson))
+              .toList() ??
+          [],
       score: json['score'] != null ? int.parse(json['score'].toString()) : 0,
     );
   }
@@ -259,7 +262,6 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   Map<String, TextEditingController> judgeControllers = {};
   Map<String?, TextEditingController> subCriteriaControllers = {};
 
-
   TextEditingController feedbackController = TextEditingController();
   bool isLoading = false;
   late Event event;
@@ -294,7 +296,6 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     fetchEventDetails();
     calculateInitialTotalScores();
     criterianame = "InitialValue";
-
   }
 
   // Future<void> initializeControllers() async {
@@ -323,7 +324,6 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     }
     super.dispose();
   }
-
 
   bool areAllFieldsPopulated() {
     for (TextEditingController judgeControllers in judgeControllers.values) {
@@ -454,7 +454,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       if (!isCreator) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("You are not the creator of this event. Can't submit scores"),
+            content: Text(
+                "You are not the creator of this event. Can't submit scores"),
             backgroundColor: Colors.orange,
           ),
         );
@@ -508,9 +509,13 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
           if (criterias != null) {
             criterias.forEach((criteriaItem) {
-              if (criteriaItem.subCriteriaList != null && criteriaItem.criteriaId == criteriaId) {
-                criteriaItem.subCriteriaList!.asMap().forEach((subIndex, subCriteria) {
-                  TextEditingController? subController = subCriteriaControllers['${key}_${subIndex}'];
+              if (criteriaItem.subCriteriaList != null &&
+                  criteriaItem.criteriaId == criteriaId) {
+                criteriaItem.subCriteriaList!
+                    .asMap()
+                    .forEach((subIndex, subCriteria) {
+                  TextEditingController? subController =
+                      subCriteriaControllers['${key}_${subIndex}'];
                   if (subController != null) {
                     double subScore = double.tryParse(subController.text) ?? 0;
                     subCriteriaData.add({
@@ -520,7 +525,6 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                       'subCriteriaPercentage': subCriteria.percentage,
                       'subScore': subScore,
                     });
-                    print("Sub data ${subCriteriaData}");
                   }
                 });
               }
@@ -540,14 +544,19 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       });
 
       List<Map<String, dynamic>> submissionData =
-      contestantScores.entries.map((entry) {
+          contestantScores.entries.map((entry) {
         var contestantId = entry.key;
         var scores = entry.value;
         var criteriaIds = scores.keys.toList();
         var rawScores = contestantRawScores[contestantId] ?? {};
 
         List<dynamic> criteriaScores = criteriaIds.map((criteriaId) {
-          List<Map<String, dynamic>> subCriteriaDataForCriteria = subCriteriaData.where((subData) => subData['criteriaId'] == criteriaId && subData['contestantId'] == contestantId).toList();
+          List<Map<String, dynamic>> subCriteriaDataForCriteria =
+              subCriteriaData
+                  .where((subData) =>
+                      subData['criteriaId'] == criteriaId &&
+                      subData['contestantId'] == contestantId)
+                  .toList();
           return {
             "criteriaId": criteriaId,
             "scores": scores[criteriaId],
@@ -575,7 +584,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
       if (response.statusCode == 201) {
         showRatingDialog(context);
-        NotificationApi.sendNotificationScoresSubmitted(widget.eventId, userId!);
+        NotificationApi.sendNotificationScoresSubmitted(
+            widget.eventId, userId!);
         print('Scores submitted successfully');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -605,24 +615,25 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     }
   }
 
-
-  Future <bool> fetchJudges(String eventId) async {
-    final url = Uri.parse('https://tab-lu.onrender.com/judges/$eventId/confirmed');
+  Future<bool> fetchJudges(String eventId) async {
+    final url =
+        Uri.parse('https://tab-lu.onrender.com/judges/$eventId/confirmed');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
       List<dynamic> judgesJson = json.decode(response.body);
-      List<Judge> judges = judgesJson.map((json) => Judge.fromJson(json)).toList();
+      List<Judge> judges =
+          judgesJson.map((json) => Judge.fromJson(json)).toList();
 
       // Check if all judges have submitted scores
-      bool allScoresSubmitted = judges.every((judge) => judge.scoreSubmitted == true);
+      bool allScoresSubmitted =
+          judges.every((judge) => judge.scoreSubmitted == true);
 
       return allScoresSubmitted;
     } else {
       throw Exception('Failed to load judges');
     }
   }
-
 
   Future<void> initializeData() async {
     try {
@@ -1031,6 +1042,13 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
+                      child: Text(contestant.contestantNumber,
+                          style: const TextStyle(fontSize: 16)),
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
                       child: Text(contestant.name,
                           style: const TextStyle(fontSize: 16)),
                     ),
@@ -1052,9 +1070,9 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   }
 
   Widget buildJudgesList(
-      List<Contestant> contestants,
-      List<Criteria>? criterias,
-      ) {
+    List<Contestant> contestants,
+    List<Criteria>? criterias,
+  ) {
     if (isLoading) {
       return buildLoadingWidget();
     } else {
@@ -1071,16 +1089,19 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     );
   }
 
-  Widget buildContestantsList(List<Contestant> contestants, List<Criteria>? criterias) {
+  Widget buildContestantsList(
+      List<Contestant> contestants, List<Criteria>? criterias) {
     // Sort contestants based on contestantNumber
-    contestants.sort((a, b) => int.parse(a.contestantNumber).compareTo(int.parse(b.contestantNumber)));
+    contestants.sort((a, b) =>
+        int.parse(a.contestantNumber).compareTo(int.parse(b.contestantNumber)));
 
     return Expanded(
       child: ListView.builder(
         itemCount: contestants.length,
         itemBuilder: (BuildContext context, int index) {
           Contestant contestant = contestants[index];
-          return Column( // Wrap with Column
+          return Column(
+            // Wrap with Column
             children: [
               buildContestantCard(contestant, criterias),
               SizedBox(height: 10), // Add spacing between cards if needed
@@ -1091,8 +1112,6 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     );
   }
 
-
-
   Widget buildContestantCard(Contestant contestant, List<Criteria>? criterias) {
     List<Widget> scoreFields = [];
     if (criterias != null && criterias.isNotEmpty) {
@@ -1102,7 +1121,9 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
         return Expanded(
           child: Row(
             children: [
-              Expanded(child: buildJudgeScoreField(uniqueKey, criteria.subCriteriaList.isNotEmpty)),
+              Expanded(
+                  child: buildJudgeScoreField(
+                      uniqueKey, criteria.subCriteriaList.isNotEmpty)),
               Expanded(child: buildScoreField(contestant, criteria)),
             ],
           ),
@@ -1119,6 +1140,15 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
             child: Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
+                contestant.contestantNumber,
+                style: const TextStyle(fontSize: 16),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
                 contestant.name,
                 style: const TextStyle(fontSize: 16),
               ),
@@ -1131,8 +1161,6 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     );
   }
 
-
-
   Widget buildScoreField(Contestant contestant, Criteria criteria) {
     String uniqueKey = "${contestant.id}_${criteria.criteriaId ?? ''}";
     if (criteria.subCriteriaList.isNotEmpty) {
@@ -1142,7 +1170,6 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       return SizedBox.shrink(); // Or return Container()
     }
   }
-
 
   Widget buildSubCriteriaScoreButton(String uniqueKey, Criteria criteria) {
     return IconButton(
@@ -1158,20 +1185,19 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     );
   }
 
-
   Widget buildSubCriteriaScoreDialog(String uniqueKey, Criteria criteria) {
     List<TextEditingController> validControllers = [];
 
     // Filter controllers based on the existence of subcriteria
     for (var i = 0; i < criteria.subCriteriaList.length; i++) {
       var subCriteria = criteria.subCriteriaList[i];
-      String subUniqueKey = "${uniqueKey}_${i}"; // Assuming subCriteria has an index property
+      String subUniqueKey =
+          "${uniqueKey}_${i}"; // Assuming subCriteria has an index property
       TextEditingController? controller = subCriteriaControllers[subUniqueKey];
       if (controller != null) {
         validControllers.add(controller);
       }
     }
-
 
     return AlertDialog(
       title: Text('Sub criteria'),
@@ -1183,8 +1209,10 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
           SizedBox(height: 8),
           ...validControllers.map((controller) {
             int index = validControllers.indexOf(controller);
-            String subCriteriaName = criteria.subCriteriaList![index].subCriteriaName;
-            double subCriteriaPercentage = double.parse(criteria.subCriteriaList![index].percentage);
+            String subCriteriaName =
+                criteria.subCriteriaList![index].subCriteriaName;
+            double subCriteriaPercentage =
+                double.parse(criteria.subCriteriaList![index].percentage);
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: TextFormField(
@@ -1215,7 +1243,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                   }),
                 ],
                 decoration: InputDecoration(
-                  labelText: "${subCriteriaName} ${subCriteriaPercentage.toString()}%",
+                  labelText:
+                      "${subCriteriaName} ${subCriteriaPercentage.toString()}%",
                   border: OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.green),
                   ),
@@ -1246,10 +1275,12 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
               for (var controller in validControllers) {
                 double subCriteriaScore = double.parse(controller.text);
                 int index = validControllers.indexOf(controller);
-                double subCriteriaPercentage = double.parse(criteria.subCriteriaList![index].percentage);
+                double subCriteriaPercentage =
+                    double.parse(criteria.subCriteriaList[index].percentage);
                 totalScore += subCriteriaScore * (subCriteriaPercentage / 100);
               }
-              TextEditingController judgeController = judgeControllers[uniqueKey]!;
+              TextEditingController judgeController =
+                  judgeControllers[uniqueKey]!;
               judgeController.text = totalScore.toStringAsFixed(2);
               Navigator.of(context).pop();
             }
@@ -1265,9 +1296,6 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       ],
     );
   }
-
-
-
 
   Widget buildJudgeScoreField(String uniqueKey, bool isSubCriteriaEmpty) {
     return Container(
@@ -1306,17 +1334,11 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
             borderSide: BorderSide(color: Colors.green),
           ),
         ),
-        enabled: !isSubCriteriaEmpty, // Enable or disable based on the bool parameter
+        enabled:
+            !isSubCriteriaEmpty, // Enable or disable based on the bool parameter
       ),
     );
   }
-
-
-
-
-
-
-
 
   Future<String> fetchEventId() async {
     final String url = 'https://tab-lu.onrender.com/latest-event-id';
@@ -1420,9 +1442,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
         final dynamic contestantData = jsonDecode(response.body);
         print('Fetched Contestant Data: $contestantData');
         if (contestantData != null && contestantData is List) {
-          List<Contestant> fetchedContestants = contestantData
-              .map((data) => Contestant.fromJson(data))
-              .toList();
+          List<Contestant> fetchedContestants =
+              contestantData.map((data) => Contestant.fromJson(data)).toList();
           int index = 0;
           int criteriaIndex = 0;
           int subIndex = 0;
@@ -1431,13 +1452,14 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
             int contestantIndex = 0;
             try {
               Map<String, List<double>> existingScores =
-              await fetchExistingScoresForContestant(contestant.id, eventId);
+                  await fetchExistingScoresForContestant(
+                      contestant.id, eventId);
               if (existingScores.isNotEmpty) {
                 for (var criteria in criterias) {
                   String uniqueKey = "${contestant.id}_${criteria.criteriaId}";
                   // Load existing criteria score
                   List<double>? criteriaScore =
-                  existingScores['criteriaScores'];
+                      existingScores['criteriaScores'];
                   // Load existing raw score
                   List<double>? rawScore = existingScores['rawScores'];
                   List<dynamic>? subScore = existingScores['subScores'];
@@ -1446,19 +1468,30 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                   controllers["${uniqueKey}"] = TextEditingController(
                     text: criteriaScore![index].toStringAsFixed(2) ?? '',
                   );
-                  judgeControllers[uniqueKey] = TextEditingController(
-                    text: rawScore![index].toStringAsFixed(2) ?? '',
-                  );
+
+                  if (rawScore!.isEmpty){
+                    judgeControllers[uniqueKey] = TextEditingController(
+                      text: rawScore[index].toStringAsFixed(2) ?? '',
+                    );
+                  }else{
+                    judgeControllers[uniqueKey] = TextEditingController(
+                      text: rawScore[index].toStringAsFixed(2) ?? '',
+                    );
+                  }
+
                   index++;
-                  for (int index = 0; index < criteria.subCriteriaList.length; index++) {
+                  for (int index = 0;
+                      index < criteria.subCriteriaList.length;
+                      index++) {
                     String uniqueSubKey = "${uniqueKey}_$index";
-                    subCriteriaControllers[uniqueSubKey] = TextEditingController(
+                    subCriteriaControllers[uniqueSubKey] =
+                        TextEditingController(
                       text: subScore![subIndex].toStringAsFixed(2),
                     );
                     subIndex++;
                   }
                   criteriaIndex++;
-                  }
+                }
                 contestantIndex++;
               } else {
                 for (var contestant in fetchedContestants) {
@@ -1468,12 +1501,18 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                     controllers[uniqueKey] = TextEditingController();
                     judgeControllers[uniqueKey] = TextEditingController();
                     // Initialize subcriteria controllers
-                    for (int index = 0; index < criteria.subCriteriaList.length; index++) {
+                    for (int index = 0;
+                        index < criteria.subCriteriaList.length;
+                        index++) {
                       // var subCriteria = criteria.subCriteriaList[index];
                       String subCriteriaUniqueKey = "${uniqueKey}_${index}";
                       // Create controllers for subcriteria score and judge
-                      subCriteriaControllers[subCriteriaUniqueKey] = TextEditingController();
+                      subCriteriaControllers[subCriteriaUniqueKey] =
+                          TextEditingController();
+                      // print("length ${subCriteriaControllers.length} ${subCriteriaUniqueKey}");
                     }
+
+
                   }
                 }
                 print(
@@ -1481,7 +1520,6 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                 // Handle the case where fetch is not successful
 
                 print('Failed to fetch scores for contestant ${contestant.id}');
-
               }
             } catch (error) {
               print('Error fetching scores: $error');
@@ -1509,9 +1547,6 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       print('Error fetching contestants: $e');
     }
   }
-
-
-
 
   Future<Map<String, List<double>>> fetchExistingScoresForContestant(
       String? contestantId, String eventId) async {
@@ -1555,7 +1590,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
           // Extract and add sub-scores if available
           if (score['criteria']['subCriteriaList'] != null) {
-            List<dynamic> subCriteriaList = score['criteria']['subCriteriaList'];
+            List<dynamic> subCriteriaList =
+                score['criteria']['subCriteriaList'];
             for (var subCriteria in subCriteriaList) {
               double subScore = subCriteria['subScore'].toDouble();
               subScores.add(subScore);
@@ -1601,13 +1637,11 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     }
   }
 
-
-
   Future<List<Criteria>> fetchCriteria(String eventId,
       {VoidCallback? onCriteriaFetched}) async {
     try {
-      final response = await http.get(
-          Uri.parse("https://tab-lu.onrender.com/events/$eventId/criteria"));
+      final response = await http
+          .get(Uri.parse("https://tab-lu.onrender.com/events/$eventId/criteria"));
       print('Fetch Criteria - Status Code: ${response.statusCode}');
       print('Fetch Criteria - Response Body: ${response.body}');
 
@@ -1704,8 +1738,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   //------------------------------------------------------------
 
   Future<Map<String, dynamic>> fetchEventData(String eventId) async {
-    final response = await http
-        .get(Uri.parse('https://tab-lu.onrender.com/events/$eventId'));
+    final response =
+        await http.get(Uri.parse('https://tab-lu.onrender.com/events/$eventId'));
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> eventData = json.decode(response.body);
@@ -1818,7 +1852,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                       child: Padding(
                         padding: const EdgeInsets.only(left: 8.0),
                         child: SizedBox(
-                          width: 600,
+                          width: criterias.length * 200,
                           child: Column(
                             children: [
                               Row(
@@ -1828,7 +1862,23 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                                       height: 50,
                                       padding: const EdgeInsets.only(top: 5),
                                       color: Colors.green,
-                                      alignment: Alignment.topCenter,
+                                      alignment: Alignment.center,
+                                      child: const Text(
+                                        'Contestant #',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Container(
+                                      height: 50,
+                                      padding: const EdgeInsets.only(top: 5),
+                                      color: Colors.green,
+                                      alignment: Alignment.center,
                                       child: const Text(
                                         'Name',
                                         style: TextStyle(
@@ -1848,7 +1898,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                                         height: 50,
                                         padding: const EdgeInsets.only(top: 5),
                                         color: Colors.green,
-                                        alignment: Alignment.topCenter,
+                                        alignment: Alignment.center,
                                         child: buildCriteriaRow(
                                           criteria.criterianame,
                                           percentage,
@@ -1920,7 +1970,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                     child: Container(
                       height: 300,
                       child: SizedBox(
-                        width: 600,
+                        width: criterias.length * 300,
                         child: Column(
                           children: [
                             Container(
@@ -1930,7 +1980,22 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                               alignment: Alignment.topCenter,
                               child: Row(
                                 children: [
-                                  // Name Column
+                                  Expanded(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 5),
+                                      child: Center(
+                                        child: Text(
+                                          'Contestant #',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                   Expanded(
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(
@@ -2071,7 +2136,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                                   onPressed: () async {
                                     try {
                                       // Fetch judges
-                                      bool allScoresSubmitted = await fetchJudges(widget.eventId);
+                                      bool allScoresSubmitted =
+                                          await fetchJudges(widget.eventId);
 
                                       if (allScoresSubmitted) {
                                         // If all judges have submitted scores, do something
@@ -2144,7 +2210,6 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                 bool confirmed = await showConfirmationDialog();
                 if (confirmed) {
                   try {
-
                     await handleSubmit();
                     // The rest of your code goes here
                     final String? token =
@@ -2215,7 +2280,9 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     );
   }
 
-  Widget buildCriteriaRow(String criterianame, double percentage, List<SubCriteria> subCriteriaList, {TextStyle? style}) {
+  Widget buildCriteriaRow(
+      String criterianame, double percentage, List<SubCriteria> subCriteriaList,
+      {TextStyle? style}) {
     TextStyle finalStyle = TextStyle(
       color: Colors.black54,
       fontWeight: FontWeight.bold,
@@ -2252,12 +2319,16 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                         children: [
                           Text(
                             'Subcriteria',
-                            style: finalStyle.copyWith(fontWeight: FontWeight.bold, color: Colors.black54),
+                            style: finalStyle.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black54),
                           ),
                           SizedBox(width: 60), // Add spacing between texts
                           Text(
                             'Percentage',
-                            style: finalStyle.copyWith(fontWeight: FontWeight.bold, color: Colors.black54),
+                            style: finalStyle.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black54),
                           ),
                         ],
                       ),

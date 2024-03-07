@@ -776,21 +776,21 @@ class _ProfilePictureDialogState extends State<ProfilePictureDialog> {
             TextField(
               controller: _nameController,
               decoration: InputDecoration(
-                labelText: 'Name',
+                labelText: 'Contestant Name',
                 labelStyle: TextStyle(fontSize: 15, color: Colors.green),
               ),
             ),
             TextField(
               controller: _courseController,
               decoration: InputDecoration(
-                labelText: 'Course',
+                labelText: 'Age',
                 labelStyle: TextStyle(fontSize: 15, color: Colors.green),
               ),
             ),
             TextField(
               controller: _departmentController,
               decoration: InputDecoration(
-                labelText: 'Department',
+                labelText: 'Address',
                 labelStyle: TextStyle(fontSize: 15, color: Colors.green),
               ),
             ),

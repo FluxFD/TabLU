@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
@@ -87,19 +88,39 @@ class EventsJoined extends StatefulWidget {
 class _EventsJoinedState extends State<EventsJoined> {
   List<Event> eventsList = []; // Updated to store the fetched events
   late Judge currentJudge;
+  bool isLoading = true; // Track loading state
+  late Timer _timer = Timer(Duration.zero, () {}); // Initialize with a dummy value
+
+
 
   @override
   void initState() {
     super.initState();
     // Fetch data when the widget is initialized
     fetchData();
+    _timer = Timer.periodic(Duration(seconds: 30), (timer) {
+      // Refresh data every minute
+      print("30 seconds have passed");
+      fetchData();
+    });
   }
+
+  @override
+  void dispose() {
+    // Cancel the timer when the widget is disposed
+    _timer.cancel();
+    super.dispose();
+  }
+
 
   Future<String> fetchData() async {
     // Retrieve token using your method
     String? token = await SharedPreferencesUtils.retrieveToken();
 
     try {
+      setState(() {
+        isLoading = true; // Set loading state to true before fetching
+      });
       if (token == null || token.isEmpty) {
         throw Exception('Token is missing or empty');
       }
@@ -123,6 +144,16 @@ class _EventsJoinedState extends State<EventsJoined> {
         // Parse the JSON response
         dynamic responseData = jsonDecode(response.body);
         Map<String, dynamic> judge = {};
+        // Check if responseData['events'] is null or empty
+        if (responseData['events'] == null ||
+            (responseData['events'] as Iterable).isEmpty) {
+          // Handle the case where there are no events
+          print('No events found.');
+          setState(() {
+            isLoading = false; // Set loading state to true before fetching
+          });
+          return 'No events found';
+        }
         judge['id'] = responseData['events'][0]['_id'];
         judge['name'] = "Score Sheet";
 
@@ -151,40 +182,35 @@ class _EventsJoinedState extends State<EventsJoined> {
           setState(() {
             eventsList = events;
           });
-
+          setState(() {
+            isLoading = false; // Set loading state to true before fetching
+          });
           // Return a success message or any other result
           return 'Data fetched successfully';
         } else {
+          setState(() {
+            isLoading = false; // Set loading state to true before fetching
+          });
           print('Invalid data format. Expected a map with "events" key.');
           return 'Invalid data format';
         }
       } else {
+        setState(() {
+          isLoading = false; // Set loading state to true before fetching
+        });
         // Handle errors
         print('Failed to fetch data. Error code: ${response.statusCode}');
         return 'Failed to fetch data';
       }
     } catch (e) {
       // Handle exceptions
+      setState(() {
+        isLoading = false; // Set loading state to true before fetching
+      });
       print('Error: $e');
       return 'An error occurred';
     }
   }
-
-  // List<Event> generateEventsList() {
-  //   List<Event> events = [];
-  //   for (int i = 1; i <= eventsList.length; i++) {
-  //     events.add(
-  //       Event(
-  //         'Event $i',
-  //         '10-10-10',
-  //         'at 5:00pm',
-  //         '65667e3ca0872db453cdae8d',
-  //         '65667e3ca0872db453cdae8d'
-  //       ),
-  //     );
-  //   }
-  //   return events;
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -211,114 +237,110 @@ class _EventsJoinedState extends State<EventsJoined> {
           },
         ),
       ),
-      body: ListView.builder(
+      body: isLoading
+          ? Center(child: CircularProgressIndicator()) // Show loading indicator while fetching
+          : eventsList.isEmpty
+          ? Center(child: Text("No events joined"))
+          :ListView.builder(
         itemCount: eventsList.length,
         itemBuilder: (context, index) {
           Event event = eventsList[index];
-          return Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Card(
-              color: Colors.white,
-              elevation: 3,
-              child: Container(
-                height: 200, // Adjust the height as needed
-                child: ListTile(
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 21.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          event.eventName,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontStyle: FontStyle.italic,
-                            color: Color.fromARGB(255, 5, 70, 20),
-                            fontWeight: FontWeight.w500,
+            return Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Card(
+                color: Colors.white,
+                elevation: 3,
+                child: Container(
+                  height: 200, // Adjust the height as needed
+                  child: ListTile(
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 21.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            event.eventName,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontStyle: FontStyle.italic,
+                              color: Color.fromARGB(255, 5, 70, 20),
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
-                        Text(
-                          'Start Date: ${event.eventDate.split("T")[0]} at ${event.eventTime}',
-                          style: TextStyle(
-                            fontSize: 13,
+                          Text(
+                            'Start Date: ${event.eventDate.split("T")[0]} at ${event.eventTime}',
+                            style: TextStyle(
+                              fontSize: 13,
+                            ),
                           ),
-                        ),
-                        Text(
-                          'End Date: ${event.eventEndDate.split("T")[0]} at ${event.eventEndTime}',
-                          style: TextStyle(
-                            fontSize: 13,
+                          Text(
+                            'End Date: ${event.eventEndDate.split("T")[0]} at ${event.eventEndTime}',
+                            style: TextStyle(
+                              fontSize: 13,
+                            ),
                           ),
-                        ),
-                        Text('Status: ${event.status}'),
-                        Text(
-                          'Event Id: ${event.eventId}',
-                          style: TextStyle(
-                            fontSize: 13,
+                          Text('Status: ${event.status}'),
+                          Text(
+                            'Event Id: ${event.eventId}',
+                            style: TextStyle(
+                              fontSize: 13,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            ElevatedButton(
-                              onPressed: () {
-                                // Handle join event logic
-                                if (event.status == 'Active') {
+                          SizedBox(height: 10),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              ElevatedButton(
+                                onPressed: event.status == 'Active'
+                                    ? () {
+                                  // Handle join event logic
                                   Navigator.of(context).push(
                                     MaterialPageRoute(
                                       builder: (context) => JudgeScoreSheet(
-                                          eventId: eventsList[index].eventId,
-                                          eventData: {},
-                                          judges: currentJudge),
-                                    ),
-                                  );
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                          'Event is already done. Cannot access this event'),
-                                      backgroundColor: Colors.red,
+                                        eventId: eventsList[index].eventId,
+                                        eventData: {},
+                                        judges: currentJudge,
+                                      ),
                                     ),
                                   );
                                 }
-                                // You can implement the logic to join the event here
-                              },
-                              style: ElevatedButton.styleFrom(
-                                primary: Colors.green,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
+                                    : null, // Set onPressed to null if event is inactive
+                                style: ElevatedButton.styleFrom(
+                                  primary: Colors.green,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                ),
+                                child: Text(
+                                  'View Event',
+                                  style: TextStyle(color: Colors.white),
                                 ),
                               ),
-                              child: Text(
-                                'View Event',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                            // ElevatedButton(
-                            //   onPressed: () {
-                            //     _showCancelConfirmationDialog(event);
-                            //   },
-                            //   style: ElevatedButton.styleFrom(
-                            //     primary: Colors.red,
-                            //     shape: RoundedRectangleBorder(
-                            //       borderRadius: BorderRadius.circular(20),
-                            //     ),
-                            //   ),
-                            //   child: Text(
-                            //     'Delete Event',
-                            //     style: TextStyle(color: Colors.white),
-                            //   ),
-                            // ),
-                          ],
-                        ),
-                      ],
+                              // ElevatedButton(
+                              //   onPressed: () {
+                              //     _showCancelConfirmationDialog(event);
+                              //   },
+                              //   style: ElevatedButton.styleFrom(
+                              //     primary: Colors.red,
+                              //     shape: RoundedRectangleBorder(
+                              //       borderRadius: BorderRadius.circular(20),
+                              //     ),
+                              //   ),
+                              //   child: Text(
+                              //     'Delete Event',
+                              //     style: TextStyle(color: Colors.white),
+                              //   ),
+                              // ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          }
       ),
     );
   }

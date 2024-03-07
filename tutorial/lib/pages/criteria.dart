@@ -145,7 +145,6 @@ class _CriteriasState extends State<Criterias> {
             .toList();
         setState(() {
           criterias = fetchedCriterias;
-          print(criterias[0].subCriteriaList);
         });
       } else {
         print('Failed to fetch criteria. Status code: ${response.statusCode}');
@@ -336,7 +335,7 @@ class _CriteriasState extends State<Criterias> {
         subPercentage += double.tryParse(subCriteria['percentage'] ?? '0.0') ?? 0.0;
       }
 
-      if (subPercentage != 100.0) {
+      if (subPercentage != 100.0 && criteriaData['subCriteriaList'] != null && (criteriaData['subCriteriaList'] as List).isNotEmpty) {
         _showErrorSnackBar('Total percentage of sub-criteria is not 100', Colors.orange);
         allSubCriteriaPercentagesAre100 = false;
       }
@@ -391,8 +390,6 @@ class _CriteriasState extends State<Criterias> {
       }
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {

@@ -65,7 +65,7 @@ router.post("/notifications", async (req, res) => {
       receiver = user._id;
       const username = user.username;
       const eventName = event.event_name;
-      body = `Judge ${username} has already submitted scores to event ${eventName}`;
+      body = `Judge ${userSender.username} has already submitted scores to event ${eventName}`;
     }
 
     // Compose notification Message

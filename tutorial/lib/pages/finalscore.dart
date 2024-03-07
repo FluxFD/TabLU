@@ -14,6 +14,8 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import 'criteria.dart';
+
 class EventData {
   final String eventName;
   final DateTime eventStartDate;
@@ -45,16 +47,24 @@ class EventData {
 class Criteria {
   final String criteriaName;
   final double criteriaPercentage;
+  final List<dynamic> subCriteriaList;
 
   Criteria({
     required this.criteriaName,
     required this.criteriaPercentage,
+    required this.subCriteriaList,
   });
 
   factory Criteria.fromJson(Map<String, dynamic> json) {
+    var subCriteriaJsonList = json['subCriteriaList'] ?? [];
+    var parsedSubCriteriaList = subCriteriaJsonList
+        .map((subJson) => SubCriteria.fromJson(subJson))
+        .toList();
+
     return Criteria(
-      criteriaName: json['criteriaName'],
-      criteriaPercentage: double.parse(json['criteriaPercentage']),
+      criteriaName: json['criteriaName'] ?? "",
+      criteriaPercentage: double.parse(json['criteriaPercentage'].toString()) ?? 0,
+      subCriteriaList: parsedSubCriteriaList,
     );
   }
 }
@@ -80,7 +90,7 @@ class aJudge {
 class Contestant {
   final String contestantName;
   final String criteriaName;
-  final int judgeRawScore;
+  final double judgeRawScore;
   final double judgeCalculatedScore;
 
   Contestant({
@@ -94,7 +104,7 @@ class Contestant {
     return Contestant(
       contestantName: json['contestantName'],
       criteriaName: json['criteriaName'],
-      judgeRawScore: json['judgeRawScore'],
+      judgeRawScore: json['judgeRawScore'].toDouble(),
       judgeCalculatedScore: json['judgeCalculatedScore'].toDouble(),
     );
   }
@@ -163,6 +173,8 @@ class _WinnerState extends State<Winner> {
 
     // Create a new PDF document
     final PdfDocument document = PdfDocument();
+    document.pageSettings.orientation = PdfPageOrientation.landscape;
+
     // Add a page to the document
     final PdfPage page = document.pages.add();
     // Get page graphics for the page
@@ -249,10 +261,12 @@ class _WinnerState extends State<Winner> {
 
     // Add criteria names as headers
     for (int i = 0; i < eventData.criterias.length; i++) {
-      header.cells[2 + i * 2].value = eventData.criterias[i].criteriaName;
+      header.cells[2 + i * 2].value = "Criteria\n " + eventData.criterias[i].criteriaName;
       header.cells[3 + i * 2].value =
           'Calculated Score (${eventData.criterias[i].criteriaPercentage}%)';
     }
+
+
     Map<String, PdfGridRow> judgeContestantMap = {};
     // Add data to the table
     // Populate data in the grid
@@ -282,9 +296,46 @@ class _WinnerState extends State<Winner> {
         }
       }
     }
+    grid.draw(page: page, bounds: Rect.fromLTWH(0, contentYPosition, 0, 0));
+
+    // Duplicate the table
+    final double secondTableStartPosition = contentYPosition;
+    final double tableSpacing = secondTableStartPosition * (scoreCards.length / 1.3); // Adjust spacing between tables
+
+
+    // Add another grid with headers and data
+    final PdfGrid secondGrid = PdfGrid();
+    secondGrid.style = PdfGridStyle(
+      font: PdfStandardFont(PdfFontFamily.helvetica, 10),
+      cellPadding: PdfPaddings(left: 5, right: 5, top: 5, bottom: 5),
+    );
+    secondGrid.columns.add(count: 2 + eventData.criterias.length * 2);
+    PdfGridRow secondHeader = secondGrid.headers.add(1)[0];
+    secondHeader.cells[0].value = 'Criteria Name';
+    secondHeader.cells[1].value = 'Calculated Percentage';
+    // Add headers for subcriteria names
+    for (int i = 0; i < eventData.criterias.length; i++) {
+      var criteria = eventData.criterias[i];
+      for (int j = 0; j < criteria.subCriteriaList.length; j++) {
+        secondHeader.cells[2 + j].value = 'Subcriteria \n ${criteria.subCriteriaList[j].subCriteriaName}';
+      }
+    }
+
+ for (int i = 0; i < eventData.criterias.length; i++) {
+    PdfGridRow dataRow = secondGrid.rows.add();
+    dataRow.cells[0].value = eventData.criterias[i].criteriaName;
+    dataRow.cells[1].value = '(${eventData.criterias[i].criteriaPercentage}%)';
+
+    var criteria = eventData.criterias[i];
+    for (int j = 0; j < criteria.subCriteriaList.length; j++) {
+    dataRow.cells[2 + j].value = '${criteria.subCriteriaList[j].percentage}%';
+    }
+    }
+
 
     // Draw the grid on the PDF page
-    grid.draw(page: page, bounds: Rect.fromLTWH(0, contentYPosition, 0, 0));
+    secondGrid.draw(
+        page: page, bounds: Rect.fromLTWH(0, tableSpacing, 0, 0));
 
     // Save the document
     List<int> documentBytes = await document.save();
@@ -324,7 +375,6 @@ class _WinnerState extends State<Winner> {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
-        print("Data ${data['response']}");
         setState(() {
           scoreCards = List<ScoreCard>.from(data['contestants'].map((item) {
             return ScoreCard(
@@ -337,19 +387,20 @@ class _WinnerState extends State<Winner> {
           // Sort scoreCards by score in descending order
           scoreCards.sort((a, b) => b.score.compareTo(a.score));
 
-          print('ScoreCards size: ${scoreCards.length}');
+          print('ScoreCards size: ${scoreCards}');
 
           for (var scorecard in scoreCards) {
-            print(scorecard.contestantName);
+            print(scorecard.score);
           }
+          print("eventData ${data['response']}");
           eventData = EventData.fromJson(data['response']);
 
           // Now, eventData contains all the information needed for PDF generation
-          print('Event Name: ${eventData.eventName}');
-          print('Start Date: ${eventData.eventStartDate}');
-          print('Start Time: ${eventData.eventStartTime}');
-          print('Criterias: ${eventData.criterias}');
-          print('Judges: ${eventData.judges}');
+          // print('Event Name: ${eventData.eventName}');
+          // print('Start Date: ${eventData.eventStartDate}');
+          // print('Start Time: ${eventData.eventStartTime}');
+          // print('Criterias: ${eventData.criterias}');
+          // print('Judges: ${eventData.judges}');
 
           setState(() {
             isLoading = false;
@@ -489,11 +540,11 @@ class _WinnerState extends State<Winner> {
                                     width: 50,
                                   ),
                                   const SizedBox(width: 25),
-                                  Text(scoreCards.length > 2
+                                  Text(scoreCards.length > 1
                                       ? scoreCards[1].contestantName
                                       : "No Scores"),
                                   const SizedBox(width: 25),
-                                  Text(scoreCards.length > 2
+                                  Text(scoreCards.length > 1
                                       ? scoreCards[1].score.toStringAsFixed(2)
                                       : ""),
                                 ],

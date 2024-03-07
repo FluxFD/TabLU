@@ -285,7 +285,6 @@ router.get("/winners/:eventId", async (req, res) => {
 
     io.emit("chartUpdate", { contestants });
     // Respond with the top three winners and their average scores
-
     const response = {
       eventName: event.event_name,
       eventStartDate: event.event_date,
@@ -293,6 +292,7 @@ router.get("/winners/:eventId", async (req, res) => {
       criterias: criterias.map((criteria) => ({
         criteriaName: criteria.criterianame,
         criteriaPercentage: criteria.percentage,
+        subCriteriaList: criteria.subCriteriaList
       })),
       judges: judges.map((judge) => {
         const contestants = scorecards
@@ -305,6 +305,7 @@ router.get("/winners/:eventId", async (req, res) => {
             criteriaName: scorecard.criteria.criteriaId.criterianame,
             judgeRawScore: scorecard.criteria.rawScore,
             judgeCalculatedScore: scorecard.criteria.criteriascore,
+            judgeSubCriteriaList: scorecard.criteria.subCriteriaList,
           }));
 
         return {
@@ -313,8 +314,8 @@ router.get("/winners/:eventId", async (req, res) => {
         };
       }),
     };
+    console.log("DSdsd");
     console.log(response);
-    // console.log(response.judges[1].contestants);
     // Respond with the top three winners, event details, scorecards, contestants, and judges
     res.status(200).json({ contestants, response });
   } catch (error) {
