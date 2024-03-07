@@ -21,10 +21,13 @@ io.on("connection", (socket) => {
 mongoose.set("strictPopulate", false);
 
 mongoose
-  .connect("mongodb+srv://jenrah09:jenrah09@cluster0.o3tvy4v.mongodb.net/tabdb?retryWrites=true&w=majority", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(
+    "mongodb+srv://fluxfusiondevs:IarmvoocK5pnptRy@cluster0.wze203o.mongodb.net/TabLUDB?retryWrites=true&w=majority",
+    {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    }
+  )
   .then(() => {
     console.log("MongoDB connected successfully");
     server.listen(port, () => {
