@@ -16,6 +16,7 @@ import 'package:share_plus/share_plus.dart';
 
 import 'criteria.dart';
 
+
 class EventData {
   final String eventName;
   final DateTime eventStartDate;
@@ -65,6 +66,51 @@ class Criteria {
       criteriaName: json['criteriaName'] ?? "",
       criteriaPercentage: double.parse(json['criteriaPercentage'].toString()) ?? 0,
       subCriteriaList: parsedSubCriteriaList,
+    );
+  }
+}
+
+class PageantScoreCard {
+  final String criteriaId;
+  final String criteriaName;
+  final List<TopContestant> topThreeContestants;
+
+  PageantScoreCard({
+    required this.criteriaId,
+    required this.criteriaName,
+    required this.topThreeContestants,
+  });
+
+  factory PageantScoreCard.fromJson(Map<String, dynamic> json) {
+    List<dynamic> contestantsJson = json['topThreeContestants'];
+    List<TopContestant> contestants = contestantsJson
+        .map((contestantJson) => TopContestant.fromJson(contestantJson))
+        .toList();
+
+    return PageantScoreCard(
+      criteriaId: json['criteriaId'],
+      criteriaName: json['criteriaName'],
+      topThreeContestants: contestants,
+    );
+  }
+}
+
+class TopContestant {
+  final String contestantId;
+  final String contestantName;
+  final double score;
+
+  TopContestant({
+    required this.contestantId,
+    required this.contestantName,
+    required this.score,
+  });
+
+  factory TopContestant.fromJson(Map<String, dynamic> json) {
+    return TopContestant(
+      contestantId: json['contestantId'],
+      contestantName: json['contestantName'],
+      score: json['score'].toDouble(),
     );
   }
 }
@@ -134,8 +180,11 @@ class ScoreCard {
 
 class Winner extends StatefulWidget {
   final String eventId;
+  final String event_category;
 
-  const Winner({required this.eventId, Key? key}) : super(key: key);
+  const Winner({required this.eventId,
+    required this.event_category,
+    Key? key}) : super(key: key);
 
   @override
   State<Winner> createState() => _WinnerState();
@@ -144,6 +193,7 @@ class Winner extends StatefulWidget {
 class _WinnerState extends State<Winner> {
   final ScreenshotController screenshotController = ScreenshotController();
   List<ScoreCard> scoreCards = [];
+  List<PageantScoreCard> pageantScoreCards = [];
   late EventData eventData;
   bool isLoading = true;
 
@@ -158,7 +208,8 @@ class _WinnerState extends State<Winner> {
         score: 50.0,
       ),
     );
-    fetchScoreCards();
+      fetchScoreCardsPageants(widget.eventId);
+      fetchScoreCards();
   }
 
   double getCriteriaScore(Contestant contestant, String criteriaName) {
@@ -167,191 +218,7 @@ class _WinnerState extends State<Winner> {
     return 0.0; // Placeholder return
   }
 
-  Future<String> generatePdf(
-      List<ScoreCard> scoreCards, EventData eventData) async {
-    // Request storage permission (make sure to handle permissions)
 
-    // Create a new PDF document
-    final PdfDocument document = PdfDocument();
-    document.pageSettings.orientation = PdfPageOrientation.landscape;
-
-    // Add a page to the document
-    final PdfPage page = document.pages.add();
-    // Get page graphics for the page
-    final PdfGraphics graphics = page.graphics;
-
-    // Load the logo image
-    final ByteData data = await rootBundle.load('assets/icons/tablut222.png');
-    final Uint8List bytesData =
-        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-    final PdfBitmap image = PdfBitmap(bytesData);
-
-    // Draw the logo at top-left
-    const double logoWidth = 100;
-    const double logoHeight = 70;
-    graphics.drawImage(image, Rect.fromLTWH(0, 0, logoWidth, logoHeight));
-
-    // Create a font for the title
-    final PdfFont titleFont = PdfStandardFont(PdfFontFamily.helvetica, 18);
-
-    // Draw the main title centered
-    final String title = 'Score Rankings';
-    final Size titleSize = titleFont.measureString(title);
-    final double titleStart =
-        (page.getClientSize().width - titleSize.width) / 2;
-    graphics.drawString(title, titleFont,
-        bounds:
-            Rect.fromLTWH(titleStart, 0, titleSize.width, titleSize.height));
-
-    // Adjust the Y position for drawing the content below the title
-    double contentYPosition =
-        titleSize.height + 50; // Adjust this value as needed
-
-    final PdfFont eventDetailsFont =
-        PdfStandardFont(PdfFontFamily.helvetica, 14);
-    String eventDetails =
-        'Event name: ${eventData.eventName}\nDate: ${eventData.eventStartDate.toString().split(' ')[0]}\nTime: ${eventData.eventStartTime}';
-    Size eventDetailsSize = eventDetailsFont.measureString(eventDetails);
-    graphics.drawString(eventDetails, eventDetailsFont,
-        brush: PdfBrushes.black,
-        bounds: Rect.fromLTWH(0, contentYPosition, page.getClientSize().width,
-            eventDetailsSize.height));
-    contentYPosition +=
-        eventDetailsSize.height + 20; // Adjust spacing after event details
-
-    // Create a font for the content
-    final PdfFont contentFont = PdfStandardFont(PdfFontFamily.helvetica, 12);
-
-    // Draw the content with rankings for the first three contestants
-    for (int i = 0; i < scoreCards.length; i++) {
-      var scoreCard = scoreCards[i];
-      String ranking = '';
-
-      // Assign rankings to the first three contestants
-      if (i == 0) {
-        ranking = '1st';
-      } else if (i == 1) {
-        ranking = '2nd';
-      } else if (i == 2) {
-        ranking = '3rd';
-      }
-
-      // Line to be drawn on the PDF
-      String line =
-          '${ranking.isNotEmpty ? "$ranking - " : ""}${scoreCard.contestantName}: ${scoreCard.score.toStringAsFixed(2)}%';
-      graphics.drawString(line, contentFont,
-          brush: PdfBrushes.black,
-          bounds: Rect.fromLTWH(
-              0, contentYPosition, page.getClientSize().width, 20));
-      contentYPosition += 20; // Adjust line spacing
-    }
-
-    // Create a PDF grid and add the headers
-    final PdfGrid grid = PdfGrid();
-    grid.style = PdfGridStyle(
-      font: PdfStandardFont(PdfFontFamily.helvetica, 10),
-      cellPadding: PdfPaddings(left: 5, right: 5, top: 5, bottom: 5),
-    );
-    contentYPosition += 50;
-    // Add column headers
-    grid.columns.add(count: 2 + eventData.criterias.length * 2);
-    PdfGridRow header = grid.headers.add(1)[0];
-    header.cells[0].value = 'Judge';
-    header.cells[1].value = 'Contestant';
-
-    // Add criteria names as headers
-    for (int i = 0; i < eventData.criterias.length; i++) {
-      header.cells[2 + i * 2].value = "Criteria\n " + eventData.criterias[i].criteriaName;
-      header.cells[3 + i * 2].value =
-          'Calculated Score (${eventData.criterias[i].criteriaPercentage}%)';
-    }
-
-
-    Map<String, PdfGridRow> judgeContestantMap = {};
-    // Add data to the table
-    // Populate data in the grid
-    for (var judge in eventData.judges) {
-      for (var contestant in judge.contestants) {
-        String key = '${judge.judgeName}_${contestant.contestantName}';
-        PdfGridRow? row;
-
-        if (judgeContestantMap.containsKey(key)) {
-          // Update existing row
-          row = judgeContestantMap[key];
-        } else {
-          // Add new row and store it in the map
-          row = grid.rows.add();
-          judgeContestantMap[key] = row;
-          row.cells[0].value = judge.judgeName;
-          row.cells[1].value = contestant.contestantName;
-        }
-
-        // Fill or update criteria scores
-        for (int i = 0; i < eventData.criterias.length; i++) {
-          if (contestant.criteriaName == eventData.criterias[i].criteriaName) {
-            row?.cells[2 + i * 2].value = contestant.judgeRawScore.toString();
-            row?.cells[3 + i * 2].value =
-                contestant.judgeCalculatedScore.toStringAsFixed(2);
-          }
-        }
-      }
-    }
-    grid.draw(page: page, bounds: Rect.fromLTWH(0, contentYPosition, 0, 0));
-
-    // Duplicate the table
-    final double secondTableStartPosition = contentYPosition;
-    final double tableSpacing = secondTableStartPosition * (scoreCards.length / 1.3); // Adjust spacing between tables
-
-
-    // Add another grid with headers and data
-    final PdfGrid secondGrid = PdfGrid();
-    secondGrid.style = PdfGridStyle(
-      font: PdfStandardFont(PdfFontFamily.helvetica, 10),
-      cellPadding: PdfPaddings(left: 5, right: 5, top: 5, bottom: 5),
-    );
-    secondGrid.columns.add(count: 2 + eventData.criterias.length * 2);
-    PdfGridRow secondHeader = secondGrid.headers.add(1)[0];
-    secondHeader.cells[0].value = 'Criteria Name';
-    secondHeader.cells[1].value = 'Calculated Percentage';
-    // Add headers for subcriteria names
-    for (int i = 0; i < eventData.criterias.length; i++) {
-      var criteria = eventData.criterias[i];
-      for (int j = 0; j < criteria.subCriteriaList.length; j++) {
-        secondHeader.cells[2 + j].value = 'Subcriteria \n ${criteria.subCriteriaList[j].subCriteriaName}';
-      }
-    }
-
- for (int i = 0; i < eventData.criterias.length; i++) {
-    PdfGridRow dataRow = secondGrid.rows.add();
-    dataRow.cells[0].value = eventData.criterias[i].criteriaName;
-    dataRow.cells[1].value = '(${eventData.criterias[i].criteriaPercentage}%)';
-
-    var criteria = eventData.criterias[i];
-    for (int j = 0; j < criteria.subCriteriaList.length; j++) {
-    dataRow.cells[2 + j].value = '${criteria.subCriteriaList[j].percentage}%';
-    }
-    }
-
-
-    // Draw the grid on the PDF page
-    secondGrid.draw(
-        page: page, bounds: Rect.fromLTWH(0, tableSpacing, 0, 0));
-
-    // Save the document
-    List<int> documentBytes = await document.save();
-    // Dispose the document
-    document.dispose();
-
-    // Get the external storage directory
-    final Directory directory = await getApplicationDocumentsDirectory();
-    // Get the file path
-    final String path = directory.path + '/score_rankings.pdf';
-    // Write as a file
-    final File file = File(path);
-    await file.writeAsBytes(documentBytes);
-
-    return path;
-  }
 
   void showSuccessToast() {
     Fluttertoast.showToast(
@@ -368,7 +235,7 @@ class _WinnerState extends State<Winner> {
   Future<void> fetchScoreCards() async {
     final eventId = widget.eventId;
     print(eventId);
-    final url = Uri.parse('https://tab-lu.onrender.com/winners/$eventId');
+    final url = Uri.parse('http://192.168.101.6:8080/winners/$eventId');
 
     try {
       final response = await http.get(url);
@@ -501,88 +368,11 @@ class _WinnerState extends State<Winner> {
                           fontSize: 18,
                           fontWeight: FontWeight.w500),
                     ),
-                    Padding(
-                      padding:
-                          const EdgeInsets.only(left: 75, right: 25, top: 25),
-                      child: Column(
-                        children: [
-                          Container(
-                            child: Center(
-                              child: Row(
-                                children: [
-                                  Image.asset(
-                                    'assets/icons/1st.png',
-                                    height: 50,
-                                    width: 50,
-                                  ),
-                                  const SizedBox(width: 25),
-                                  Text(scoreCards.length > 0
-                                      ? scoreCards[0].contestantName
-                                      : "No Scores"),
-                                  const SizedBox(width: 25),
-                                  Text(scoreCards.length > 0
-                                      ? scoreCards[0].score.toStringAsFixed(2)
-                                      : ""),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(
-                            height: 20,
-                          ),
-                          Container(
-                            child: Center(
-                              child: Row(
-                                children: [
-                                  Image.asset(
-                                    'assets/icons/2nd.png',
-                                    height: 50,
-                                    width: 50,
-                                  ),
-                                  const SizedBox(width: 25),
-                                  Text(scoreCards.length > 1
-                                      ? scoreCards[1].contestantName
-                                      : "No Scores"),
-                                  const SizedBox(width: 25),
-                                  Text(scoreCards.length > 1
-                                      ? scoreCards[1].score.toStringAsFixed(2)
-                                      : ""),
-                                ],
 
-                              ),
-                            ),
-                          ),
-                          const SizedBox(
-                            height: 20,
-                          ),
-                          Container(
-                            child: Center(
-                              child: Row(
-                                children: [
-                                  Image.asset(
-                                    'assets/icons/3rd.png',
-                                    height: 50,
-                                    width: 50,
-                                  ),
-                                  const SizedBox(width: 25),
-                                  Text(scoreCards.length > 2
-                                      ? scoreCards[2].contestantName
-                                      : "No Scores"),
-                                  const SizedBox(width: 25),
-                                  Text(scoreCards.length > 2
-                                      ? scoreCards[2].score.toStringAsFixed(2)
-                                      : ""),
-                                ],
-
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                     const SizedBox(
                       height: 20,
                     ),
+                    (widget.event_category == "Pageants") ?  buildScoreCardForPageants() : buildScoreCard(),
                     Container(
                       height: 5,
                       width: 350,
@@ -627,7 +417,392 @@ class _WinnerState extends State<Winner> {
             ),
     );
   }
+
+  Widget buildScoreCard() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 75, right: 25, top: 25),
+      child: Column(
+        children: [
+          Container(
+            child: Center(
+              child: Row(
+                children: [
+                  Image.asset(
+                    'assets/icons/1st.png',
+                    height: 50,
+                    width: 50,
+                  ),
+                  const SizedBox(width: 25),
+                  Text(scoreCards.length > 0
+                      ? scoreCards[0].contestantName
+                      : "No Scores"),
+                  const SizedBox(width: 25),
+                  Text(scoreCards.length > 0
+                      ? scoreCards[0].score.toStringAsFixed(2)
+                      : ""),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(
+            height: 20,
+          ),
+          Container(
+            child: Center(
+              child: Row(
+                children: [
+                  Image.asset(
+                    'assets/icons/2nd.png',
+                    height: 50,
+                    width: 50,
+                  ),
+                  const SizedBox(width: 25),
+                  Text(scoreCards.length > 1
+                      ? scoreCards[1].contestantName
+                      : "No Scores"),
+                  const SizedBox(width: 25),
+                  Text(scoreCards.length > 1
+                      ? scoreCards[1].score.toStringAsFixed(2)
+                      : ""),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(
+            height: 20,
+          ),
+          Container(
+            child: Center(
+              child: Row(
+                children: [
+                  Image.asset(
+                    'assets/icons/3rd.png',
+                    height: 50,
+                    width: 50,
+                  ),
+                  const SizedBox(width: 25),
+                  Text(scoreCards.length > 2
+                      ? scoreCards[2].contestantName
+                      : "No Scores"),
+                  const SizedBox(width: 25),
+                  Text(scoreCards.length > 2
+                      ? scoreCards[2].score.toStringAsFixed(2)
+                      : ""),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  Widget buildScoreCardForPageants() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 25, right: 25, top: 25),
+      child: Center( // Center widget added here
+        child: Column(
+          children: [
+            for (int i = 0; i < pageantScoreCards.length && i < 3; i++)
+              Container(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center, // Center crossAxisAlignment
+                  children: [
+                    Text(
+                      "${pageantScoreCards[i].criteriaName}",
+                      style: TextStyle(
+                          color: Color(0xFF054E07),
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 10),
+                    // Contestant and score details
+                    for (int j = 0;
+                    j < pageantScoreCards[i].topThreeContestants.length &&
+                        j < 3;
+                    j++)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center, // Center mainAxisAlignment
+                        children: [
+                          Image.asset(
+                            'assets/icons/${_getOrdinal(j)}.png', // Adjusted the index to start from 1
+                            height: 50,
+                            width: 50,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            "${_getOrdinal(j)} ${pageantScoreCards[i].topThreeContestants[j].contestantName}",
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            "${pageantScoreCards[i].topThreeContestants[j].score.toStringAsFixed(2)}",
+                          ),
+                          const SizedBox(width: 10),
+                        ],
+                      ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+  String _getOrdinal(int index) {
+    if (index == 0) {
+      return "1st";
+    } else if (index == 1) {
+      return "2nd";
+    } else if (index == 2) {
+      return "3rd";
+    } else {
+      return "${index}rd";
+    }
+  }
+
+
+
+
+  Future<void> fetchScoreCardsPageants(String eventId) async {
+    try {
+      final response = await http.get(Uri.parse('http://192.168.101.6:8080/winners-pageants/$eventId'));
+
+      if (response.statusCode == 200) {
+        // Parse the JSON response
+        final List<dynamic> data = jsonDecode(response.body);
+        setState(() {
+          // Map each score card data to create instances of PageantScoreCard
+          pageantScoreCards = data.map((item) {
+            return PageantScoreCard(
+              criteriaId: item['criteriaId'],
+              criteriaName: item['criteriaName'],
+              topThreeContestants: List<TopContestant>.from(item['topThreeContestants']
+                  .map((contestantJson) => TopContestant.fromJson(contestantJson))),
+            );
+          }).toList();
+          // Sort scoreCards by score in descending order
+          // Sort pageantScoreCards by the score of the top contestant in each card
+          pageantScoreCards.sort((a, b) {
+            // Get the top score of each card
+            double scoreA = a.topThreeContestants.isNotEmpty ? a.topThreeContestants[0].score : 0.0;
+            double scoreB = b.topThreeContestants.isNotEmpty ? b.topThreeContestants[0].score : 0.0;
+            // Compare the scores
+            return scoreB.compareTo(scoreA); // Sort in descending order
+          });
+
+          isLoading = false; // Set loading to false when data is fetched
+        });
+      } else {
+        // If the server did not return a 200 OK response,
+        // throw an exception.
+        throw Exception('Failed to fetch score cards');
+      }
+    } catch (error) {
+      // Handle errors here
+      print(error);
+      setState(() {
+        isLoading = false; // Set loading to false in case of error
+      });
+    }
+  }
+
+  Future<String> generatePdf(
+      List<ScoreCard> scoreCards, EventData eventData) async {
+    // Request storage permission (make sure to handle permissions)
+
+    // Create a new PDF document
+    final PdfDocument document = PdfDocument();
+    document.pageSettings.orientation = PdfPageOrientation.landscape;
+    // Add a page to the document
+    final PdfPage page = document.pages.add();
+    // Get page graphics for the page
+    final PdfGraphics graphics = page.graphics;
+
+    // Load the logo image
+    final ByteData data = await rootBundle.load('assets/icons/tablut222.png');
+    final Uint8List bytesData = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+    final PdfBitmap image = PdfBitmap(bytesData);
+
+    // Draw the logo at top-left
+    const double logoWidth = 100;
+    const double logoHeight = 70;
+    graphics.drawImage(image, Rect.fromLTWH(0, 0, logoWidth, logoHeight));
+
+    // Create a font for the title
+    final PdfFont titleFont = PdfStandardFont(PdfFontFamily.helvetica, 18);
+
+    // Draw the main title centered
+    final String title = 'Score Rankings';
+    final Size titleSize = titleFont.measureString(title);
+    final double titleStart = (page.getClientSize().width - titleSize.width) / 2;
+    graphics.drawString(title, titleFont, bounds: Rect.fromLTWH(titleStart, 0, titleSize.width, titleSize.height));
+
+    // Adjust the Y position for drawing the content below the title
+    double contentYPosition = titleSize.height + 50; // Adjust this value as needed
+
+    final PdfFont eventDetailsFont = PdfStandardFont(PdfFontFamily.helvetica, 14);
+    String eventDetails = 'Event name: ${eventData.eventName}\nDate: ${eventData.eventStartDate.toString().split(' ')[0]}\nTime: ${eventData.eventStartTime}';
+    Size eventDetailsSize = eventDetailsFont.measureString(eventDetails);
+    graphics.drawString(eventDetails, eventDetailsFont, brush: PdfBrushes.black, bounds: Rect.fromLTWH(0, contentYPosition, page.getClientSize().width, eventDetailsSize.height));
+    contentYPosition += eventDetailsSize.height + 20; // Adjust spacing after event details
+
+    if(widget.event_category == "Pageants"){
+      // Create a font for the content
+      final PdfFont contentFont = PdfStandardFont(PdfFontFamily.helvetica, 12);
+
+      for (int i = 0; i < pageantScoreCards.length && i < 3; i++) {
+        final scoreCard = pageantScoreCards[i];
+
+        // Draw criteria name
+        graphics.drawString(
+          scoreCard.criteriaName,
+          titleFont,
+          bounds: Rect.fromLTWH(0, contentYPosition, page.getClientSize().width, 50),
+        );
+
+        contentYPosition += 30; // Adjust vertical spacing
+
+        // Draw contestant details
+        for (int j = 0; j < scoreCard.topThreeContestants.length && j < 3; j++) {
+          final contestant = scoreCard.topThreeContestants[j];
+
+          // Draw contestant information
+          graphics.drawString(
+            '${_getOrdinal(j)} ${contestant.contestantName}',
+            contentFont,
+            bounds: Rect.fromLTWH(25, contentYPosition, 300, 20),
+          );
+
+          // Draw contestant score
+          graphics.drawString(
+            contestant.score.toStringAsFixed(2),
+            contentFont,
+            bounds: Rect.fromLTWH(325, contentYPosition, 100, 20),
+          );
+
+          contentYPosition += 20; // Adjust vertical spacing
+        }
+
+        contentYPosition += 20; // Adjust spacing between criteria
+      }
+    }
+
+
+    // Create a PDF grid and add the headers
+    final PdfGrid grid = PdfGrid();
+    grid.style = PdfGridStyle(
+      font: PdfStandardFont(PdfFontFamily.helvetica, 10),
+      cellPadding: PdfPaddings(left: 5, right: 5, top: 5, bottom: 5),
+    );
+    contentYPosition += 50;
+    // Add column headers
+    grid.columns.add(count: 2 + eventData.criterias.length * 2);
+    PdfGridRow header = grid.headers.add(1)[0];
+    header.cells[0].value = 'Judge';
+    header.cells[1].value = 'Contestant';
+
+    // Add criteria names as headers
+    for (int i = 0; i < eventData.criterias.length; i++) {
+      header.cells[2 + i * 2].value = "Criteria\n " + eventData.criterias[i].criteriaName;
+      header.cells[3 + i * 2].value = 'Calculated Score (${eventData.criterias[i].criteriaPercentage}%)';
+    }
+
+    Map<String, PdfGridRow> judgeContestantMap = {};
+    // Add data to the table
+    // Populate data in the grid
+    for (var judge in eventData.judges) {
+      for (var contestant in judge.contestants) {
+        String key = '${judge.judgeName}_${contestant.contestantName}';
+        PdfGridRow? row;
+
+        if (judgeContestantMap.containsKey(key)) {
+          // Update existing row
+          row = judgeContestantMap[key];
+        } else {
+          // Add new row and store it in the map
+          row = grid.rows.add();
+          judgeContestantMap[key] = row;
+          row.cells[0].value = judge.judgeName;
+          row.cells[1].value = contestant.contestantName;
+        }
+
+        // Fill or update criteria scores
+        for (int i = 0; i < eventData.criterias.length; i++) {
+          if (contestant.criteriaName == eventData.criterias[i].criteriaName) {
+            row?.cells[2 + i * 2].value = contestant.judgeRawScore.toString();
+            row?.cells[3 + i * 2].value = contestant.judgeCalculatedScore.toStringAsFixed(2);
+          }
+        }
+      }
+    }
+    grid.draw(page: page, bounds: Rect.fromLTWH(0, contentYPosition, 0, 0));
+
+    // Calculate the position for the second grid
+    double secondGridContentYPosition = contentYPosition + 200; // Adjust as needed
+
+    // Add another grid with headers and data
+    final PdfGrid secondGrid = PdfGrid();
+    secondGrid.style = PdfGridStyle(
+      font: PdfStandardFont(PdfFontFamily.helvetica, 10),
+      cellPadding: PdfPaddings(left: 5, right: 5, top: 5, bottom: 5),
+    );
+    int columnLength = 0;
+    for (int i = 0; i < eventData.criterias.length; i++) {
+      var criteria = eventData.criterias[i];
+      for (int j = 0; j < criteria.subCriteriaList.length; j++) {
+        columnLength++;
+      }
+    }
+    secondGrid.columns.add(count: 2 + columnLength);
+    PdfGridRow secondHeader = secondGrid.headers.add(1)[0];
+    secondHeader.cells[0].value = 'Criteria Name';
+    secondHeader.cells[1].value = 'Calculated Percentage';
+
+    // Add headers for subcriteria names
+    for (int i = 0; i < eventData.criterias.length; i++) {
+      var criteria = eventData.criterias[i];
+      for (int j = 0; j < criteria.subCriteriaList.length; j++) {
+        secondHeader.cells[2 + j].value = 'Subcriteria \n ${criteria.subCriteriaList[j].subCriteriaName}';
+      }
+    }
+
+    for (int i = 0; i < eventData.criterias.length; i++) {
+      PdfGridRow dataRow = secondGrid.rows.add();
+      dataRow.cells[0].value = eventData.criterias[i].criteriaName;
+      dataRow.cells[1].value = '(${eventData.criterias[i].criteriaPercentage}%)';
+
+      var criteria = eventData.criterias[i];
+      for (int j = 0; j < criteria.subCriteriaList.length; j++) {
+        dataRow.cells[2 + j].value = '${criteria.subCriteriaList[j].percentage}%';
+      }
+    }
+
+    final PdfPage secondPage = document.pages.add();
+    secondGrid.draw(page: secondPage, bounds: Rect.fromLTWH(0, 0, secondPage.getClientSize().width, secondPage.getClientSize().height));
+
+    // Save the document
+    List<int> documentBytes = await document.save();
+    // Dispose the document
+    document.dispose();
+
+    // Get the external storage directory
+    final Directory directory = await getApplicationDocumentsDirectory();
+    // Get the file path
+    final String path = directory.path + '/score_rankings.pdf';
+    // Write as a file
+    final File file = File(path);
+    await file.writeAsBytes(documentBytes);
+
+    return path;
+  }
+
+
+
 }
+
+
 
 
 

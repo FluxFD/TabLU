@@ -109,11 +109,13 @@ router.get("/criteria/:eventId", async (req, res) => {
 // API for deleting criteria
 router.delete("/criteria", async (req, res) => {
   try {
+    
     const eventId = req.query.eventId;
     const criteriaName = req.query.criteriaName;
-
     const associatedScoreCards = await ScoreCard.find({ eventId: eventId });
+    console.log(eventId, criteriaName);
 
+    // console.log(eventId, criteriaName);
     if (associatedScoreCards.length > 0) {
       return res
         .status(304)
@@ -121,6 +123,7 @@ router.delete("/criteria", async (req, res) => {
           error: "Cannot modify criteria; scores are already submitted.",
         });
     }
+   
 
     // Find the criteria to delete
     const criteriaToDelete = await Criteria.findOne({

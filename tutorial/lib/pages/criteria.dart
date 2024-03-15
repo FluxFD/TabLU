@@ -29,8 +29,9 @@ class Criteria {
       percentage: json['percentage'] ?? '',
       eventId: json['eventId'] ?? '',
       subCriteriaList: (json['subCriteriaList'] as List<dynamic>?)
-          ?.map((subCriteriaJson) => SubCriteria.fromJson(subCriteriaJson))
-          .toList() ?? [],
+              ?.map((subCriteriaJson) => SubCriteria.fromJson(subCriteriaJson))
+              .toList() ??
+          [],
     );
   }
 
@@ -40,7 +41,8 @@ class Criteria {
       'criterianame': criterianame,
       'percentage': percentage,
       'eventId': eventId,
-      'subCriteriaList': subCriteriaList.map((subCriteria) => subCriteria.toJson()).toList(),
+      'subCriteriaList':
+          subCriteriaList.map((subCriteria) => subCriteria.toJson()).toList(),
     };
   }
 }
@@ -69,7 +71,6 @@ class SubCriteria {
   }
 }
 
-
 class Event {
   String event_name;
   String event_date;
@@ -77,6 +78,7 @@ class Event {
   String access_code;
   String? event_venue; // Added field
   String? event_organizer; // Added field
+  String event_category; // Added field
   final List<dynamic>? contestants; // Assuming contestants is a list of strings
   final List<dynamic>? criteria; // Assuming criteria is a list of strings
 
@@ -88,6 +90,7 @@ class Event {
     required this.access_code,
     required this.event_venue,
     required this.event_organizer,
+    required this.event_category,
     required this.contestants,
     required this.criteria,
   });
@@ -95,12 +98,13 @@ class Event {
   // Factory method to create an Event from JSON
   factory Event.fromJson(Map<String, dynamic> json) {
     return Event(
-      event_name: json['event_name'] ?? '',
-      event_date: json['event_date'] ?? '',
-      event_time: json['event_time'] ?? '',
-      access_code: json['access_code'] ?? '',
-      event_venue: json['event_venue'] ?? '',
-      event_organizer: json['event_organizer'] ?? '',
+      event_name: json['eventName'] ?? '',
+      event_date: json['eventDate'] ?? '',
+      event_time: json['eventTime'] ?? '',
+      access_code: json['accessCode'] ?? '',
+      event_venue: json['eventVenue'] ?? '',
+      event_organizer: json['eventOrganizer'] ?? '',
+      event_category: json['eventCategory'] ?? '',
       contestants: json['contestants'] != null
           ? List<dynamic>.from(json['contestants'])
           : null,
@@ -123,19 +127,50 @@ class Criterias extends StatefulWidget {
 class _CriteriasState extends State<Criterias> {
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   List<Criteria> criterias = [];
-
+  Event? event;
+  bool isLoading = true;
   TextEditingController _criteriaNameController = TextEditingController();
   TextEditingController _percentageController = TextEditingController();
-  void updateTotalPercentage() {
-    setState(() {
-      totalPercentage = calculateTotalPercentage();
-    });
+
+  void initState() {
+    super.initState();
+    _initializeState();
+  }
+
+  void _initializeState() async {
+    await _fetchEvent(widget.eventId);
+    await _fetchCriterias(widget.eventId);
+    // Now, the event variable can be safely accessed here
+    if (mounted) {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _fetchEvent(String eventId) async {
+    try {
+      final response =
+          await http.get(Uri.parse('http://192.168.101.6:8080/event/$eventId'));
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        print(jsonData);
+          event = Event.fromJson(jsonData);
+          print(event?.event_name);
+      } else {
+        print(
+            'Failed to fetch event data. Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching event data: $e');
+    }
   }
 
   Future<void> _fetchCriterias(String eventId) async {
     try {
       final response = await http.get(
-        Uri.parse('https://tab-lu.onrender.com/criteria/$eventId'),
+        Uri.parse('http://192.168.101.6:8080/criteria/$eventId'),
       );
 
       if (response.statusCode == 200) {
@@ -154,14 +189,22 @@ class _CriteriasState extends State<Criterias> {
     }
   }
 
+  void updateTotalPercentage() {
+    if(event?.event_category != "Pageants") {
+      setState(() {
+        totalPercentage = calculateTotalPercentage();
+      });
+    }
+  }
+
   Future<void> deleteCriteria(String eventId, String criteriaName) async {
     final url = Uri.parse(
-        "https://tab-lu.onrender.com/criteria?eventId=$eventId&criteriaName=$criteriaName");
-    updateTotalPercentage();
+        "http://192.168.101.6:8080/criteria?eventId=$eventId&criteriaName=$criteriaName");
     try {
       final response = await http.delete(url);
       print('Response headers: ${response.headers}');
       if (response.statusCode == 200) {
+        updateTotalPercentage();
         _showErrorSnackBar('Criteria deleted successfully', Colors.green);
       } else {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
@@ -175,19 +218,6 @@ class _CriteriasState extends State<Criterias> {
     } catch (e) {
       print('Error deleting criteria: $e');
     }
-  }
-
-  bool isLoading = true;
-  void initState() {
-    super.initState();
-    _fetchCriterias(widget.eventId);
-    Timer(Duration(seconds: 3), () {
-      if (mounted && isLoading) {
-        setState(() {
-          isLoading = false;
-        });
-      }
-    });
   }
 
   void insertItem(Criteria criteria) {
@@ -228,14 +258,21 @@ class _CriteriasState extends State<Criterias> {
                     labelStyle: TextStyle(fontSize: 15, color: Colors.green),
                   ),
                 ),
-                TextField(
-                  keyboardType: TextInputType.number,
-                  controller: _percentageController,
-                  decoration: const InputDecoration(
-                    labelText: 'Percentage',
-                    labelStyle: TextStyle(fontSize: 15, color: Colors.green),
+                if (event?.event_category != "Pageants")
+                  TextField(
+                    controller: _percentageController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
+                    decoration: const InputDecoration(
+                      labelText: 'Percentage',
+                      labelStyle: TextStyle(
+                        fontSize: 15,
+                        color: Colors.green,
+                      ),
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -283,6 +320,7 @@ class _CriteriasState extends State<Criterias> {
           onClicked: () => removeItem(index),
           onEdit: () {},
           onAdd: () {},
+          event_category: event?.event_category,
         ),
         duration: const Duration(milliseconds: 300),
       );
@@ -291,13 +329,13 @@ class _CriteriasState extends State<Criterias> {
   }
 
   double totalPercentage = 0.0;
-  double calculateTotalPercentage() {
-    double totalPercentage = 0.0;
-    for (final criteria in criterias) {
-      final percentage = double.tryParse(criteria.percentage) ?? 0.0;
-      totalPercentage += percentage;
-    }
 
+  double calculateTotalPercentage() {
+      double totalPercentage = 0.0;
+      for (final criteria in criterias) {
+        final percentage = double.tryParse(criteria.percentage) ?? 0.0;
+        totalPercentage += percentage;
+    }
     return totalPercentage;
   }
 
@@ -311,7 +349,8 @@ class _CriteriasState extends State<Criterias> {
     );
   }
 
-  Future<void> createCriteria(String eventId, Map<String, dynamic> criteriaData) async {
+  Future<void> createCriteria(
+      String eventId, Map<String, dynamic> criteriaData) async {
     if (eventId == null) {
       print('Error: Event ID is null');
       return;
@@ -327,31 +366,39 @@ class _CriteriasState extends State<Criterias> {
     bool allSubCriteriaPercentagesAre100 = true;
 
     if (criteriaData.containsKey('subCriteriaList')) {
-      List<Map<String, dynamic>> subCriteriaList = criteriaData['subCriteriaList'];
+      List<Map<String, dynamic>> subCriteriaList =
+          criteriaData['subCriteriaList'];
 
       double subPercentage = 0.0; // Initialize subPercentage outside the loop
 
       for (final subCriteria in subCriteriaList) {
-        subPercentage += double.tryParse(subCriteria['percentage'] ?? '0.0') ?? 0.0;
+        subPercentage +=
+            double.tryParse(subCriteria['percentage'] ?? '0.0') ?? 0.0;
       }
 
-      if (subPercentage != 100.0 && criteriaData['subCriteriaList'] != null && (criteriaData['subCriteriaList'] as List).isNotEmpty) {
-        _showErrorSnackBar('Total percentage of sub-criteria is not 100', Colors.orange);
+      if (subPercentage != 100.0 &&
+          criteriaData['subCriteriaList'] != null &&
+          (criteriaData['subCriteriaList'] as List).isNotEmpty) {
+        _showErrorSnackBar(
+            'Total percentage of sub-criteria is not 100', Colors.orange);
         allSubCriteriaPercentagesAre100 = false;
       }
-
     }
 
     if (!allSubCriteriaPercentagesAre100) {
-      throw Exception('One or more criteria have a total sub-criteria percentage not equal to 100');
+      throw Exception(
+          'One or more criteria have a total sub-criteria percentage not equal to 100');
     }
 
     final double totalPercentage = calculateTotalPercentage();
-    final double newPercentage = double.tryParse(criteriaData['percentage'] ?? '0.0') ?? 0.0;
+    final double newPercentage =
+        double.tryParse(criteriaData['percentage'] ?? '0.0') ?? 0.0;
     print(newPercentage);
 
-    if (totalPercentage > 100.0) {
-      _showErrorSnackBar('Total percentage exceeds 100%. Adjusting percentages.', Colors.orange);
+    if (totalPercentage > 100.0 && event?.event_category != "Pageants") {
+      _showErrorSnackBar(
+          'Total percentage exceeds 100%. Adjusting percentages.',
+          Colors.orange);
       final double adjustment = 100.0 - totalPercentage;
       final double adjustedPercentage = newPercentage - adjustment;
       criteriaData['percentage'] = adjustedPercentage.toString();
@@ -359,11 +406,13 @@ class _CriteriasState extends State<Criterias> {
       final double adjustmentPerCriteria = adjustment / criteriaCount;
 
       for (final criteria in criterias) {
-        final double currentPercentage = double.tryParse(criteria.percentage ?? '0.0') ?? 0.0;
-        criteria.percentage = (currentPercentage + adjustmentPerCriteria).toString();
+        final double currentPercentage =
+            double.tryParse(criteria.percentage ?? '0.0') ?? 0.0;
+        criteria.percentage =
+            (currentPercentage + adjustmentPerCriteria).toString();
       }
     } else {
-      final url = Uri.parse("https://tab-lu.onrender.com/criteria");
+      final url = Uri.parse("http://192.168.101.6:8080/criteria");
 
       try {
         print(criteriaData);
@@ -440,6 +489,7 @@ class _CriteriasState extends State<Criterias> {
             onClicked: () => removeItem(index),
             onEdit: () => _editCriteria(context, criterias[index]),
             onAdd: () => (),
+            event_category: event?.event_category,
           );
         },
       ),
@@ -488,6 +538,7 @@ class _CriteriasState extends State<Criterias> {
                                 ),
                               ),
                             ),
+                            if (event?.event_category != "Pageants")
                             TextField(
                               controller: _percentageController,
                               keyboardType: TextInputType.number,
@@ -526,7 +577,7 @@ class _CriteriasState extends State<Criterias> {
                                 totalPercentage + newPercentage;
 
                             // Check if the new total percentage will exceed 100%
-                            if (updatedTotalPercentage <= 100.0) {
+                            if (updatedTotalPercentage <= 100.0 || event?.event_category == "Pageants") {
                               Criteria newCriterias = Criteria(
                                 criterianame:
                                     _criteriaNameController.text ?? '',
@@ -565,11 +616,12 @@ class _CriteriasState extends State<Criterias> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Total: ${totalPercentage.toStringAsFixed(2)}%',
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
+              if (event?.event_category != 'Pageants') // Check event category
+                Text(
+                  'Total: ${totalPercentage.toStringAsFixed(2)}%',
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold),
+                ),
             ],
           ),
           const SizedBox(height: 10),
@@ -626,16 +678,14 @@ class _CriteriasState extends State<Criterias> {
                 onPressed: () async {
                   try {
                     final double totalPercentage = calculateTotalPercentage();
-
-                    if (totalPercentage != 100.0) {
-                      _showErrorSnackBar(
-                        'Error: Total percentage must be 100%. Current total: $totalPercentage%',
-                        Colors.red,
-                      );
-                      return;
-                    }
-
-                    if (totalPercentage == 100.0) {
+                    // if (totalPercentage != 100.0 || event?.event_category != "Pageants") {
+                    //   _showErrorSnackBar(
+                    //     'Error: Total percentage must be 100%. Current total: $totalPercentage%',
+                    //     Colors.red,
+                    //   );
+                    //   return;
+                    // }
+                    if (totalPercentage == 100.0 || event?.event_category == "Pageants") {
                       if (criterias.isNotEmpty) {
                         for (final criteria in criterias) {
                           if (widget.eventId != null) {
@@ -655,24 +705,11 @@ class _CriteriasState extends State<Criterias> {
                       if (eventId != null) {
                         print('Fetching event with ID: $eventId');
                         final response = await http.get(
-                          Uri.parse(
-                              'https://tab-lu.onrender.com/event/$eventId'),
+                          Uri.parse('http://192.168.101.6:8080/event/$eventId'),
                         );
 
                         if (response.statusCode == 200) {
-                          final Event event =
-                              Event.fromJson(jsonDecode(response.body));
-
-                          final eventData = {
-                            'eventName': event.event_name,
-                            'eventDate': event.event_date,
-                            'eventTime': event.event_time,
-                            'accessCode': event.access_code,
-                            'eventVenue': event.event_venue ?? 'n/a',
-                            'eventOrganizer': event.event_organizer ?? 'n/a',
-                            'contestants': event.contestants ?? [],
-                            'criteria': event.criteria ?? [],
-                          };
+                          event = Event.fromJson(jsonDecode(response.body));
 
                           // Navigate to the next screen or perform any other actions
                           Navigator.push(
@@ -730,6 +767,7 @@ class ListItemWidget extends StatefulWidget {
   final VoidCallback onClicked;
   final VoidCallback onEdit;
   final VoidCallback onAdd;
+  final event_category;
 
   ListItemWidget({
     required this.criteria,
@@ -737,6 +775,7 @@ class ListItemWidget extends StatefulWidget {
     required this.onClicked,
     required this.onEdit,
     required this.onAdd,
+    required this.event_category,
   });
 
   @override
@@ -746,6 +785,21 @@ class ListItemWidget extends StatefulWidget {
 class _ListItemWidgetState extends State<ListItemWidget> {
   bool isDropdownOpen = false;
 
+  // Method to calculate the total percentage
+  double calculateTotalPercentage() {
+    return widget.criteria.subCriteriaList
+        .map((subCriteria) => double.parse(subCriteria.percentage))
+        .fold(0, (previousValue, element) => previousValue + element);
+  }
+
+  // Method to update the main criteria's percentage
+  void updateMainCriteriaPercentage() {
+    print(calculateTotalPercentage().toString());
+    setState(() {
+      widget.criteria.percentage = calculateTotalPercentage().toString();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return SizeTransition(
@@ -753,7 +807,6 @@ class _ListItemWidgetState extends State<ListItemWidget> {
       child: buildItem(context),
     );
   }
-
 
   Widget buildItem(BuildContext context) {
     return SizeTransition(
@@ -876,11 +929,16 @@ class _ListItemWidgetState extends State<ListItemWidget> {
                       onPressed: () {
                         // Calculate total percentage including the new subcriteria
                         double totalPercentage = widget.criteria.subCriteriaList
-                            .map((subCriteria) => double.parse(subCriteria.percentage))
-                            .fold(0, (previousValue, element) => previousValue + element);
+                            .map((subCriteria) =>
+                                double.parse(subCriteria.percentage))
+                            .fold(
+                                0,
+                                (previousValue, element) =>
+                                    previousValue + element);
 
                         // Parse the new subcriteria's percentage
-                        double newPercentage = double.parse(percentageController.text);
+                        double newPercentage =
+                            double.parse(percentageController.text);
 
                         // Check if the new total percentage will exceed 100%
                         if (totalPercentage + newPercentage <= 100.0) {
@@ -891,6 +949,9 @@ class _ListItemWidgetState extends State<ListItemWidget> {
                           setState(() {
                             widget.criteria.subCriteriaList.add(newSubCriteria);
                           });
+                          if (widget.event_category == "Pageants"){
+                            updateMainCriteriaPercentage();
+                          }
                           Navigator.pop(context);
                         } else {
                           // Display an error message if adding the new subcriteria exceeds 100%
@@ -918,21 +979,21 @@ class _ListItemWidgetState extends State<ListItemWidget> {
     );
   }
 
-
   Widget buildDropdownList() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child:
-      Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Divider( // This creates the horizontal line
+          Divider(
+            // This creates the horizontal line
             color: Colors.grey,
             thickness: 1, // Adjust thickness as needed
           ),
-          if (widget.criteria.subCriteriaList.isNotEmpty)
-            Text("Sub-criteria"),
-          for (int index = 0; index < widget.criteria.subCriteriaList.length; index++)
+          if (widget.criteria.subCriteriaList.isNotEmpty) Text("Sub-criteria"),
+          for (int index = 0;
+              index < widget.criteria.subCriteriaList.length;
+              index++)
             Row(
               children: [
                 Expanded(
@@ -962,23 +1023,17 @@ class _ListItemWidgetState extends State<ListItemWidget> {
                   onPressed: () {
                     setState(() {
                       widget.criteria.subCriteriaList.removeAt(index);
+                      if (widget.event_category == "Pageants"){
+                        updateMainCriteriaPercentage();
+                      }
                     });
                   },
                 ),
               ],
             ),
-          if (widget.criteria.subCriteriaList.isEmpty)
-            Text("No Sub-criteria"),
+          if (widget.criteria.subCriteriaList.isEmpty) Text("No Sub-criteria"),
         ],
       ),
     );
   }
-
 }
-
-
-
-
-
-
-

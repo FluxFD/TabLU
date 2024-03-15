@@ -94,6 +94,7 @@ class _ContestantsState extends State<Contestants> {
     super.initState();
     _picker = ImagePicker();
     contestantsFuture = fetchContestants();
+
   }
 
   late Future<List<Contestant>> contestantsFuture;
@@ -104,6 +105,7 @@ class _ContestantsState extends State<Contestants> {
   TextEditingController _courseController = TextEditingController();
   TextEditingController _departmentController = TextEditingController();
   File? _selectedImage;
+  bool isContestantsEmpty = true;
 
 
   void insertItem(Contestant contestant) {
@@ -117,7 +119,7 @@ class _ContestantsState extends State<Contestants> {
     try {
       String eventId = widget.eventId;
       final url =
-          Uri.parse("https://tab-lu.onrender.com/get-contestants/$eventId");
+          Uri.parse("http://192.168.101.6:8080/get-contestants/$eventId");
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -132,6 +134,7 @@ class _ContestantsState extends State<Contestants> {
         setState(() {
           contestants = fetchedContestants;
         });
+        updateContestantsEmptyState();
 
         return fetchedContestants;
       } else {
@@ -149,7 +152,7 @@ class _ContestantsState extends State<Contestants> {
 
   Future<void> deleteContestant(int index, String? contestantId) async {
     final url = Uri.parse(
-        "https://tab-lu.onrender.com/delete-contestant/$contestantId");
+        "http://192.168.101.6:8080/delete-contestant/$contestantId");
 
     try {
       final response = await http.delete(url);
@@ -192,6 +195,7 @@ class _ContestantsState extends State<Contestants> {
 
       // Update contestant numbers
       updateContestantNumbers();
+      updateContestantsEmptyState();
     }
   }
 
@@ -229,6 +233,11 @@ class _ContestantsState extends State<Contestants> {
     );
   }
 
+  void updateContestantsEmptyState() {
+    setState(() {
+      isContestantsEmpty = contestants.isEmpty;
+    });
+  }
 
   void updateContestantNumbers() {
     for (int i = 0; i < contestants.length; i++) {
@@ -286,7 +295,7 @@ class _ContestantsState extends State<Contestants> {
 
   Future<void> createContestant(
       String eventId, Map<String, dynamic> contestantData) async {
-    final url = Uri.parse("https://tab-lu.onrender.com/contestants");
+    final url = Uri.parse("http://192.168.101.6:8080/contestants");
     try {
       // Read the image file
 
@@ -388,7 +397,7 @@ class _ContestantsState extends State<Contestants> {
 // Function to update the contestant information in the database
   Future<void> updateContestant(String eventId, Contestant contestant) async {
     final url =
-        Uri.parse("https://tab-lu.onrender.com/contestants/${contestant.id}");
+        Uri.parse("http://192.168.101.6:8080/contestants/${contestant.id}");
 
     try {
       final response = await http.put(
@@ -492,6 +501,7 @@ class _ContestantsState extends State<Contestants> {
                   onClicked: () async {
                     await deleteContestant(index, contestants[index].id);
                     removeItem(index);
+
                   },
                   onEdit: () => _editContestant(contestants[index]),
                 );
@@ -510,6 +520,7 @@ class _ContestantsState extends State<Contestants> {
           showDialog(
             context: context,
             builder: (BuildContext context) {
+
               return AddContestantDialog(
                 eventId: widget.eventId,
                 onImageChanged: (File? newImage) {
@@ -523,9 +534,11 @@ class _ContestantsState extends State<Contestants> {
                   newContestant.contestantNumber = _lastContestantNumber;
                   insertItem(newContestant);
                   updateContestantNumbers();
+                  updateContestantsEmptyState();
                 },
                 lastContestantNumber: _lastContestantNumber, // Pass contestant number
               );
+
             },
           );
         },
@@ -554,7 +567,7 @@ class _ContestantsState extends State<Contestants> {
             ),
             const SizedBox(width: 10),
             ElevatedButton(
-              onPressed: () async {
+              onPressed: isContestantsEmpty ? null : () async{
                 if (contestants.isNotEmpty) {
                   for (final contestant in contestants) {
                     await createContestant(widget.eventId, contestant.toJson());
@@ -625,7 +638,7 @@ class ListItemWidget extends StatelessWidget {
 
   Future<void> deleteContestant(String contestantId) async {
     final url = Uri.parse(
-        "https://tab-lu.onrender.com/delete-contestant/$contestantId");
+        "http://192.168.101.6:8080/delete-contestant/$contestantId");
 
     try {
       final response = await http.delete(url);
@@ -665,7 +678,7 @@ class ListItemWidget extends StatelessWidget {
                       : null as ImageProvider<Object>?,
 
               // ? NetworkImage(
-              //     "https://tab-lu.onrender.com/uploads/${contestant.profilePic?.path}")
+              //     "http://192.168.101.6:8080/uploads/${contestant.profilePic?.path}")
               // : null as ImageProvider<Object>?,
             ),
           ),
@@ -786,7 +799,7 @@ class _ProfilePictureDialogState extends State<ProfilePictureDialog> {
                 labelText: 'Age',
                 labelStyle: TextStyle(fontSize: 15, color: Colors.green),
               ),
-            ),
+                          ),
             TextField(
               controller: _departmentController,
               decoration: InputDecoration(
@@ -994,6 +1007,7 @@ class _AddContestantDialogState extends State<AddContestantDialog> {
             _courseController.clear();
             _departmentController.clear();
             _selectedImage = null;
+
 
             Navigator.pop(context);
           },

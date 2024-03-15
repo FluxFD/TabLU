@@ -10,15 +10,14 @@ const Judge = require("../models/judges.model");
 const User = require("../models/user.model");
 const { io } = require("./socket");
 
-
-
 router.post("/scorecards", async (req, res) => {
   try {
     const scoreCardEntries = [];
     let judge;
     // Iterate over each object in the array
     for (const scoreData of req.body) {
-      const { eventId, contestantId, criterias, userId, subCriteriaList } = scoreData;
+      const { eventId, contestantId, criterias, userId, subCriteriaList } =
+        scoreData;
       // console.log(criterias.length);
       console.log(
         "Event Id:",
@@ -83,7 +82,7 @@ router.post("/scorecards", async (req, res) => {
             criteriaId: criteriaObj._id,
             criteriascore: criteria["scores"],
             rawScore: criteria["rawScore"],
-            subCriteriaList: criteria["subCriteriaList"]
+            subCriteriaList: criteria["subCriteriaList"],
           },
           contestantId: contestant._id,
         });
@@ -237,7 +236,8 @@ router.get("/winners/:eventId", async (req, res) => {
     const scorecards = await ScoreCard.find({ eventId })
       .populate("contestantId")
       .populate("criteria.criteriaId");
-
+    console.log("hello");
+    console.log(scorecards);
     const criterias = await Criteria.find({ eventId });
     const judges = await Judge.find({ eventId: eventId }).populate("userId");
 
@@ -292,7 +292,7 @@ router.get("/winners/:eventId", async (req, res) => {
       criterias: criterias.map((criteria) => ({
         criteriaName: criteria.criterianame,
         criteriaPercentage: criteria.percentage,
-        subCriteriaList: criteria.subCriteriaList
+        subCriteriaList: criteria.subCriteriaList,
       })),
       judges: judges.map((judge) => {
         const contestants = scorecards
@@ -323,5 +323,95 @@ router.get("/winners/:eventId", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+router.get("/winners-pageants/:eventId", async (req, res) => {
+  try {
+    const eventId = req.params.eventId;
+
+    // Retrieve event details
+    const event = await Event.findById(eventId);
+
+    // Retrieve scorecards for the specific event
+    const scorecards = await ScoreCard.find({ eventId }).populate(
+      "contestantId"
+    );
+
+    // Retrieve criteria for the specific event
+    const criterias = await Criteria.find({ eventId });
+
+    // Retrieve confirmed judges for the specific event
+    const judges = await Judge.find({ eventId: eventId, isConfirm: true });
+
+    const contestantAverageScores = {};
+
+    // Calculate average score for each contestant based on judges' count
+    scorecards.forEach((scorecard) => {
+      const contestantId = scorecard.contestantId;
+      let totalScore = 0;
+      if (scorecard.criteria && typeof scorecard.criteria === "object") {
+        // If scorecard.criteria is an object, assume it contains a single score
+        totalScore = scorecard.criteria.criteriascore;
+      }
+
+      const averageScore = totalScore / judges.length;
+      if (!isNaN(averageScore)) {
+        // Ensure averageScore is a valid number
+        contestantAverageScores[contestantId] = averageScore;
+      }
+    });
+
+    // Log contestant average scores for debugging
+    console.log(contestantAverageScores);
+
+    const response = [];
+
+    // Iterate over each criteria
+    for (const criteria of criterias) {
+      // Filter scorecards for the current criteria
+      const criteriaScorecards = scorecards.filter((scorecard) => {
+        console.log(
+          "Scorecard criteria",
+          scorecard.criteria.criteriaId.toString()
+        );
+        console.log("criteria Id", criteria._id.toString());
+        return (
+          scorecard.criteria.criteriaId.toString() === criteria._id.toString()
+        );
+      });
+
+      console.log(criteriaScorecards);
+
+      // Sort scorecards based on criteria score
+      criteriaScorecards.sort(
+        (a, b) => b.criteria.criteriascore - a.criteria.criteriascore
+      );
+
+      // Extract top three contestants for the current criteria
+      const topThreeContestants = criteriaScorecards
+        .slice(0, 3)
+        .map((scorecard) => ({
+          contestantId: scorecard.contestantId._id,
+          contestantName: scorecard.contestantId.name,
+          score: scorecard.criteria.criteriascore,
+        }));
+
+      // Add criteria details along with top three contestants to the response
+      response.push({
+        criteriaId: criteria._id,
+        criteriaName: criteria.criterianame,
+        topThreeContestants: topThreeContestants,
+      });
+    }
+
+    console.log(response);
+
+    // Respond with the top three winners, event details, scorecards, contestants, and judges
+    res.status(200).json(response); // Return response as a list
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 
 module.exports = router;

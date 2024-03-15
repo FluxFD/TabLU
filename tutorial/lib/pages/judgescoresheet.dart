@@ -264,7 +264,18 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
   TextEditingController feedbackController = TextEditingController();
   bool isLoading = false;
-  late Event event;
+  late Event event = Event(
+    eventId: '',
+    eventName: '',
+    eventCategory: '',
+    eventVenue: '',
+    eventOrganizer: '',
+    eventDate: '',
+    accessCode: '',
+    eventTime: '',
+    contestants: [],
+    criterias: [],
+  );
   bool isCreator = true;
   VoidCallback? onCriteriaFetched;
 
@@ -416,7 +427,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                           // Send server notification
                           final response = await http.post(
                             Uri.parse(
-                                'https://tab-lu.onrender.com/notifications'),
+                                'http://192.168.101.6:8080/notifications'),
                             headers: {'Content-Type': 'application/json'},
                             body: requestBodyJson,
                           );
@@ -575,7 +586,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
       print("Datas: ${submissionData}");
 
-      var url = Uri.parse('https://tab-lu.onrender.com/scorecards');
+      var url = Uri.parse('http://192.168.101.6:8080/scorecards');
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -617,7 +628,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
   Future<bool> fetchJudges(String eventId) async {
     final url =
-        Uri.parse('https://tab-lu.onrender.com/judges/$eventId/confirmed');
+        Uri.parse('http://192.168.101.6:8080/judges/$eventId/confirmed');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -782,7 +793,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   Future<String?> fetchImagePath(Contestant contestant) async {
     final contestantId = contestant.id;
     final url = Uri.parse(
-        'https://tab-lu.onrender.com/uploads/${contestantId}'); // Replace with your server URL
+        'http://192.168.101.6:8080/uploads/${contestantId}'); // Replace with your server URL
     try {
       final response = await http.get(url, headers: {
         'Content-Type': 'application/json',
@@ -992,13 +1003,78 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     );
   }
 
-  Widget buildContestantList(
-      List<Contestant> contestants, List<Criteria>? criterias) {
+  Widget buildContestantList(List<Contestant> contestants, Criteria? criteria) {
     if (isLoading) {
       return Padding(
         padding: const EdgeInsets.only(top: 150, right: 0),
         child: Center(
           child: CircularProgressIndicator(),
+        ),
+      );
+    } else if (criteria != null && event.eventCategory == "Pageants") {
+      return Expanded(
+        child: ListView(
+          children: [
+            Column(
+              children: contestants.map((contestant) {
+                List<Widget> scoreFields = criteria.subCriteriaList.map((subCriteria) {
+                  int subCriteriaIndex = criteria.subCriteriaList.indexOf(subCriteria);
+                  String uniqueKey = "${contestant.id}_${criteria.criteriaId ?? ''}";
+                  String subUniqueKey = "${uniqueKey}_${subCriteriaIndex}";
+
+                  return Expanded(
+                    child: Container(
+                      height: 30,
+                      alignment: Alignment.center,
+                      child: TextFormField(
+                        controller: subCriteriaControllers[subUniqueKey],
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        enabled: false,
+                        decoration: InputDecoration(
+                          labelText: 'score',
+                          border: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.green),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList();
+
+                return Card(
+                  elevation: 5.0,
+                  margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                              contestant.contestantNumber, style: const TextStyle(
+                              fontSize: 16)),
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(contestant.name, style: const TextStyle(
+                              fontSize: 16)),
+                        ),
+                      ),
+                      ...scoreFields,
+                      IconButton(
+                        icon: const Icon(Icons.remove_red_eye, color: Colors.green),
+                        onPressed: () {
+                          showContestantDetailsDialog(context, contestant);
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
         ),
       );
     } else {
@@ -1010,8 +1086,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
             List<Widget> scoreFields = [];
             if (criterias != null && criterias.isNotEmpty) {
               scoreFields = criterias.map((criteria) {
-                String uniqueKey =
-                    "${contestant.id}_${criteria.criteriaId ?? ''}";
+                String uniqueKey = "${contestant.id}_${criteria.criteriaId ?? ''}";
+
                 return Expanded(
                   child: Container(
                     height: 30,
@@ -1035,8 +1111,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
             return Card(
               elevation: 5.0,
-              margin:
-                  const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+              margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
               child: Row(
                 children: [
                   Expanded(
@@ -1068,6 +1143,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       );
     }
   }
+
 
   Widget buildJudgesList(
     List<Contestant> contestants,
@@ -1190,7 +1266,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
     // Filter controllers based on the existence of subcriteria
     for (var i = 0; i < criteria.subCriteriaList.length; i++) {
-      var subCriteria = criteria.subCriteriaList[i];
+      // var subCriteria = criteria.subCriteriaList[i];
       String subUniqueKey =
           "${uniqueKey}_${i}"; // Assuming subCriteria has an index property
       TextEditingController? controller = subCriteriaControllers[subUniqueKey];
@@ -1198,102 +1274,99 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
         validControllers.add(controller);
       }
     }
-
-    return AlertDialog(
-      title: Text('Sub criteria'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text('Please enter score (1-100)'),
-          SizedBox(height: 8),
-          ...validControllers.map((controller) {
-            int index = validControllers.indexOf(controller);
-            String subCriteriaName =
-                criteria.subCriteriaList![index].subCriteriaName;
-            double subCriteriaPercentage =
-                double.parse(criteria.subCriteriaList![index].percentage);
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: TextFormField(
-                controller: controller,
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(3), // Limit to 3 digits
-                  TextInputFormatter.withFunction((oldValue, newValue) {
-                    // Custom logic to restrict input to the range of 0-100
-                    try {
-                      if (newValue.text.isEmpty) {
-                        // Allow empty value
-                        return newValue;
-                      }
-                      final enteredValue = int.parse(newValue.text);
-                      if (enteredValue >= 0 && enteredValue <= 100) {
-                        return newValue;
-                      } else {
-                        // Value is out of range, return the oldValue
+    return SingleChildScrollView(
+      child: AlertDialog(
+        title: Text('Sub criteria'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Please enter score (1-100)'),
+            SizedBox(height: 8),
+            ...validControllers.map((controller) {
+              int index = validControllers.indexOf(controller);
+              String subCriteriaName =
+                  criteria.subCriteriaList![index].subCriteriaName;
+              double subCriteriaPercentage =
+              double.parse(criteria.subCriteriaList![index].percentage);
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: TextFormField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(3),
+                    TextInputFormatter.withFunction((oldValue, newValue) {
+                      try {
+                        if (newValue.text.isEmpty) {
+                          return newValue;
+                        }
+                        final enteredValue = int.parse(newValue.text);
+                        if (enteredValue >= 0 && enteredValue <= 100) {
+                          return newValue;
+                        } else {
+                          return oldValue;
+                        }
+                      } catch (e) {
                         return oldValue;
                       }
-                    } catch (e) {
-                      // Error parsing the value, return the oldValue
-                      return oldValue;
-                    }
-                  }),
-                ],
-                decoration: InputDecoration(
-                  labelText:
-                      "${subCriteriaName} ${subCriteriaPercentage.toString()}%",
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.green),
+                    }),
+                  ],
+                  decoration: InputDecoration(
+                    labelText:
+                    "${subCriteriaName} ${subCriteriaPercentage.toString()}%",
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.green),
+                    ),
                   ),
                 ),
-              ),
-            );
-          }).toList(),
+              );
+            }).toList(),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              bool isValid = true;
+              validControllers.forEach((controller) {
+                if (controller.text.isEmpty) {
+                  isValid = false;
+                  Fluttertoast.showToast(
+                    msg: 'Please fill in all fields',
+                    gravity: ToastGravity.BOTTOM,
+                    backgroundColor: Colors.red,
+                    textColor: Colors.white,
+                  );
+                  return;
+                }
+              });
+              if (isValid) {
+                double totalScore = 0;
+                for (var controller in validControllers) {
+                  double subCriteriaScore = double.parse(controller.text);
+                  int index = validControllers.indexOf(controller);
+                  double subCriteriaPercentage =
+                  double.parse(criteria.subCriteriaList[index].percentage);
+                  totalScore += subCriteriaScore * (subCriteriaPercentage / 100);
+                }
+                TextEditingController judgeController =
+                judgeControllers[uniqueKey]!;
+                judgeController.text = totalScore.toStringAsFixed(2);
+                Navigator.of(context).pop();
+              }
+            },
+            child: Text('Save'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Close'),
+          ),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () {
-            bool isValid = true;
-            validControllers.forEach((controller) {
-              if (controller.text.isEmpty) {
-                isValid = false;
-                Fluttertoast.showToast(
-                  msg: 'Please fill in all fields',
-                  gravity: ToastGravity.BOTTOM,
-                  backgroundColor: Colors.red,
-                  textColor: Colors.white,
-                );
-                return;
-              }
-            });
-            if (isValid) {
-              double totalScore = 0;
-              for (var controller in validControllers) {
-                double subCriteriaScore = double.parse(controller.text);
-                int index = validControllers.indexOf(controller);
-                double subCriteriaPercentage =
-                    double.parse(criteria.subCriteriaList[index].percentage);
-                totalScore += subCriteriaScore * (subCriteriaPercentage / 100);
-              }
-              TextEditingController judgeController =
-                  judgeControllers[uniqueKey]!;
-              judgeController.text = totalScore.toStringAsFixed(2);
-              Navigator.of(context).pop();
-            }
-          },
-          child: Text('Save'),
-        ),
-        TextButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-          child: Text('Close'),
-        ),
-      ],
     );
   }
 
@@ -1341,7 +1414,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   }
 
   Future<String> fetchEventId() async {
-    final String url = 'https://tab-lu.onrender.com/latest-event-id';
+    final String url = 'http://192.168.101.6:8080/latest-event-id';
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -1377,7 +1450,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       print('Fetched Event ID: $eventId');
       if (eventId.isNotEmpty) {
         final response = await http
-            .get(Uri.parse("https://tab-lu.onrender.com/event/$eventId"));
+            .get(Uri.parse("http://192.168.101.6:8080/event/$eventId"));
         print('Event Details Response Status Code: ${response.statusCode}');
         if (response.statusCode == 200) {
           dynamic eventData = jsonDecode(response.body);
@@ -1436,7 +1509,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   Future<void> fetchContestants(String eventId) async {
     try {
       final response = await http.get(
-        Uri.parse("https://tab-lu.onrender.com/events/$eventId/contestants"),
+        Uri.parse("http://192.168.101.6:8080/events/$eventId/contestants"),
       );
       if (response.statusCode == 200) {
         final dynamic contestantData = jsonDecode(response.body);
@@ -1469,11 +1542,11 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                     text: criteriaScore![index].toStringAsFixed(2) ?? '',
                   );
 
-                  if (rawScore!.isEmpty){
+                  if (rawScore!.isEmpty) {
                     judgeControllers[uniqueKey] = TextEditingController(
                       text: rawScore[index].toStringAsFixed(2) ?? '',
                     );
-                  }else{
+                  } else {
                     judgeControllers[uniqueKey] = TextEditingController(
                       text: rawScore[index].toStringAsFixed(2) ?? '',
                     );
@@ -1511,8 +1584,6 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                           TextEditingController();
                       // print("length ${subCriteriaControllers.length} ${subCriteriaUniqueKey}");
                     }
-
-
                   }
                 }
                 print(
@@ -1560,7 +1631,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       }
       // Make a GET request to your server endpoint with contestantId and eventId as query parameters
       final Uri uri = Uri.parse(
-          'https://tab-lu.onrender.com/judge-scorecards'); // Update the URL accordingly
+          'http://192.168.101.6:8080/judge-scorecards'); // Update the URL accordingly
       final response = await http.get(
         uri.replace(queryParameters: {
           'contestantId': contestantId ?? '',
@@ -1641,7 +1712,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       {VoidCallback? onCriteriaFetched}) async {
     try {
       final response = await http
-          .get(Uri.parse("https://tab-lu.onrender.com/events/$eventId/criteria"));
+          .get(Uri.parse("http://192.168.101.6:8080/events/$eventId/criteria"));
       print('Fetch Criteria - Status Code: ${response.statusCode}');
       print('Fetch Criteria - Response Body: ${response.body}');
 
@@ -1739,7 +1810,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
   Future<Map<String, dynamic>> fetchEventData(String eventId) async {
     final response =
-        await http.get(Uri.parse('https://tab-lu.onrender.com/events/$eventId'));
+        await http.get(Uri.parse('http://192.168.101.6:8080/events/$eventId'));
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> eventData = json.decode(response.body);
@@ -1852,88 +1923,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                       child: Padding(
                         padding: const EdgeInsets.only(left: 8.0),
                         child: SizedBox(
-                          width: criterias.length * 200,
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Container(
-                                      height: 50,
-                                      padding: const EdgeInsets.only(top: 5),
-                                      color: Colors.green,
-                                      alignment: Alignment.center,
-                                      child: const Text(
-                                        'Contestant #',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Container(
-                                      height: 50,
-                                      padding: const EdgeInsets.only(top: 5),
-                                      color: Colors.green,
-                                      alignment: Alignment.center,
-                                      child: const Text(
-                                        'Name',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  ...criterias.map((criteria) {
-                                    double percentage =
-                                        double.tryParse(criteria.percentage) ??
-                                            0.0;
-                                    return Expanded(
-                                      child: Container(
-                                        height: 50,
-                                        padding: const EdgeInsets.only(top: 5),
-                                        color: Colors.green,
-                                        alignment: Alignment.center,
-                                        child: buildCriteriaRow(
-                                          criteria.criterianame,
-                                          percentage,
-                                          criteria.subCriteriaList,
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  }),
-                                  Expanded(
-                                    child: Container(
-                                      height: 50,
-                                      padding: const EdgeInsets.only(top: 5),
-                                      color: Colors.green,
-                                      alignment: Alignment.topCenter,
-                                      child: const Text(
-                                        'Edit',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              buildContestantList(_contestants, criterias),
-                            ],
-                          ),
-                        ),
+                            width: event.eventCategory == "Pageants" ? criterias.length * 500 : criterias.length * 200,
+                            child: _buildCriteriaColumn()),
                       ),
                     ),
                   ),
@@ -1970,7 +1961,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                     child: Container(
                       height: 300,
                       child: SizedBox(
-                        width: criterias.length * 300,
+                        width: criterias.length * 500,
                         child: Column(
                           children: [
                             Container(
@@ -2146,7 +2137,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                                           context,
                                           MaterialPageRoute(
                                               builder: (context) => Winner(
-                                                  eventId: widget.eventId)),
+                                                  eventId: widget.eventId, event_category: event.eventCategory,)),
                                         );
                                       } else {
                                         // If not all judges have submitted scores, show a Snackbar
@@ -2245,6 +2236,194 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
         ),
       ),
     );
+  }
+
+  Widget _buildCriteriaColumn() {
+    if (event.eventCategory == "Pageants") {
+      return ListView.builder(
+        scrollDirection: Axis.vertical,
+        itemCount: criterias.length,
+        itemBuilder: (context, index) {
+          final criteria = criterias[index];
+          return Column(
+            children: [
+              // Header cell for each criteria
+              Container(
+                height: 30,
+                padding: const EdgeInsets.only(top: 5),
+                color: Colors.green,
+                alignment: Alignment.center,
+                child: Text(
+                  criteria.criterianame,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              // Row of sub-criteria
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 40,
+                      padding: const EdgeInsets.only(top: 5),
+                      color: Colors.green,
+                      alignment: Alignment.center,
+                      child: const Text(
+                        'Contestant #',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Container(
+                      height: 40,
+                      padding: const EdgeInsets.only(top: 5),
+                      color: Colors.green,
+                      alignment: Alignment.center,
+                      child: const Text(
+                        'Name',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                  ...criteria.subCriteriaList.map((subCriteria) {
+                    return Expanded(
+                      child: Container(
+                        height: 40,
+                        padding: const EdgeInsets.only(top: 5),
+                        color: Colors.green,
+                        alignment: Alignment.center,
+                        margin: EdgeInsets.symmetric(vertical: 5),
+                        child: Text(subCriteria.subCriteriaName + " ${subCriteria.percentage}%",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ],
+              ),
+              // Other content if any
+              // Container or widget for contestant list
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 200, // Adjust height according to your needs
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min, // Ensure the column takes the minimum height necessary
+                        children: [
+                          buildContestantList(_contestants, criteria),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              )
+
+
+
+            ],
+          );
+        },
+      );
+
+    } else {
+      return Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  height: 50,
+                  padding: const EdgeInsets.only(top: 5),
+                  color: Colors.green,
+                  alignment: Alignment.center,
+                  child: const Text(
+                    'Contestant #',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Container(
+                  height: 50,
+                  padding: const EdgeInsets.only(top: 5),
+                  color: Colors.green,
+                  alignment: Alignment.center,
+                  child: const Text(
+                    'Name',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+              ...criterias.map((criteria) {
+                double percentage =
+                    double.tryParse(criteria.percentage) ??
+                        0.0;
+                return Expanded(
+                  child: Container(
+                    height: 50,
+                    padding: const EdgeInsets.only(top: 5),
+                    color: Colors.green,
+                    alignment: Alignment.center,
+                    child: buildCriteriaRow(
+                      criteria.criterianame,
+                      percentage,
+                      criteria.subCriteriaList,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                );
+              }),
+              Expanded(
+                child: Container(
+                  height: 50,
+                  padding: const EdgeInsets.only(top: 5),
+                  color: Colors.green,
+                  alignment: Alignment.topCenter,
+                  child: const Text(
+                    'Edit',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          buildContestantList(_contestants, null),
+        ],
+      );
+    }
   }
 
   Widget buildContestantRow(Contestant contestant, int number) {

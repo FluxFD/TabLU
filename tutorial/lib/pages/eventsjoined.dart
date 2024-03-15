@@ -129,7 +129,7 @@ class _EventsJoinedState extends State<EventsJoined> {
       String userId = decodedToken['userId'];
       // Construct the URL with the userId as a query parameter
       String url =
-          'https://tab-lu.onrender.com/get-all-judges-events?userId=$userId';
+          'http://192.168.101.6:8080/get-all-judges-events?userId=$userId';
 
       // Make the HTTP request
       final response = await http.get(
@@ -162,21 +162,25 @@ class _EventsJoinedState extends State<EventsJoined> {
         if (responseData is Map<String, dynamic> &&
             responseData.containsKey('events')) {
           List<dynamic> eventsData = responseData['events'];
+          // print(eventsData);
           // Convert the eventsData to a list of Event objects
           List<Event> events = eventsData
-              .map((json) => Event(
-                    json['eventId']['event_name'] ??
-                        '', // Use empty string if 'event_name' is null
-                    json['eventId']['event_date'] ??
-                        '', // Use empty string if 'event_date' is null
-                    json['eventId']['event_time'] ??
-                        '', // Use empty string if 'event_time' is null
-                    json['eventId']['event_end_date'] ?? '',
-                    json['eventId']['event_end_time'] ?? '',
-                    json['eventId']['_id'] ?? '',
-                    json['_id'] ?? '', // Use empty string if '_id' is null
-                  ))
-              .toList();
+              .where((json) => json['eventId'] != null) // Filter out entries where eventId is null
+              .map<Event>((json) {
+            var eventId = json['eventId'];
+            return Event(
+              eventId['event_name'] ?? 'Event Name Not Available',
+              eventId['event_date'] ?? 'Event Date Not Available',
+              eventId['event_time'] ?? 'Event Time Not Available',
+              eventId['event_end_date'] ?? 'Event End Date Not Available',
+              eventId['event_end_time'] ?? 'Event End Time Not Available',
+              eventId['_id'] ?? 'Event ID Not Available',
+              json['_id'] ?? 'ID Not Available',
+            );
+          }).toList();
+
+          print(events);
+
 
           // Set the eventsList to the fetched events
           setState(() {
@@ -348,7 +352,7 @@ class _EventsJoinedState extends State<EventsJoined> {
   Future<void> deleteEvent(String judgeId) async {
     try {
       final response = await http.delete(
-        Uri.parse('https://tab-lu.onrender.com/delete-judge/$judgeId'),
+        Uri.parse('http://192.168.101.6:8080/delete-judge/$judgeId'),
         headers: {
           'Content-Type': 'application/json',
           // Add any other headers if needed
