@@ -113,8 +113,6 @@ router.delete("/criteria", async (req, res) => {
     const eventId = req.query.eventId;
     const criteriaName = req.query.criteriaName;
     const associatedScoreCards = await ScoreCard.find({ eventId: eventId });
-    console.log(eventId, criteriaName);
-
     // console.log(eventId, criteriaName);
     if (associatedScoreCards.length > 0) {
       return res

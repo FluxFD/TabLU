@@ -21,7 +21,7 @@ io.on("connection", (socket) => {
 mongoose.set("strictPopulate", false);
 
 mongoose
-  .connect("mongodb+srv://jenrah09:jenrah09@cluster0.o3tvy4v.mongodb.net/tabdb?retryWrites=true&w=majority", {
+  .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
