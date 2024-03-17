@@ -1820,6 +1820,16 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     }
   }
 
+  int getMaxLength(List<dynamic> criterias) {
+    int maxLength = 0;
+    for (var criteria in criterias) {
+      if (criteria.subCriteriaList != null && criteria.subCriteriaList.length > maxLength) {
+        maxLength = criteria.subCriteriaList.length;
+      }
+    }
+    return maxLength;
+  }
+
 //------------------------------------------------------------
   /*List<Criteria> extractCriteria(Map<String, dynamic> eventData) {
     final List<dynamic> criteriaData = eventData['criterias'];
@@ -1923,7 +1933,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                       child: Padding(
                         padding: const EdgeInsets.only(left: 8.0),
                         child: SizedBox(
-                            width: event.eventCategory == "Pageants" ? criterias.length * 500 : criterias.length * 200,
+                            width: event.eventCategory == "Pageants" ? getMaxLength(criterias) * 300 : criterias.length * 200,
                             child: _buildCriteriaColumn()),
                       ),
                     ),

@@ -502,7 +502,7 @@ class _WinnerState extends State<Winner> {
       child: Center( // Center widget added here
         child: Column(
           children: [
-            for (int i = 0; i < pageantScoreCards.length && i < 3; i++)
+            for (int i = 0; i < pageantScoreCards.length; i++)
               Container(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center, // Center crossAxisAlignment
@@ -616,9 +616,9 @@ class _WinnerState extends State<Winner> {
     final PdfDocument document = PdfDocument();
     document.pageSettings.orientation = PdfPageOrientation.landscape;
     // Add a page to the document
-    final PdfPage page = document.pages.add();
+    PdfPage page = document.pages.add();
     // Get page graphics for the page
-    final PdfGraphics graphics = page.graphics;
+    PdfGraphics graphics = page.graphics;
 
     // Load the logo image
     final ByteData data = await rootBundle.load('assets/icons/tablut222.png');
@@ -648,12 +648,22 @@ class _WinnerState extends State<Winner> {
     graphics.drawString(eventDetails, eventDetailsFont, brush: PdfBrushes.black, bounds: Rect.fromLTWH(0, contentYPosition, page.getClientSize().width, eventDetailsSize.height));
     contentYPosition += eventDetailsSize.height + 20; // Adjust spacing after event details
 
-    if(widget.event_category == "Pageants"){
+    if (widget.event_category == "Pageants") {
       // Create a font for the content
       final PdfFont contentFont = PdfStandardFont(PdfFontFamily.helvetica, 12);
 
-      for (int i = 0; i < pageantScoreCards.length && i < 3; i++) {
+      for (int i = 0; i < pageantScoreCards.length; i++) {
         final scoreCard = pageantScoreCards[i];
+
+        // Check if drawing this scoreCard will exceed the available space
+        double requiredHeight = 30 + (scoreCard.topThreeContestants.length * 30) + 80; // Height of criteria name + contestant details + spacing between criteria
+        if (contentYPosition + requiredHeight > page.getClientSize().height) {
+          // If drawing this scoreCard would exceed the available space, start a new page
+          document.pages.add(); // Add a new page
+          page = document.pages[document.pages.count - 1]; // Switch to the new page
+          graphics = page.graphics; // Update graphics object
+          contentYPosition = 0; // Reset contentYPosition for the new page
+        }
 
         // Draw criteria name
         graphics.drawString(
@@ -667,6 +677,15 @@ class _WinnerState extends State<Winner> {
         // Draw contestant details
         for (int j = 0; j < scoreCard.topThreeContestants.length && j < 3; j++) {
           final contestant = scoreCard.topThreeContestants[j];
+
+          // Check if drawing this contestant will exceed the available space
+          if (contentYPosition + 30 > page.getClientSize().height) {
+            // If drawing this contestant would exceed the available space, start a new page
+            document.pages.add(); // Add a new page
+            page = document.pages[document.pages.count - 1]; // Switch to the new page
+            graphics = page.graphics; // Update graphics object
+            contentYPosition = 0; // Reset contentYPosition for the new page
+          }
 
           // Draw contestant information
           graphics.drawString(
@@ -682,12 +701,13 @@ class _WinnerState extends State<Winner> {
             bounds: Rect.fromLTWH(325, contentYPosition, 100, 20),
           );
 
-          contentYPosition += 20; // Adjust vertical spacing
+          contentYPosition += 10; // Adjust vertical spacing
         }
 
-        contentYPosition += 20; // Adjust spacing between criteria
+        contentYPosition += 10; // Adjust spacing between criteria
       }
     }
+
 
 
     // Create a PDF grid and add the headers

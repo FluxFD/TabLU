@@ -13,6 +13,7 @@ class _ForgotpassState extends State<Forgotpass> {
   TextEditingController resetPassword = TextEditingController();
   bool isLoading = false;
 
+
   Future<void> sendVerificationCode(String email) async {
     try {
       setState(() {
@@ -329,6 +330,8 @@ class _ResetPassState extends State<ResetPass> {
   TextEditingController newPasswordController = TextEditingController();
   TextEditingController confirmPasswordController = TextEditingController();
   Color passwordBorderColor = Colors.grey.withOpacity(0.5);
+  bool _isNewPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
 
   Future<void> resetPassword(
       String resetToken, String newPassword, String accessCode) async {
@@ -419,7 +422,7 @@ class _ResetPassState extends State<ResetPass> {
                     passwordBorderColor = Colors.grey.withOpacity(0.5);
                   });
                 },
-                obscureText: true,
+                obscureText: _isNewPasswordVisible,
                 decoration: InputDecoration(
                   hintText: 'New Password',
                   hintStyle: const TextStyle(
@@ -442,6 +445,17 @@ class _ResetPassState extends State<ResetPass> {
                       color: passwordBorderColor,
                       width: 1.0,
                     ),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isNewPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isNewPasswordVisible = !_isNewPasswordVisible;
+                      });
+                    },
                   ),
                 ),
               ),
@@ -471,7 +485,7 @@ class _ResetPassState extends State<ResetPass> {
                     passwordBorderColor = Colors.grey.withOpacity(0.5);
                   });
                 },
-                obscureText: true,
+                obscureText: _isConfirmPasswordVisible,
                 decoration: InputDecoration(
                   hintText: 'Confirm Password',
                   hintStyle: const TextStyle(
@@ -494,6 +508,17 @@ class _ResetPassState extends State<ResetPass> {
                       color: passwordBorderColor,
                       width: 1.0,
                     ),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isConfirmPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                      });
+                    },
                   ),
                 ),
               ),
