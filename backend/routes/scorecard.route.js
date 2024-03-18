@@ -236,11 +236,10 @@ router.get("/winners/:eventId", async (req, res) => {
     const scorecards = await ScoreCard.find({ eventId })
       .populate("contestantId")
       .populate("criteria.criteriaId");
-    console.log("hello");
-    console.log(scorecards);
     const criterias = await Criteria.find({ eventId });
-    const judges = await Judge.find({ eventId: eventId }).populate("userId");
-
+    const judges = await Judge.find({ eventId: eventId, isConfirm: true }).populate("userId");
+    console.log("length", judges);
+    
     // Aggregate to calculate average score for each contestant
     const contestants = await ScoreCard.aggregate([
       {
@@ -353,7 +352,7 @@ router.get("/winners-pageants/:eventId", async (req, res) => {
         totalScore = scorecard.criteria.criteriascore;
       }
 
-      const averageScore = totalScore / judges.length;
+      const averageScore = totalScore / judges.length -1;
       if (!isNaN(averageScore)) {
         // Ensure averageScore is a valid number
         contestantAverageScores[contestantId] = averageScore;
