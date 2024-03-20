@@ -146,6 +146,7 @@ class _LoginPageState extends State<Login> {
     try {
       final fcmToken = await FirebaseMessaging.instance.getToken();
       print("fcm token: $fcmToken");
+
       final Uri url = Uri.parse("https://tab-lu.onrender.com/login");
       var res = await http.post(
         url,
@@ -159,7 +160,10 @@ class _LoginPageState extends State<Login> {
         }),
       );
 
+      print("Logging in...");
+
       if (res.statusCode == 200) {
+        print("You are logged in");
         var jsonResponse = json.decode(res.body);
         var myToken = jsonResponse['token'];
         print(jsonResponse); // debugging token

@@ -11,12 +11,13 @@ class ChartData extends StatefulWidget {
     Key? key,
     required this.title,
     required this.eventId,
-    required Map eventData,
+    required this.eventCategory,
     required List judges,
   }) : super(key: key);
 
   final String title;
   final String eventId;
+  final String eventCategory;
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
@@ -78,6 +79,20 @@ class _MyHomePageState extends State<ChartData> {
         ),
         body: Column(
           children: [
+            if (widget.eventCategory == "Pageants")
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20), // Adjust the value as needed
+                  child: Center(
+                    child: Text(
+                      'Live scores not available for category pageants',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
+              )
+            else
             Expanded(
               child: SfCartesianChart(
                 isTransposed: true,
@@ -109,7 +124,8 @@ class _MyHomePageState extends State<ChartData> {
                 ),
               ),
             ),
-            // Display the fetched data in a ListView for testing
+            // Display the fetched data in a ListView for testing4
+            if (widget.eventCategory != "Pageants")
             Expanded(
               child: ListView.builder(
                 itemCount: chartData.length,
@@ -150,9 +166,9 @@ class _MyHomePageState extends State<ChartData> {
 
   List<LiveData> getChartData() {
     return <LiveData>[
-      LiveData(0, 'Contestant 1', 42),
-      LiveData(1, 'Contestant 2', 47),
-      LiveData(2, 'Contestant 3', 43),
+      LiveData(0, 'No scores', 0),
+      LiveData(1, 'No scores', 0),
+      LiveData(2, 'No scores', 0),
     ];
   }
 

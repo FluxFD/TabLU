@@ -111,7 +111,7 @@ class _ContestantsState extends State<Contestants> {
   void insertItem(Contestant contestant) {
     final newIndex = 0;
     contestants ??= []; // Ensure contestants is not null
-    contestants.insert(newIndex, contestant);
+    contestants.insert(contestants.length, contestant);
     _listKey.currentState!.insertItem(newIndex);
   }
 

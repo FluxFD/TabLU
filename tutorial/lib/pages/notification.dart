@@ -123,10 +123,10 @@ class _NotifState extends State<Notif> {
     }
   }
 
-  Future<void> rejectJudgeRequest(String userId) async {
+  Future<void> rejectJudgeRequest(String userId, String eventId) async {
     try {
       final response = await http.delete(
-        Uri.parse('https://tab-lu.onrender.com/reject-request/$userId'),
+        Uri.parse('https://tab-lu.onrender.com/reject-request/$userId/$eventId'),
       );
 
       if (response.statusCode == 200) {
@@ -244,7 +244,7 @@ class _NotifState extends State<Notif> {
             TextButton(
               onPressed: () async {
                 // Handle reject logic here
-                rejectJudgeRequest(userId);
+                rejectJudgeRequest(userId, eventId);
                 await deleteNotification(userId);
                 await refreshNotifications();
                 final receiverId = notification['userId'];
@@ -319,7 +319,7 @@ class _NotifState extends State<Notif> {
                           snapshot.data![index]['type'];
                       final String userId = snapshot.data![index]['userId'];
                       if (notificationType == "confirmation") {
-                        rejectJudgeRequest(userId);
+                        rejectJudgeRequest(userId, snapshot.data![index]['eventId']);
                       }
                       await deleteNotification(snapshot.data![index]['userId']);
                     },

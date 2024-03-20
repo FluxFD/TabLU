@@ -268,7 +268,7 @@ class _EventsManagementState extends State<EventsManagement> {
                                     MaterialPageRoute(
                                       builder: (context) => ChartData(
                                         eventId: events[index].eventId,
-                                        eventData: {},
+                                        eventCategory: events[index].eventCategory,
                                         judges: [],
                                         title: '',
                                       ),

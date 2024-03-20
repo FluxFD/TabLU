@@ -1296,14 +1296,13 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                   keyboardType: TextInputType.number,
                   textAlign: TextAlign.center,
                   inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(3),
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d{0,3}(\.\d{0,2})?$')), // Allow up to 3 digits followed by an optional decimal and up to 2 decimal places
                     TextInputFormatter.withFunction((oldValue, newValue) {
                       try {
                         if (newValue.text.isEmpty) {
                           return newValue;
                         }
-                        final enteredValue = int.parse(newValue.text);
+                        final enteredValue = double.parse(newValue.text);
                         if (enteredValue >= 0 && enteredValue <= 100) {
                           return newValue;
                         } else {
@@ -1314,6 +1313,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                       }
                     }),
                   ],
+
                   decoration: InputDecoration(
                     labelText:
                     "${subCriteriaName} ${subCriteriaPercentage.toString()}%",
@@ -1933,7 +1933,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                       child: Padding(
                         padding: const EdgeInsets.only(left: 8.0),
                         child: SizedBox(
-                            width: event.eventCategory == "Pageants" ? getMaxLength(criterias) * 300 : criterias.length * 200,
+                            width: event.eventCategory == "Pageants" ? getMaxLength(criterias) * 300 : criterias.length * 400,
                             child: _buildCriteriaColumn()),
                       ),
                     ),
