@@ -237,9 +237,12 @@ router.get("/winners/:eventId", async (req, res) => {
       .populate("contestantId")
       .populate("criteria.criteriaId");
     const criterias = await Criteria.find({ eventId });
-    const judges = await Judge.find({ eventId: eventId, isConfirm: true }).populate("userId");
+    const judges = await Judge.find({
+      eventId: eventId,
+      isConfirm: true,
+    }).populate("userId");
     console.log("length", judges);
-    
+
     // Aggregate to calculate average score for each contestant
     const contestants = await ScoreCard.aggregate([
       {
@@ -341,58 +344,61 @@ router.get("/winners-pageants/:eventId", async (req, res) => {
     // Retrieve confirmed judges for the specific event
     const judges = await Judge.find({ eventId: eventId, isConfirm: true });
 
-    const contestantAverageScores = {};
-
-    // Calculate average score for each contestant based on judges' count
-    scorecards.forEach((scorecard) => {
-      const contestantId = scorecard.contestantId;
-      let totalScore = 0;
-      if (scorecard.criteria && typeof scorecard.criteria === "object") {
-        // If scorecard.criteria is an object, assume it contains a single score
-        totalScore = scorecard.criteria.criteriascore;
-      }
-
-      const averageScore = totalScore / judges.length -1;
-      if (!isNaN(averageScore)) {
-        // Ensure averageScore is a valid number
-        contestantAverageScores[contestantId] = averageScore;
-      }
-    });
-
-    // Log contestant average scores for debugging
-    console.log(contestantAverageScores);
-
     const response = [];
 
     // Iterate over each criteria
     for (const criteria of criterias) {
-      // Filter scorecards for the current criteria
-      const criteriaScorecards = scorecards.filter((scorecard) => {
-        console.log(
-          "Scorecard criteria",
-          scorecard.criteria.criteriaId.toString()
-        );
-        console.log("criteria Id", criteria._id.toString());
-        return (
+      // Initialize a map to store scores for each contestant
+      const contestantScoresMap = new Map();
+
+      // Iterate over each scorecard
+      for (const scorecard of scorecards) {
+        // Check if the scorecard matches the current criterion
+        if (
           scorecard.criteria.criteriaId.toString() === criteria._id.toString()
-        );
+        ) {
+          // Calculate the total score for the contestant
+          const contestantId = scorecard.contestantId._id.toString();
+          const score = scorecard.criteria.criteriascore;
+          const currentTotalScore = contestantScoresMap.has(contestantId)
+            ? contestantScoresMap.get(contestantId)
+            : 0;
+          const newTotalScore = currentTotalScore + score;
+          contestantScoresMap.set(contestantId, newTotalScore);
+        }
+      }
+
+      // Calculate average score for each contestant for the current criterion
+      const topContestants = [];
+      contestantScoresMap.forEach((totalScore, contestantId) => {
+        const averageScore = totalScore / judges.length; // Divide by the number of judges
+        topContestants.push({
+          contestantId,
+          contestantName: scorecards.find(
+            (scorecard) =>
+              scorecard.contestantId._id.toString() === contestantId
+          ).contestantId.name,
+          score: averageScore,
+        });
       });
 
-      console.log(criteriaScorecards);
+      // Sort top contestants based on score in descending order
+      topContestants.sort((a, b) => b.score - a.score);
+      // Check for tie scores
+      let tieScores = [];
+      let previousScore = null;
+      topContestants.forEach((contestant) => {
+        if (previousScore !== null && contestant.score === previousScore) {
+          // Add contestant to tieScores if their score matches the previous contestant's score
+          tieScores.push(contestant);
+        } 
+        previousScore = contestant.score; // Update previous score
+      });
 
-      // Sort scorecards based on criteria score
-      criteriaScorecards.sort(
-        (a, b) => b.criteria.criteriascore - a.criteria.criteriascore
-      );
+      // console.log("Tie scores: " , tieScores.length);
 
-      // Extract top three contestants for the current criteria
-      const topThreeContestants = criteriaScorecards
-        .slice(0, 3)
-        .map((scorecard) => ({
-          contestantId: scorecard.contestantId._id,
-          contestantName: scorecard.contestantId.name,
-          score: scorecard.criteria.criteriascore,
-        }));
+      // Extract top three contestants for the current criterion
+      const topThreeContestants = topContestants.slice(0, 3 + tieScores.length);
 
       // Add criteria details along with top three contestants to the response
       response.push({
@@ -402,15 +408,27 @@ router.get("/winners-pageants/:eventId", async (req, res) => {
       });
     }
 
-    console.log(response);
+    // Log response for debugging
+    response.forEach((item) => {
+      console.log("Criteria ID:", item.criteriaId);
+      console.log("Criteria Name:", item.criteriaName);
+      console.log("Top Three Contestants:");
+      item.topThreeContestants.forEach((contestant, index) => {
+        console.log(
+          `  ${index + 1}: Contestant ID: ${contestant.contestantId}, Name: ${
+            contestant.contestantName
+          }, Score: ${contestant.score}`
+        );
+      });
+      console.log("-------------------");
+    });
 
-    // Respond with the top three winners, event details, scorecards, contestants, and judges
-    res.status(200).json(response); // Return response as a list
+    // Respond with the top three winners for each criterion
+    res.status(200).json(response);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
-
 
 module.exports = router;
