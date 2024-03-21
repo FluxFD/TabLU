@@ -233,7 +233,7 @@ class _WinnerState extends State<Winner> {
   Future<void> fetchScoreCards() async {
     final eventId = widget.eventId;
     print(eventId);
-    final url = Uri.parse('http://192.168.101.6:8080/winners/$eventId');
+    final url = Uri.parse('https://tab-lu.onrender.com/winners/$eventId');
 
     try {
       final response = await http.get(url);
@@ -595,7 +595,7 @@ class _WinnerState extends State<Winner> {
   Future<void> fetchScoreCardsPageants(String eventId) async {
     try {
       final response = await http.get(
-          Uri.parse('http://192.168.101.6:8080/winners-pageants/$eventId'));
+          Uri.parse('https://tab-lu.onrender.com/winners-pageants/$eventId'));
 
       if (response.statusCode == 200) {
         // Parse the JSON response

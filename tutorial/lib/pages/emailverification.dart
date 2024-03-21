@@ -33,7 +33,7 @@ class _VerifyAccountState extends State<VerifyAccount> {
           .join();
 
       final response = await http.post(
-        Uri.parse("http://192.168.101.6:8080/verify-email"),
+        Uri.parse("https://tab-lu.onrender.com/verify-email"),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },

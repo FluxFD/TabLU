@@ -64,7 +64,7 @@ class _LoginPageState extends State<Login> {
   }
 
   try {
-    final Uri url = Uri.parse("http://192.168.101.6:8080/login");
+    final Uri url = Uri.parse("https://tab-lu.onrender.com/login");
     var res = await http.post(
       url,
       headers: <String, String>{
@@ -147,7 +147,7 @@ class _LoginPageState extends State<Login> {
       final fcmToken = await FirebaseMessaging.instance.getToken();
       print("fcm token: $fcmToken");
 
-      final Uri url = Uri.parse("http://192.168.101.6:8080/login");
+      final Uri url = Uri.parse("https://tab-lu.onrender.com/login");
       var res = await http.post(
         url,
         headers: <String, String>{
