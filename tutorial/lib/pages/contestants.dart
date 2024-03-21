@@ -119,7 +119,7 @@ class _ContestantsState extends State<Contestants> {
     try {
       String eventId = widget.eventId;
       final url =
-          Uri.parse("https://tab-lu.onrender.com/get-contestants/$eventId");
+          Uri.parse("http://192.168.101.6:8080/get-contestants/$eventId");
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -152,7 +152,7 @@ class _ContestantsState extends State<Contestants> {
 
   Future<void> deleteContestant(int index, String? contestantId) async {
     final url = Uri.parse(
-        "https://tab-lu.onrender.com/delete-contestant/$contestantId");
+        "http://192.168.101.6:8080/delete-contestant/$contestantId");
 
     try {
       final response = await http.delete(url);
@@ -295,7 +295,7 @@ class _ContestantsState extends State<Contestants> {
 
   Future<void> createContestant(
       String eventId, Map<String, dynamic> contestantData) async {
-    final url = Uri.parse("https://tab-lu.onrender.com/contestants");
+    final url = Uri.parse("http://192.168.101.6:8080/contestants");
     try {
       // Read the image file
 
@@ -397,7 +397,7 @@ class _ContestantsState extends State<Contestants> {
 // Function to update the contestant information in the database
   Future<void> updateContestant(String eventId, Contestant contestant) async {
     final url =
-        Uri.parse("https://tab-lu.onrender.com/contestants/${contestant.id}");
+        Uri.parse("http://192.168.101.6:8080/contestants/${contestant.id}");
 
     try {
       final response = await http.put(
@@ -638,7 +638,7 @@ class ListItemWidget extends StatelessWidget {
 
   Future<void> deleteContestant(String contestantId) async {
     final url = Uri.parse(
-        "https://tab-lu.onrender.com/delete-contestant/$contestantId");
+        "http://192.168.101.6:8080/delete-contestant/$contestantId");
 
     try {
       final response = await http.delete(url);
@@ -678,7 +678,7 @@ class ListItemWidget extends StatelessWidget {
                       : null as ImageProvider<Object>?,
 
               // ? NetworkImage(
-              //     "https://tab-lu.onrender.com/uploads/${contestant.profilePic?.path}")
+              //     "http://192.168.101.6:8080/uploads/${contestant.profilePic?.path}")
               // : null as ImageProvider<Object>?,
             ),
           ),

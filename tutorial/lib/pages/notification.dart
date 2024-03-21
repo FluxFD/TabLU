@@ -55,7 +55,7 @@ class _NotifState extends State<Notif> {
 
   Future<List<dynamic>> fetchNotifications(String? userId) async {
     final response = await http.get(
-      Uri.parse('https://tab-lu.onrender.com/get-notifications/$userId'),
+      Uri.parse('http://192.168.101.6:8080/get-notifications/$userId'),
     );
 
     if (response.statusCode == 200) {
@@ -105,7 +105,7 @@ class _NotifState extends State<Notif> {
       String userId, String eventId) async {
     try {
       final response = await http.post(
-        Uri.parse('https://tab-lu.onrender.com/update-confirmation'),
+        Uri.parse('http://192.168.101.6:8080/update-confirmation'),
         body: {
           'userId': userId,
           'eventId': eventId,
@@ -126,7 +126,7 @@ class _NotifState extends State<Notif> {
   Future<void> rejectJudgeRequest(String userId, String eventId) async {
     try {
       final response = await http.delete(
-        Uri.parse('https://tab-lu.onrender.com/reject-request/$userId/$eventId'),
+        Uri.parse('http://192.168.101.6:8080/reject-request/$userId/$eventId'),
       );
 
       if (response.statusCode == 200) {
@@ -142,7 +142,7 @@ class _NotifState extends State<Notif> {
   Future<void> deleteNotification(String userId) async {
     try {
       final response = await http.delete(
-        Uri.parse('https://tab-lu.onrender.com/delete-notification/$userId'),
+        Uri.parse('http://192.168.101.6:8080/delete-notification/$userId'),
       );
 
       if (response.statusCode == 200) {
@@ -169,7 +169,7 @@ class _NotifState extends State<Notif> {
       print("Event ID:" + eventId);
       // Make an HTTP POST request to send a notification without specifying the type
       final response = await http.post(
-        Uri.parse('https://tab-lu.onrender.com/notifications'),
+        Uri.parse('http://192.168.101.6:8080/notifications'),
         body: {
           'eventId': eventId,
           'userId': widget.userId,
@@ -195,7 +195,7 @@ class _NotifState extends State<Notif> {
   Future<String?> getUsernameById(String userId) async {
     try {
       final response = await http.get(
-        Uri.parse('https://tab-lu.onrender.com/get-username/$userId'),
+        Uri.parse('http://192.168.101.6:8080/get-username/$userId'),
       );
 
       if (response.statusCode == 200) {

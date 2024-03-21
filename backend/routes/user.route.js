@@ -37,6 +37,12 @@ router.post("/signin", async (req, res) => {
     // Check if a user with the given email or username already exists
     const existingUser = await User.findOne({
       $or: [{ username: username }, { email: email }],
+      isEmailVerified: true
+    }); 
+
+    const existingNotVerifiedUser = await User.findOne({
+      $or: [{ username: username }, { email: email }],
+      isEmailVerified: false
     });
 
     if (!validator.isEmail(email)) {
@@ -54,15 +60,24 @@ router.post("/signin", async (req, res) => {
 
     const verificationCode = generateVerificationCode();
 
-    const newUser = new User({
-      username: username,
-      email: email,
-      password: password,
-      verificationCode: verificationCode,
-    });
-    // Save the new user to the database
-    newUser.isEmailVerified = false;
-    await newUser.save();
+    if (existingNotVerifiedUser){
+      existingNotVerifiedUser.verificationCode = verificationCode;
+      existingNotVerifiedUser.username = username;
+      existingNotVerifiedUser.email = email;
+      existingNotVerifiedUser.password = password;
+      existingNotVerifiedUser.save();
+    }else{
+      const newUser = new User({
+        username: username,
+        email: email,
+        password: password,
+        verificationCode: verificationCode,
+      });
+      // Save the new user to the database
+      newUser.isEmailVerified = false;
+      await newUser.save();
+    }
+   
 
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
@@ -150,7 +165,8 @@ router.post("/login", async (req, res) => {
   try {
     const user = await User.findOne({ username: username });
 
-    if (!user) {
+
+    if (!user || user.isEmailVerified == false) {
       return res.status(401).json({ message: "Invalid username or password" });
     }
 

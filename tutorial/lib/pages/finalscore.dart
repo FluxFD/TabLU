@@ -233,7 +233,7 @@ class _WinnerState extends State<Winner> {
   Future<void> fetchScoreCards() async {
     final eventId = widget.eventId;
     print(eventId);
-    final url = Uri.parse('https://tab-lu.onrender.com/winners/$eventId');
+    final url = Uri.parse('http://192.168.101.6:8080/winners/$eventId');
 
     try {
       final response = await http.get(url);
@@ -560,13 +560,9 @@ class _WinnerState extends State<Winner> {
   }
 
   String _getOrdinal(int index, List<TopContestant> contestants) {
-      if (index == 0 || contestants[index].score != contestants[index - 1].score) {
-        // Return "1st", "2nd", or "3rd" if it's the highest score or not tied with the previous
+
         return "${index + 1}${_getSuffix(index + 1)}";
-      } else {
-        // If tied with the previous, return "Tie"
-        return "${3}${_getSuffix(3)}";
-      }
+
     }
 
 
@@ -599,7 +595,7 @@ class _WinnerState extends State<Winner> {
   Future<void> fetchScoreCardsPageants(String eventId) async {
     try {
       final response = await http.get(
-          Uri.parse('https://tab-lu.onrender.com/winners-pageants/$eventId'));
+          Uri.parse('http://192.168.101.6:8080/winners-pageants/$eventId'));
 
       if (response.statusCode == 200) {
         // Parse the JSON response

@@ -37,7 +37,7 @@ class _LoginPageState extends State<Signin> {
   }
 
   Future<void> signIn({bool isEmailVerified = false}) async {
-    final Uri url = Uri.parse("https://tab-lu.onrender.com/signin");
+    final Uri url = Uri.parse("http://192.168.101.6:8080/signin");
     if (username.text.isEmpty || email.text.isEmpty || password.text.isEmpty) {
       // Handle empty fields
       // Set border colors to indicate the error
@@ -135,6 +135,7 @@ class _LoginPageState extends State<Signin> {
           });
         }
       } else {
+        showLoginErrorToast(jsonResponse["message"]);
         print('HTTP Error: ${response.statusCode}');
       }
     } catch (e) {

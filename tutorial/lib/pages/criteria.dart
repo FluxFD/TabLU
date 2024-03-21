@@ -151,7 +151,7 @@ class _CriteriasState extends State<Criterias> {
   Future<void> _fetchEvent(String eventId) async {
     try {
       final response =
-          await http.get(Uri.parse('https://tab-lu.onrender.com/event/$eventId'));
+          await http.get(Uri.parse('http://192.168.101.6:8080/event/$eventId'));
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
@@ -170,7 +170,7 @@ class _CriteriasState extends State<Criterias> {
   Future<void> _fetchCriterias(String eventId) async {
     try {
       final response = await http.get(
-        Uri.parse('https://tab-lu.onrender.com/criteria/$eventId'),
+        Uri.parse('http://192.168.101.6:8080/criteria/$eventId'),
       );
 
       if (response.statusCode == 200) {
@@ -199,7 +199,7 @@ class _CriteriasState extends State<Criterias> {
 
   Future<void> deleteCriteria(String eventId, String criteriaName) async {
     final url = Uri.parse(
-        "https://tab-lu.onrender.com/criteria?eventId=$eventId&criteriaName=$criteriaName");
+        "http://192.168.101.6:8080/criteria?eventId=$eventId&criteriaName=$criteriaName");
     try {
       final response = await http.delete(url);
       print('Response headers: ${response.headers}');
@@ -412,7 +412,7 @@ class _CriteriasState extends State<Criterias> {
             (currentPercentage + adjustmentPerCriteria).toString();
       }
     } else {
-      final url = Uri.parse("https://tab-lu.onrender.com/criteria");
+      final url = Uri.parse("http://192.168.101.6:8080/criteria");
 
       try {
         print(criteriaData);
@@ -705,7 +705,7 @@ class _CriteriasState extends State<Criterias> {
                       if (eventId != null) {
                         print('Fetching event with ID: $eventId');
                         final response = await http.get(
-                          Uri.parse('https://tab-lu.onrender.com/event/$eventId'),
+                          Uri.parse('http://192.168.101.6:8080/event/$eventId'),
                         );
 
                         if (response.statusCode == 200) {
