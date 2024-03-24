@@ -111,7 +111,7 @@ router.delete("/criteria", async (req, res) => {
   try {
     
     const eventId = req.query.eventId;
-    const criteriaName = req.query.criteriaName;
+    const criteriaId = req.query.criteriaId;
     const associatedScoreCards = await ScoreCard.find({ eventId: eventId });
     // console.log(eventId, criteriaName);
     if (associatedScoreCards.length > 0) {
@@ -124,18 +124,13 @@ router.delete("/criteria", async (req, res) => {
    
 
     // Find the criteria to delete
-    const criteriaToDelete = await Criteria.findOne({
-      eventId: eventId,
-      criterianame: criteriaName,
-    });
+    const criteriaToDelete = await Criteria.findByIdAndDelete(criteriaId);
 
     if (!criteriaToDelete) {
       return res.status(404).json({ error: "Criteria not found" });
     }
 
     // Delete the criteria from the database
-    await Criteria.findByIdAndDelete(criteriaToDelete._id);
-
     res.json({ message: "Criteria deleted successfully" });
   } catch (error) {
     console.error("Error deleting criteria:", error);
