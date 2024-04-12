@@ -105,14 +105,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
             color: Color.fromARGB(255, 5, 78, 7),
           ),
           onPressed: () async {
-            // Retrieve the token asynchronously
-            String? token = await retrieveToken();
-            // Navigate to the SearchEvents screen with the retrieved token
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => SearchEvents(token: token),
-              ),
-            );
+            Navigator.pop(context);
           },
         ),
       ),
@@ -848,6 +841,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
 /////////////////////////EDIT SECTION //////////////////////////////
 
+
 class EditEventScreen extends StatefulWidget {
   final String eventId;
   EditEventScreen({Key? key, required this.eventId}) : super(key: key);
@@ -858,7 +852,19 @@ class EditEventScreen extends StatefulWidget {
 
 class _EditEventScreen extends State<EditEventScreen> {
   final items = ['Pageants', 'Talent Shows', 'Debates', 'Art Contests'];
+  String? selectedCategory;
 
+  TextEditingController _dateController = TextEditingController();
+  TextEditingController _timeController = TextEditingController();
+  TextEditingController _endDateController = TextEditingController();
+  TextEditingController _endTimeController = TextEditingController();
+  TextEditingController _eventNameController = TextEditingController();
+  TextEditingController _venueController = TextEditingController();
+  TextEditingController _organizerController = TextEditingController();
+  String? eventId;
+  String? token;
+  bool isButtonDisabled = false;
+  
   Future<List<Event>> fetchEventData(String? eventId) async {
     token = await SharedPreferencesUtils.retrieveToken();
     try {
@@ -889,7 +895,6 @@ class _EditEventScreen extends State<EditEventScreen> {
           setState(() {
             selectedCategory = eventData["eventCategory"];
             isButtonDisabled = false;
-
             ;
           });
 
@@ -913,18 +918,7 @@ class _EditEventScreen extends State<EditEventScreen> {
     }
   }
 
-  String? selectedCategory;
-
-  TextEditingController _dateController = TextEditingController();
-  TextEditingController _timeController = TextEditingController();
-  TextEditingController _endDateController = TextEditingController();
-  TextEditingController _endTimeController = TextEditingController();
-  TextEditingController _eventNameController = TextEditingController();
-  TextEditingController _venueController = TextEditingController();
-  TextEditingController _organizerController = TextEditingController();
-  String? eventId;
-  String? token;
-  bool isButtonDisabled = false;
+ 
   @override
   void initState() {
     super.initState();

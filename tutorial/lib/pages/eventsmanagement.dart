@@ -49,6 +49,33 @@ class Event {
   }
 }
 
+class Judge {
+  final String id;
+  final String name;
+  bool isConfirm;
+
+  Judge({
+    required this.id,
+    required this.name,
+    required this.isConfirm,
+  });
+
+  factory Judge.fromJson(Map<String, dynamic> json) {
+    print("Judge JSON: $json");
+
+    var judge = Judge(
+      id: json['_id'] ?? 'No ID',
+      name: json['userId']?['username'] ?? 'No Name',
+      isConfirm:
+      json['isConfirm'] ?? false, // Fallback to false if null
+    );
+
+    print("Created Judge: id=${judge.id}, name=${judge.name}");
+
+    return judge;
+  }
+}
+
 class _EventsManagementState extends State<EventsManagement> {
   String? token;
   List<Event> events = [];
@@ -171,6 +198,24 @@ class _EventsManagementState extends State<EventsManagement> {
     }
   }
 
+  Future<bool> fetchJudgesScoreSubmitted(String eventId) async {
+    final url =
+    Uri.parse('https://tab-lu.onrender.com/judges/$eventId/confirmed');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      List<dynamic> judgesJson = json.decode(response.body);
+      List<Judge> judges =
+      judgesJson.map((json) => Judge.fromJson(json)).toList();
+
+      // Check if all judges have submitted scores
+      bool judgesJoined = judges.isNotEmpty && judges.every((judge) => judge.isConfirm == true);
+      return judgesJoined;
+    } else {
+      throw Exception('Failed to load judges');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -227,16 +272,26 @@ class _EventsManagementState extends State<EventsManagement> {
                             children: [
                               IconButton(
                                 icon: Icon(Icons.edit),
-                                onPressed: () {
-                                  isAdding = false;
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => EditEventScreen(
-                                        eventId: events[index].eventId,
+                                onPressed: () async {
+                                  bool judgesScoreSubmitted = await fetchJudgesScoreSubmitted(events[index].eventId);
+                                  if (!judgesScoreSubmitted) {
+                                    isAdding = false;
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => EditEventScreen(
+                                          eventId: events[index].eventId,
+                                        ),
                                       ),
-                                    ),
-                                  );
+                                    );
+                                  }else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        backgroundColor: Colors.red,
+                                        content: Text("Can't edit event. Judges have already joined."),
+                                      ),
+                                    );
+                                  }
                                 },
                               ),
                               IconButton(

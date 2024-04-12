@@ -868,7 +868,7 @@ class _ScoreCardState extends State<ScoreCard> {
   Widget buildJudgesList(List<Judge> judges, List<Criteria>? criterias) {
     if (isLoading) {
       return Padding(
-        padding: const EdgeInsets.only(top: 150, right: 110),
+        padding: const EdgeInsets.only(top: 150),
         child: Center(
           child: CircularProgressIndicator(),
         ),

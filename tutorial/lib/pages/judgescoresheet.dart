@@ -1003,415 +1003,132 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     );
   }
 
-  Widget buildContestantList(List<Contestant> contestants, Criteria? criteria) {
-    if (isLoading) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 150, right: 0),
-        child: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    } else if (criteria != null && event.eventCategory == "Pageants") {
-      return Expanded(
-        child: ListView(
-          children: [
-            Column(
-              children: contestants.map((contestant) {
-                List<Widget> scoreFields = criteria.subCriteriaList.map((subCriteria) {
-                  int subCriteriaIndex = criteria.subCriteriaList.indexOf(subCriteria);
-                  String uniqueKey = "${contestant.id}_${criteria.criteriaId ?? ''}";
-                  String subUniqueKey = "${uniqueKey}_${subCriteriaIndex}";
+  List<DataRow> buildContestantList(
+      List<Contestant> contestants, Criteria? criteria) {
+    List<DataRow> rows = [];
 
-                  return Expanded(
-                    child: Container(
-                      height: 30,
-                      alignment: Alignment.center,
-                      child: TextFormField(
-                        controller: subCriteriaControllers[subUniqueKey],
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.center,
-                        enabled: false,
-                        decoration: InputDecoration(
-                          labelText: 'score',
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.green),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList();
+    if (criteria != null && event.eventCategory == "Pageants") {
+      contestants.forEach((contestant) {
+        List<DataCell> dataCells = [];
 
-                return Card(
-                  elevation: 5.0,
-                  margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                              contestant.contestantNumber, style: const TextStyle(
-                              fontSize: 16)),
-                        ),
-                      ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(contestant.name, style: const TextStyle(
-                              fontSize: 16)),
-                        ),
-                      ),
-                      ...scoreFields,
-                      IconButton(
-                        icon: const Icon(Icons.remove_red_eye, color: Colors.green),
-                        onPressed: () {
-                          showContestantDetailsDialog(context, contestant);
-                        },
-                      ),
-                    ],
+        // Add contestant data cells
+        dataCells.add(DataCell(
+          Center(child: Text(contestant.contestantNumber)),
+        ));
+        dataCells.add(DataCell(
+          Center(child: Text(contestant.name)),
+        ));
+
+        // Add score data cells
+        criteria.subCriteriaList.forEach((subCriteria) {
+          String uniqueKey = "${contestant.id}_${criteria.criteriaId ?? ''}";
+          int subCriteriaIndex = criteria.subCriteriaList.indexOf(subCriteria);
+          String subUniqueKey = "${uniqueKey}_${subCriteriaIndex}";
+
+          dataCells.add(DataCell(
+            Container(
+              height: 30, // Adjust the height as needed
+              alignment: Alignment.center,
+              child: TextFormField(
+                controller: subCriteriaControllers[subUniqueKey],
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                enabled: false,
+                style: TextStyle(fontSize: 16), // Adjust font size as needed
+                decoration: InputDecoration(
+                  labelText: 'score',
+                  isDense: true, // Reduces the height of the input field
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.green),
                   ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      );
-    } else {
-      return Expanded(
-        child: ListView.builder(
-          itemCount: contestants.length,
-          itemBuilder: (BuildContext context, int index) {
-            Contestant contestant = contestants[index];
-            List<Widget> scoreFields = [];
-            if (criterias != null && criterias.isNotEmpty) {
-              scoreFields = criterias.map((criteria) {
-                String uniqueKey = "${contestant.id}_${criteria.criteriaId ?? ''}";
-
-                return Expanded(
-                  child: Container(
-                    height: 30,
-                    alignment: Alignment.center,
-                    child: TextFormField(
-                      controller: controllers[uniqueKey],
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      enabled: false,
-                      decoration: InputDecoration(
-                        labelText: 'score',
-                        border: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.green),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList();
-            }
-
-            return Card(
-              elevation: 5.0,
-              margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(contestant.contestantNumber,
-                          style: const TextStyle(fontSize: 16)),
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(contestant.name,
-                          style: const TextStyle(fontSize: 16)),
-                    ),
-                  ),
-                  ...scoreFields,
-                  IconButton(
-                    icon: const Icon(Icons.remove_red_eye, color: Colors.green),
-                    onPressed: () {
-                      showContestantDetailsDialog(context, contestant);
-                    },
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      );
-    }
-  }
-
-
-  Widget buildJudgesList(
-    List<Contestant> contestants,
-    List<Criteria>? criterias,
-  ) {
-    if (isLoading) {
-      return buildLoadingWidget();
-    } else {
-      return buildContestantsList(contestants, criterias);
-    }
-  }
-
-  Widget buildLoadingWidget() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 150, right: 0),
-      child: Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-  }
-
-  Widget buildContestantsList(
-      List<Contestant> contestants, List<Criteria>? criterias) {
-    // Sort contestants based on contestantNumber
-    contestants.sort((a, b) =>
-        int.parse(a.contestantNumber).compareTo(int.parse(b.contestantNumber)));
-
-    return Expanded(
-      child: ListView.builder(
-        itemCount: contestants.length,
-        itemBuilder: (BuildContext context, int index) {
-          Contestant contestant = contestants[index];
-          return Column(
-            // Wrap with Column
-            children: [
-              buildContestantCard(contestant, criterias),
-              SizedBox(height: 10), // Add spacing between cards if needed
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget buildContestantCard(Contestant contestant, List<Criteria>? criterias) {
-    List<Widget> scoreFields = [];
-    if (criterias != null && criterias.isNotEmpty) {
-      scoreFields = criterias.map((criteria) {
-        String uniqueKey = "${contestant.id}_${criteria.criteriaId ?? ''}";
-        // Wrap buildJudgeScoreField and buildScoreField into a Row with Expanded widgets
-        return Expanded(
-          child: Row(
-            children: [
-              Expanded(
-                  child: buildJudgeScoreField(
-                      uniqueKey, criteria.subCriteriaList.isNotEmpty)),
-              Expanded(child: buildScoreField(contestant, criteria)),
-            ],
-          ),
-        );
-      }).toList();
-    }
-
-    return Card(
-      elevation: 5.0,
-      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                contestant.contestantNumber,
-                style: const TextStyle(fontSize: 16),
+                ),
               ),
             ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                contestant.name,
-                style: const TextStyle(fontSize: 16),
-              ),
-            ),
-          ),
-          // Use Row to display the scoreFields in a single row
-          ...scoreFields,
-        ],
-      ),
-    );
-  }
+          ));
+        });
 
-  Widget buildScoreField(Contestant contestant, Criteria criteria) {
-    String uniqueKey = "${contestant.id}_${criteria.criteriaId ?? ''}";
-    if (criteria.subCriteriaList.isNotEmpty) {
-      return buildSubCriteriaScoreButton(uniqueKey, criteria);
+        // Add view button
+        dataCells.add(DataCell(
+          IconButton(
+            icon: Icon(Icons.remove_red_eye, color: Colors.green),
+            onPressed: () {
+              showContestantDetailsDialog(context, contestant);
+            },
+          ),
+        ));
+
+        rows.add(DataRow(cells: dataCells));
+      });
     } else {
-      // Return an empty widget
-      return SizedBox.shrink(); // Or return Container()
-    }
-  }
+      contestants.forEach((contestant) {
+        List<DataCell> dataCells = [];
 
-  Widget buildSubCriteriaScoreButton(String uniqueKey, Criteria criteria) {
-    return IconButton(
-      icon: Icon(Icons.info_outline),
-      onPressed: () {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return buildSubCriteriaScoreDialog(uniqueKey, criteria);
-          },
-        );
-      },
-    );
-  }
+        // Add contestant data cells
+        dataCells.add(DataCell(Text(contestant.contestantNumber)));
+        dataCells.add(DataCell(Text(contestant.name)));
 
-  Widget buildSubCriteriaScoreDialog(String uniqueKey, Criteria criteria) {
-    List<TextEditingController> validControllers = [];
+        // Add score data cells if criterias are provided
+        if (criterias != null && criterias.isNotEmpty) {
+          criterias.forEach((criteria) {
+            String uniqueKey = "${contestant.id}_${criteria.criteriaId ?? ''}";
 
-    // Filter controllers based on the existence of subcriteria
-    for (var i = 0; i < criteria.subCriteriaList.length; i++) {
-      // var subCriteria = criteria.subCriteriaList[i];
-      String subUniqueKey =
-          "${uniqueKey}_${i}"; // Assuming subCriteria has an index property
-      TextEditingController? controller = subCriteriaControllers[subUniqueKey];
-      if (controller != null) {
-        validControllers.add(controller);
-      }
-    }
-    return SingleChildScrollView(
-      child: AlertDialog(
-        title: Text('Sub criteria'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('Please enter score (1-100)'),
-            SizedBox(height: 8),
-            ...validControllers.map((controller) {
-              int index = validControllers.indexOf(controller);
-              String subCriteriaName =
-                  criteria.subCriteriaList![index].subCriteriaName;
-              double subCriteriaPercentage =
-              double.parse(criteria.subCriteriaList![index].percentage);
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
+            dataCells.add(DataCell(
+              Container(
+                height: 30,
+                alignment: Alignment.center,
                 child: TextFormField(
-                  controller: controller,
+                  controller: controllers[uniqueKey],
                   keyboardType: TextInputType.number,
                   textAlign: TextAlign.center,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d{0,3}(\.\d{0,2})?$')), // Allow up to 3 digits followed by an optional decimal and up to 2 decimal places
-                    TextInputFormatter.withFunction((oldValue, newValue) {
-                      try {
-                        if (newValue.text.isEmpty) {
-                          return newValue;
-                        }
-                        final enteredValue = double.parse(newValue.text);
-                        if (enteredValue >= 0 && enteredValue <= 100) {
-                          return newValue;
-                        } else {
-                          return oldValue;
-                        }
-                      } catch (e) {
-                        return oldValue;
-                      }
-                    }),
-                  ],
-
+                  enabled: false,
                   decoration: InputDecoration(
-                    labelText:
-                    "${subCriteriaName} ${subCriteriaPercentage.toString()}%",
+                    labelText: 'score',
                     border: OutlineInputBorder(
                       borderSide: BorderSide(color: Colors.green),
                     ),
                   ),
                 ),
-              );
-            }).toList(),
-          ],
-        ),
-        actions: [
-          TextButton(
+              ),
+            ));
+          });
+        }
+
+        // Add view button
+        dataCells.add(DataCell(
+          IconButton(
+            icon: Icon(Icons.remove_red_eye, color: Colors.green),
             onPressed: () {
-              bool isValid = true;
-              validControllers.forEach((controller) {
-                if (controller.text.isEmpty) {
-                  isValid = false;
-                  Fluttertoast.showToast(
-                    msg: 'Please fill in all fields',
-                    gravity: ToastGravity.BOTTOM,
-                    backgroundColor: Colors.red,
-                    textColor: Colors.white,
-                  );
-                  return;
-                }
-              });
-              if (isValid) {
-                double totalScore = 0;
-                for (var controller in validControllers) {
-                  double subCriteriaScore = double.parse(controller.text);
-                  int index = validControllers.indexOf(controller);
-                  double subCriteriaPercentage =
-                  double.parse(criteria.subCriteriaList[index].percentage);
-                  totalScore += subCriteriaScore * (subCriteriaPercentage / 100);
-                }
-                TextEditingController judgeController =
-                judgeControllers[uniqueKey]!;
-                judgeController.text = totalScore.toStringAsFixed(2);
-                Navigator.of(context).pop();
-              }
+              showContestantDetailsDialog(context, contestant);
             },
-            child: Text('Save'),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: Text('Close'),
-          ),
-        ],
-      ),
-    );
+        ));
+
+        rows.add(DataRow(cells: dataCells));
+      });
+    }
+
+    return rows;
   }
 
-  Widget buildJudgeScoreField(String uniqueKey, bool isSubCriteriaEmpty) {
-    return Container(
-      height: 30,
-      alignment: Alignment.center,
-      child: TextFormField(
-        controller: judgeControllers[uniqueKey],
-        keyboardType: TextInputType.number,
-        textAlign: TextAlign.center,
-        inputFormatters: [
-          FilteringTextInputFormatter.digitsOnly,
-          LengthLimitingTextInputFormatter(3), // Limit to 3 digits
-          TextInputFormatter.withFunction((oldValue, newValue) {
-            // Custom logic to restrict input to the range of 0-100
-            try {
-              if (newValue.text.isEmpty) {
-                // Allow empty value
-                return newValue;
-              }
-              final enteredValue = int.parse(newValue.text);
-              if (enteredValue >= 0 && enteredValue <= 100) {
-                return newValue;
-              } else {
-                // Value is out of range, return the oldValue
-                return oldValue;
-              }
-            } catch (e) {
-              // Error parsing the value, return the oldValue
-              return oldValue;
-            }
-          }),
-        ],
-        decoration: InputDecoration(
-          labelText: 'score',
-          border: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.green),
-          ),
-        ),
-        enabled:
-            !isSubCriteriaEmpty, // Enable or disable based on the bool parameter
-      ),
-    );
-  }
+  // List<DataRow> buildJudgesList(
+  //   List<Contestant> contestants,
+  //   List<Criteria>? criterias,
+  // ) {
+  //   if (isLoading) {
+  //     return [];
+  //   } else {
+  //     return buildContestantsList(contestants, criterias);
+  //   }
+  // }
+  //
+  // Widget buildLoadingWidget() {
+  //   return Padding(
+  //     padding: const EdgeInsets.only(top: 150, right: 0),
+  //     child: Center(
+  //       child: CircularProgressIndicator(),
+  //     ),
+  //   );
+  // }
 
   Future<String> fetchEventId() async {
     final String url = 'https://tab-lu.onrender.com/latest-event-id';
@@ -1711,8 +1428,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   Future<List<Criteria>> fetchCriteria(String eventId,
       {VoidCallback? onCriteriaFetched}) async {
     try {
-      final response = await http
-          .get(Uri.parse("https://tab-lu.onrender.com/events/$eventId/criteria"));
+      final response = await http.get(
+          Uri.parse("https://tab-lu.onrender.com/events/$eventId/criteria"));
       print('Fetch Criteria - Status Code: ${response.statusCode}');
       print('Fetch Criteria - Response Body: ${response.body}');
 
@@ -1809,8 +1526,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   //------------------------------------------------------------
 
   Future<Map<String, dynamic>> fetchEventData(String eventId) async {
-    final response =
-        await http.get(Uri.parse('https://tab-lu.onrender.com/events/$eventId'));
+    final response = await http
+        .get(Uri.parse('https://tab-lu.onrender.com/events/$eventId'));
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> eventData = json.decode(response.body);
@@ -1823,7 +1540,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   int getMaxLength(List<dynamic> criterias) {
     int maxLength = 0;
     for (var criteria in criterias) {
-      if (criteria.subCriteriaList != null && criteria.subCriteriaList.length > maxLength) {
+      if (criteria.subCriteriaList != null &&
+          criteria.subCriteriaList.length > maxLength) {
         maxLength = criteria.subCriteriaList.length;
       }
     }
@@ -1927,15 +1645,15 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                 ),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
-                  child: Container(
-                    height: 400, // Adjust the height as needed
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
-                        child: SizedBox(
-                            width: event.eventCategory == "Pageants" ? getMaxLength(criterias) * 300 : criterias.length * 400,
-                            child: _buildCriteriaColumn()),
-                      ),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(top: 8.0, left: 5.0, right: 5.0),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                          minWidth: MediaQuery.of(context)
+                              .size
+                              .width), // Ensure minimum width
+                      child: _buildCriteriaColumn(),
                     ),
                   ),
                 ),
@@ -1970,82 +1688,16 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                         const EdgeInsets.only(top: 8.0, left: 5.0, right: 5.0),
                     child: Container(
                       height: 300,
-                      child: SizedBox(
-                        width: criterias.length * 500,
-                        child: Column(
-                          children: [
-                            Container(
-                              height: 50,
-                              padding: const EdgeInsets.only(top: 5),
-                              color: Colors.green,
-                              alignment: Alignment.topCenter,
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 5),
-                                      child: Center(
-                                        child: Text(
-                                          'Contestant #',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 5),
-                                      child: Center(
-                                        child: Text(
-                                          'Name',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  // Criteria Columns
-                                  ...criterias.map((criteria) {
-                                    double percentage =
-                                        double.tryParse(criteria.percentage) ??
-                                            0.0;
-                                    return Expanded(
-                                      child: Container(
-                                        height: 50,
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 5),
-                                        color: Colors.green,
-                                        alignment: Alignment.topCenter,
-                                        child: Center(
-                                          child: buildCriteriaRow(
-                                            criteria.criterianame,
-                                            percentage,
-                                            criteria.subCriteriaList,
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
-                                ],
-                              ),
-                            ),
-                            buildJudgesList(_contestants, criterias),
-                          ],
-                        ),
+                      child: Column(
+                        children: [
+                          DataTable(
+                            headingRowColor: MaterialStateColor.resolveWith(
+                                (states) => Colors.green),
+                            columns: buildDataColumns(criterias),
+                            rows: buildContestantsList(
+                                context, _contestants, criterias),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -2147,7 +1799,10 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                                           context,
                                           MaterialPageRoute(
                                               builder: (context) => Winner(
-                                                  eventId: widget.eventId, event_category: event.eventCategory,)),
+                                                    eventId: widget.eventId,
+                                                    event_category:
+                                                        event.eventCategory,
+                                                  )),
                                         );
                                       } else {
                                         // If not all judges have submitted scores, show a Snackbar
@@ -2248,74 +1903,209 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     );
   }
 
-  Widget _buildCriteriaColumn() {
-    if (event.eventCategory == "Pageants") {
-      return ListView.builder(
-        scrollDirection: Axis.vertical,
-        itemCount: criterias.length,
-        itemBuilder: (context, index) {
-          final criteria = criterias[index];
-          return Column(
-            children: [
-              // Header cell for each criteria
-              Container(
-                height: 30,
-                padding: const EdgeInsets.only(top: 5),
-                color: Colors.green,
-                alignment: Alignment.center,
-                child: Text(
-                  criteria.criterianame,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
+  List<DataColumn> buildDataColumns(List<Criteria> criterias) {
+    List<DataColumn> columns = [
+      DataColumn(
+        label: Text(
+          'Contestant #',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+      DataColumn(
+        label: Text(
+          'Name',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+      // Example of using a function to create columns dynamically
+      ...criterias.map((criteria) {
+        double percentage = double.tryParse(criteria.percentage) ?? 0.0;
+        return DataColumn(
+          label: Container(
+            height: 50,
+            padding: const EdgeInsets.only(top: 5),
+            color: Colors.green,
+            alignment: Alignment.topCenter,
+            child: buildCriteriaRow(
+              criteria.criterianame,
+              percentage,
+              criteria.subCriteriaList,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    ];
+
+    return columns;
+  }
+
+  List<DataRow> buildContestantsList(BuildContext context,
+      List<Contestant> contestants, List<Criteria>? criterias) {
+    // Sort contestants based on contestantNumber
+    contestants.sort((a, b) =>
+        int.parse(a.contestantNumber).compareTo(int.parse(b.contestantNumber)));
+    List<DataRow> rows = [];
+
+    for (int index = 0; index < contestants.length; index++) {
+      Contestant contestant = contestants[index];
+      List<DataCell> cells = [];
+
+      cells.add(
+        DataCell(
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                contestant.contestantNumber.toString(),
+                style: const TextStyle(fontSize: 16),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      cells.add(
+        DataCell(
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              contestant.name,
+              style: const TextStyle(fontSize: 16),
+            ),
+          ),
+        ),
+      );
+
+      List<DataCell> scoreFields = [];
+      if (criterias != null && criterias.isNotEmpty) {
+        scoreFields = criterias.map((criteria) {
+          String uniqueKey = "${contestant.id}_${criteria.criteriaId ?? ''}";
+          return DataCell(
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    height: 30,
+                    alignment: Alignment.center,
+                    child: TextFormField(
+                      controller: judgeControllers[uniqueKey],
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(
+                            3), // Limit to 3 digits
+                        TextInputFormatter.withFunction((oldValue, newValue) {
+                          // Custom logic to restrict input to the range of 0-100
+                          try {
+                            if (newValue.text.isEmpty) {
+                              // Allow empty value
+                              return newValue;
+                            }
+                            final enteredValue = int.parse(newValue.text);
+                            if (enteredValue >= 0 && enteredValue <= 100) {
+                              return newValue;
+                            } else {
+                              // Value is out of range, return the oldValue
+                              return oldValue;
+                            }
+                          } catch (e) {
+                            // Error parsing the value, return the oldValue
+                            return oldValue;
+                          }
+                        }),
+                      ],
+                      decoration: InputDecoration(
+                        labelText: 'score',
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.green),
+                        ),
+                      ),
+                      enabled: !criteria.subCriteriaList
+                          .isNotEmpty, // Enable or disable based on the bool parameter
+                    ),
                   ),
                 ),
-              ),
-              // Row of sub-criteria
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 40,
-                      padding: const EdgeInsets.only(top: 5),
-                      color: Colors.green,
-                      alignment: Alignment.center,
-                      child: const Text(
-                        'Contestant #',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                        ),
+                if (criteria.subCriteriaList.isNotEmpty)
+                  IconButton(
+                    icon: Icon(Icons.info_outline),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return buildSubCriteriaScoreDialog(
+                              uniqueKey, criteria);
+                        },
+                      );
+                    },
+                  ),
+              ],
+            ),
+          );
+        }).toList();
+      }
+
+      cells.addAll(scoreFields);
+
+      rows.add(DataRow(cells: cells));
+    }
+
+    return rows;
+  }
+
+  Widget _buildCriteriaColumn() {
+    if (event.eventCategory == 'Pageants') {
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: criterias.map((criteriaItem) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Display criteria name as header cell
+                Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                        vertical:
+                            10.0), // Adjust the vertical padding as needed
+                    child: Text(
+                      criteriaItem.criterianame,
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: Colors.black54,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                  Expanded(
-                    child: Container(
-                      height: 40,
-                      padding: const EdgeInsets.only(top: 5),
-                      color: Colors.green,
-                      alignment: Alignment.center,
-                      child: const Text(
-                        'Name',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
+                ),
+
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.green), // Set border color
+                    borderRadius: BorderRadius.all(
+                        Radius.circular(5.0)), // Optional: Add border radius
                   ),
-                  ...criteria.subCriteriaList.map((subCriteria) {
-                    return Expanded(
-                      child: Container(
-                        height: 40,
-                        padding: const EdgeInsets.only(top: 5),
-                        color: Colors.green,
-                        alignment: Alignment.center,
-                        margin: EdgeInsets.symmetric(vertical: 5),
-                        child: Text(subCriteria.subCriteriaName + " ${subCriteria.percentage}%",
+                  child: DataTable(
+                    headingRowColor: MaterialStateColor.resolveWith(
+                        (states) => Colors.green),
+                    columns: [
+                      DataColumn(
+                        label: Text(
+                          'Contestant #',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.white,
@@ -2323,48 +2113,62 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                           ),
                         ),
                       ),
-                    );
-                  }).toList(),
-                ],
-              ),
-              // Other content if any
-              // Container or widget for contestant list
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 200, // Adjust height according to your needs
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min, // Ensure the column takes the minimum height necessary
-                        children: [
-                          buildContestantList(_contestants, criteria),
-                        ],
+                      DataColumn(
+                        label: Text(
+                          'Name',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ),
-                    ),
+                      ...criteriaItem.subCriteriaList.map((subCriteria) {
+                        return DataColumn(
+                          label: Text(
+                            '${subCriteria.subCriteriaName} ${subCriteria.percentage}%',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        );
+                      }),
+                      DataColumn(
+                        label: Text(
+                          'View',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                    // Container or widget for contestant list
+                    rows: buildContestantList(_contestants, criteriaItem),
                   ),
-                ],
-              )
-
-
-
-            ],
-          );
-        },
+                ),
+              ],
+            );
+          }).toList(),
+        ),
       );
-
     } else {
       return Column(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  height: 50,
-                  padding: const EdgeInsets.only(top: 5),
-                  color: Colors.green,
-                  alignment: Alignment.center,
-                  child: const Text(
-                    'Contestant #',
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              headingRowColor:
+                  MaterialStateColor.resolveWith((states) => Colors.green),
+              columns: [
+                ...buildDataColumns(
+                    criterias), // Assuming buildDataColumns returns a list of DataColumn
+                DataColumn(
+                  label: const Text(
+                    'View',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.white,
@@ -2372,68 +2176,190 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                     ),
                   ),
                 ),
-              ),
-              Expanded(
-                child: Container(
-                  height: 50,
-                  padding: const EdgeInsets.only(top: 5),
-                  color: Colors.green,
-                  alignment: Alignment.center,
-                  child: const Text(
-                    'Name',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-              ...criterias.map((criteria) {
-                double percentage =
-                    double.tryParse(criteria.percentage) ??
-                        0.0;
-                return Expanded(
-                  child: Container(
-                    height: 50,
-                    padding: const EdgeInsets.only(top: 5),
-                    color: Colors.green,
-                    alignment: Alignment.center,
-                    child: buildCriteriaRow(
-                      criteria.criterianame,
-                      percentage,
-                      criteria.subCriteriaList,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                );
-              }),
-              Expanded(
-                child: Container(
-                  height: 50,
-                  padding: const EdgeInsets.only(top: 5),
-                  color: Colors.green,
-                  alignment: Alignment.topCenter,
-                  child: const Text(
-                    'Edit',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+              ],
+              rows: buildContestantList(_contestants,
+                  null), // Assuming this function returns a widget
+            ),
           ),
-          buildContestantList(_contestants, null),
         ],
       );
     }
+  }
+
+  // Widget buildSubCriteriaModalButton(Contestant contestant, Criteria criteria) {
+  //   String uniqueKey = "${contestant.id}_${criteria.criteriaId ?? ''}";
+  //   if (criteria.subCriteriaList.isNotEmpty) {
+  //     return buildSubCriteriaScoreButton(uniqueKey, criteria);
+  //   } else {
+  //     // Return an empty widget
+  //     return SizedBox.shrink(); // Or return Container()
+  //   }
+  // }
+  //
+  // Widget buildJudgeScoreField(String uniqueKey, bool isSubCriteriaEmpty) {
+  //   return Container(
+  //     height: 30,
+  //     alignment: Alignment.center,
+  //     child: TextFormField(
+  //       controller: judgeControllers[uniqueKey],
+  //       keyboardType: TextInputType.number,
+  //       textAlign: TextAlign.center,
+  //       inputFormatters: [
+  //         FilteringTextInputFormatter.digitsOnly,
+  //         LengthLimitingTextInputFormatter(3), // Limit to 3 digits
+  //         TextInputFormatter.withFunction((oldValue, newValue) {
+  //           // Custom logic to restrict input to the range of 0-100
+  //           try {
+  //             if (newValue.text.isEmpty) {
+  //               // Allow empty value
+  //               return newValue;
+  //             }
+  //             final enteredValue = int.parse(newValue.text);
+  //             if (enteredValue >= 0 && enteredValue <= 100) {
+  //               return newValue;
+  //             } else {
+  //               // Value is out of range, return the oldValue
+  //               return oldValue;
+  //             }
+  //           } catch (e) {
+  //             // Error parsing the value, return the oldValue
+  //             return oldValue;
+  //           }
+  //         }),
+  //       ],
+  //       decoration: InputDecoration(
+  //         labelText: 'score',
+  //         border: OutlineInputBorder(
+  //           borderSide: BorderSide(color: Colors.green),
+  //         ),
+  //       ),
+  //       enabled: true, // Enable or disable based on the bool parameter
+  //     ),
+  //   );
+  // }
+  //
+  // Widget buildSubCriteriaScoreButton(String uniqueKey, Criteria criteria) {
+  //   return IconButton(
+  //     icon: Icon(Icons.info_outline),
+  //     onPressed: () {
+  //       showDialog(
+  //         context: context,
+  //         builder: (BuildContext context) {
+  //           return buildSubCriteriaScoreDialog(uniqueKey, criteria);
+  //         },
+  //       );
+  //     },
+  //   );
+  // }
+
+  Widget buildSubCriteriaScoreDialog(String uniqueKey, Criteria criteria) {
+    List<TextEditingController> validControllers = [];
+
+    // Filter controllers based on the existence of subcriteria
+    for (var i = 0; i < criteria.subCriteriaList.length; i++) {
+      // var subCriteria = criteria.subCriteriaList[i];
+      String subUniqueKey =
+          "${uniqueKey}_${i}"; // Assuming subCriteria has an index property
+      TextEditingController? controller = subCriteriaControllers[subUniqueKey];
+      if (controller != null) {
+        validControllers.add(controller);
+      }
+    }
+    return SingleChildScrollView(
+      child: AlertDialog(
+        title: Text('Sub criteria'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Please enter score (1-100)'),
+            SizedBox(height: 8),
+            ...validControllers.map((controller) {
+              int index = validControllers.indexOf(controller);
+              String subCriteriaName =
+                  criteria.subCriteriaList![index].subCriteriaName;
+              double subCriteriaPercentage =
+                  double.parse(criteria.subCriteriaList![index].percentage);
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: TextFormField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(
+                        r'^\d{0,3}(\.\d{0,2})?$')), // Allow up to 3 digits followed by an optional decimal and up to 2 decimal places
+                    TextInputFormatter.withFunction((oldValue, newValue) {
+                      try {
+                        if (newValue.text.isEmpty) {
+                          return newValue;
+                        }
+                        final enteredValue = double.parse(newValue.text);
+                        if (enteredValue >= 0 && enteredValue <= 100) {
+                          return newValue;
+                        } else {
+                          return oldValue;
+                        }
+                      } catch (e) {
+                        return oldValue;
+                      }
+                    }),
+                  ],
+                  decoration: InputDecoration(
+                    labelText:
+                        "${subCriteriaName} ${subCriteriaPercentage.toString()}%",
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.green),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              bool isValid = true;
+              validControllers.forEach((controller) {
+                if (controller.text.isEmpty) {
+                  isValid = false;
+                  Fluttertoast.showToast(
+                    msg: 'Please fill in all fields',
+                    gravity: ToastGravity.BOTTOM,
+                    backgroundColor: Colors.red,
+                    textColor: Colors.white,
+                  );
+                  return;
+                }
+              });
+              if (isValid) {
+                double totalScore = 0;
+                for (var controller in validControllers) {
+                  double subCriteriaScore = double.parse(controller.text);
+                  int index = validControllers.indexOf(controller);
+                  double subCriteriaPercentage =
+                      double.parse(criteria.subCriteriaList[index].percentage);
+                  totalScore +=
+                      subCriteriaScore * (subCriteriaPercentage / 100);
+                }
+                TextEditingController judgeController =
+                    judgeControllers[uniqueKey]!;
+                judgeController.text = totalScore.toStringAsFixed(2);
+                Navigator.of(context).pop();
+              }
+            },
+            child: Text('Save'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget buildContestantRow(Contestant contestant, int number) {
@@ -2479,11 +2405,9 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
     return Row(
       children: [
-        Expanded(
-          child: Text(
-            '$criterianame: $percentage%',
-            style: finalStyle,
-          ),
+        Text(
+          '$criterianame: $percentage%',
+          style: finalStyle,
         ),
         IconButton(
           icon: Icon(Icons.info),
@@ -2512,7 +2436,6 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black54),
                           ),
-                          SizedBox(width: 60), // Add spacing between texts
                           Text(
                             'Percentage',
                             style: finalStyle.copyWith(

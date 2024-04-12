@@ -900,7 +900,7 @@ class _SearchEventsState extends State<SearchEvents> {
               leading: const Icon(Icons.help),
               title: const Text("Help and FAQ's"),
               onTap: () {
-                Navigator.of(context).pushReplacement(
+                Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => const HelpandFaq(),
                   ),
@@ -999,7 +999,7 @@ class _SearchEventsState extends State<SearchEvents> {
                   return GestureDetector(
                     onTap: () {
                       if (code[index].name == 'Create Events') {
-                        Navigator.of(context).pushReplacement(MaterialPageRoute(
+                        Navigator.of(context).push(MaterialPageRoute(
                             builder: (context) => CreateEventScreen()));
                       } else if (code[index].name == 'Event Calendar') {
                         Navigator.of(context).push(
