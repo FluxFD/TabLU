@@ -632,6 +632,25 @@ class _WinnerState extends State<Winner> {
       });
     }
   }
+  Future<double> drawLogoAndEventDetails(PdfGraphics graphics, EventData eventData, PdfPage page) async {
+    // Load the logo image
+    final ByteData data = await rootBundle.load('assets/icons/tablut222.png');
+    final Uint8List bytesData = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+    final PdfBitmap image = PdfBitmap(bytesData);
+
+    // Draw the logo at top-left
+    const double logoWidth = 100;
+    const double logoHeight = 70;
+      graphics.drawImage(image, Rect.fromLTWH(0, 0, logoWidth, logoHeight));
+
+    final PdfFont eventDetailsFont = PdfStandardFont(PdfFontFamily.helvetica, 14);
+    String eventDetails = 'Event name: ${eventData.eventName}\nDate: ${eventData.eventStartDate.toString().split(' ')[0]}\nTime: ${eventData.eventStartTime}';
+    Size eventDetailsSize = eventDetailsFont.measureString(eventDetails);
+    graphics.drawString(eventDetails, eventDetailsFont,
+        brush: PdfBrushes.black,
+        bounds: Rect.fromLTWH(0, logoHeight, page.getClientSize().width, eventDetailsSize.height));
+    return  eventDetailsSize.height + 80; // Adjust spacing after event details
+  }
 
   Future<String> generatePdf(
       List<ScoreCard> scoreCards, EventData eventData) async {
@@ -645,16 +664,6 @@ class _WinnerState extends State<Winner> {
     // Get page graphics for the page
     PdfGraphics graphics = page.graphics;
 
-    // Load the logo image
-    final ByteData data = await rootBundle.load('assets/icons/tablut222.png');
-    final Uint8List bytesData =
-        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-    final PdfBitmap image = PdfBitmap(bytesData);
-
-    // Draw the logo at top-left
-    const double logoWidth = 100;
-    const double logoHeight = 70;
-    graphics.drawImage(image, Rect.fromLTWH(0, 0, logoWidth, logoHeight));
 
     // Create a font for the title
     final PdfFont titleFont = PdfStandardFont(PdfFontFamily.helvetica, 18);
@@ -672,20 +681,11 @@ class _WinnerState extends State<Winner> {
     double contentYPosition =
         titleSize.height + 50; // Adjust this value as needed
 
-    final PdfFont eventDetailsFont =
-        PdfStandardFont(PdfFontFamily.helvetica, 14);
-    String eventDetails =
-        'Event name: ${eventData.eventName}\nDate: ${eventData.eventStartDate.toString().split(' ')[0]}\nTime: ${eventData.eventStartTime}';
-    Size eventDetailsSize = eventDetailsFont.measureString(eventDetails);
-    graphics.drawString(eventDetails, eventDetailsFont,
-        brush: PdfBrushes.black,
-        bounds: Rect.fromLTWH(0, contentYPosition, page.getClientSize().width,
-            eventDetailsSize.height));
-    contentYPosition +=
-        eventDetailsSize.height + 20; // Adjust spacing after event details
+    contentYPosition = await drawLogoAndEventDetails(graphics, eventData, page);
 
     if (widget.event_category == "Pageants") {
       // Create a font for the content
+
       final PdfFont contentFont = PdfStandardFont(PdfFontFamily.helvetica, 12);
 
       for (int i = 0; i < pageantScoreCards.length; i++) {
@@ -808,6 +808,8 @@ class _WinnerState extends State<Winner> {
       }
 
       page = document.pages.add();
+
+
       contentYPosition = 0; // Reset contentYPosition for the new page
       double totalScore = 0.0; // Initialize total score for each contestant
       for (var contestant in judge.contestants) {
@@ -839,6 +841,9 @@ class _WinnerState extends State<Winner> {
           row?.cells[row.cells.count - 1].value = totalScore.toStringAsFixed(2);
         }
       }
+      PdfGraphics graphics = page.graphics;
+
+      contentYPosition = await drawLogoAndEventDetails(graphics, eventData, page);
 
       // Draw the grid on the current page
       final PdfLayoutResult? gridResult = grid.draw(
@@ -851,7 +856,6 @@ class _WinnerState extends State<Winner> {
       Size judgeTextSize = judgeFont.measureString(judgeText);
 
 // Get the graphics of the current page
-      PdfGraphics graphics = page.graphics;
 
 // Draw the string on the current page
       graphics.drawString(judgeText, judgeFont,
@@ -913,113 +917,116 @@ class _WinnerState extends State<Winner> {
         }
       }
 
-      // Iterate over the groupCriteriaData map
-      groupCriteriaData.forEach((criteria, contestants) {
-        // Create a new PDF grid
-        // Add a new page to the document
-        PdfPage page = document.pages.add();
-        // Draw the criteria name
-        PdfGraphics graphics = page.graphics;
-        PdfFont CriteriaTitleStyle = PdfStandardFont(
-            PdfFontFamily.helvetica, 20,
-            style: PdfFontStyle.bold);
-        String criteriaName = criteria;
-        Size criteriaNameSize = CriteriaTitleStyle.measureString(criteriaName);
-        double startX =
-            (page.getClientSize().width - criteriaNameSize.width) / 2;
+     for (var criteria in groupCriteriaData.keys) {
+  var contestants = groupCriteriaData[criteria];
+  // Create a new PDF grid
+  // Add a new page to the document
+  PdfPage page = document.pages.add();
+  // Draw the criteria name
+  PdfGraphics graphics = page.graphics;
+  contentYPosition = await drawLogoAndEventDetails(graphics, eventData, page);
 
-        // Draw the string on the current page
-        graphics.drawString(criteriaName, CriteriaTitleStyle,
-            bounds: Rect.fromLTWH(startX, 0, 0, 0));
-        contentYPosition = criteriaNameSize.height +
-            20; // Adjust the Y position for the content
+  PdfFont CriteriaTitleStyle = PdfStandardFont(
+      PdfFontFamily.helvetica, 20,
+      style: PdfFontStyle.bold);
+  String criteriaName = criteria;
+  Size criteriaNameSize = CriteriaTitleStyle.measureString(criteriaName);
+  double startX =
+      (page.getClientSize().width - criteriaNameSize.width) / 2;
 
-        final PdfGrid grid = PdfGrid();
-        grid.style = PdfGridStyle(
-          font: PdfStandardFont(PdfFontFamily.helvetica, 10),
-          cellPadding: PdfPaddings(left: 5, right: 5, top: 5, bottom: 5),
-        );
+  // Draw the string on the current page
+  graphics.drawString(criteriaName, CriteriaTitleStyle,
+      bounds: Rect.fromLTWH(startX, 0, 0, 0));
+  contentYPosition = criteriaNameSize.height +
+      20; // Adjust the Y position for the content
 
-        // Add the headers
-        grid.columns.add(count: judgeNames.length + 4);
-        PdfGridRow header = grid.headers.add(1)[0];
-        header.cells[0].value = 'Contestant Number';
-        header.cells[1].value = 'Contestant Name';
-        for (int i = 0; i < judgeNames.length; i++) {
-          header.cells[i + 2].value = judgeNames[i];
-        }
-        header.cells[header.cells.count - 2].value = 'Average';
-        header.cells[header.cells.count - 1].value = 'Rank';
+  final PdfGrid grid = PdfGrid();
+  grid.style = PdfGridStyle(
+    font: PdfStandardFont(PdfFontFamily.helvetica, 10),
+    cellPadding: PdfPaddings(left: 5, right: 5, top: 5, bottom: 5),
+  );
 
-        // Iterate over the contestants map and add the data to the grid
-        contestants.forEach((contestantNumber, data) {
-          PdfGridRow row = grid.rows.add();
-          row.cells[0].value = contestantNumber;
-          row.cells[1].value = data['contestantName'];
+  // Add the headers
+  grid.columns.add(count: judgeNames.length + 4);
+  PdfGridRow header = grid.headers.add(1)[0];
+  header.cells[0].value = 'Contestant Number';
+  header.cells[1].value = 'Contestant Name';
+  for (int i = 0; i < judgeNames.length; i++) {
+    header.cells[i + 2].value = judgeNames[i];
+  }
+  header.cells[header.cells.count - 2].value = 'Average';
+  header.cells[header.cells.count - 1].value = 'Rank';
 
-// Add the scores for each judge
-          double totalScore = 0.0;
-          for (int i = 0; i < judgeNames.length; i++) {
-            double score = data['judges'][i]['judgeCalculatedScore'];
-            row.cells[i + 2].value = score.toString();
-            totalScore += score;
-          }
-          // Set the total and rank to 0
-          row.cells[row.cells.count - 2].value = (totalScore / judgeNames.length).toStringAsFixed(2);
-          // Sort contestants based on total score
-          List sortedContestants = contestants.values
-              .map((data) => data['judges']
-                  .map((judgeData) => judgeData['judgeCalculatedScore'])
-                  .reduce((value, element) => value + element))
-              .toList()
-            ..sort((a, b) => b.compareTo(a));
+  // Iterate over the contestants map and add the data to the grid
+  for (var contestantNumber in contestants!.keys) {
+    var data = contestants[contestantNumber];
+    PdfGridRow row = grid.rows.add();
+    row.cells[0].value = contestantNumber;
+    row.cells[1].value = data?['contestantName'];
 
-          for (var score in sortedContestants) {
-            print(score);
-          }
-          // Find the contestant in the sorted list and add 1 to get the rank
-          int rank = sortedContestants.indexOf(totalScore) + 1;
-          row.cells[row.cells.count - 1].value = rank.toString();
-        });
+    // Add the scores for each judge
+    double totalScore = 0.0;
+    for (int i = 0; i < judgeNames.length; i++) {
+      double score = data?['judges'][i]['judgeCalculatedScore'];
+      row.cells[i + 2].value = score.toString();
+      totalScore += score;
+    }
+    // Set the total and rank to 0
+    row.cells[row.cells.count - 2].value = (totalScore / judgeNames.length).toStringAsFixed(2);
+    // Sort contestants based on total score
+    List sortedContestants = contestants.values
+        .map((data) => data['judges']
+            .map((judgeData) => judgeData['judgeCalculatedScore'])
+            .reduce((value, element) => value + element))
+        .toList()
+      ..sort((a, b) => b.compareTo(a));
 
-        // Draw the grid on the new page
-        // Draw the grid on the current page
-        final PdfLayoutResult? gridResult = grid.draw(
-            page: page, bounds: Rect.fromLTWH(0, contentYPosition, 0, 0));
-        contentYPosition = gridResult!.bounds.bottom + 30;
+    for (var score in sortedContestants) {
+      print(score);
+    }
+    // Find the contestant in the sorted list and add 1 to get the rank
+    int rank = sortedContestants.indexOf(totalScore) + 1;
+    row.cells[row.cells.count - 1].value = rank.toString();
+  }
 
-        contentYPosition = gridResult!.bounds.bottom + 30;
+  // Draw the grid on the new page
+  // Draw the grid on the current page
+  final PdfLayoutResult? gridResult = grid.draw(
+      page: page, bounds: Rect.fromLTWH(0, contentYPosition + 80, 0, 0));
+  contentYPosition = gridResult!.bounds.bottom + 30;
 
-        // New code to add "Judges" text
-        Size judgesTextSize = CriteriaTitleStyle.measureString("Judges");
-        PdfFont fontStyle = PdfStandardFont(PdfFontFamily.helvetica, 14,
-            style: PdfFontStyle.bold);
-        PdfFont judgesStyle = PdfStandardFont(PdfFontFamily.helvetica, 14);
+  contentYPosition = gridResult!.bounds.bottom + 30;
 
-        graphics.drawString("Judges", fontStyle,
-            bounds: Rect.fromLTWH(0, contentYPosition, 0, 0));
-        contentYPosition += judgesTextSize.height + 10;
+  // New code to add "Judges" text
+  Size judgesTextSize = CriteriaTitleStyle.measureString("Judges");
+  PdfFont fontStyle = PdfStandardFont(PdfFontFamily.helvetica, 14,
+      style: PdfFontStyle.bold);
+  PdfFont judgesStyle = PdfStandardFont(PdfFontFamily.helvetica, 14);
 
-        // New code to display all judge names
-        Size judgeNameSize = Size.zero;
-        double contentXPosition = 0;
+  graphics.drawString("Judges", fontStyle,
+      bounds: Rect.fromLTWH(0, contentYPosition, 0, 0));
+  contentYPosition += judgesTextSize.height + 10;
 
-        for (String judgeName in judgeNames) {
-          judgeNameSize = judgesStyle.measureString(judgeName);
-          graphics.drawString(judgeName, judgesStyle,
-              bounds: Rect.fromLTWH(contentXPosition, contentYPosition, 0, 0));
-          contentXPosition += judgeNameSize.width + 40;
+  // New code to display all judge names
+  Size judgeNameSize = Size.zero;
+  double contentXPosition = 0;
 
-          // Adjust the Y position for the next judge name
-          if (contentXPosition + judgeNameSize.width >
-              page.getClientSize().width) {
-            // If it would, move to the next line and reset contentXPosition
-            contentYPosition += judgeNameSize.height +
-                20; // Adjust the Y position for the next line
-            contentXPosition = 0; // Reset the X position for the next line
-          }
-        }
-      });
+  for (String judgeName in judgeNames) {
+    judgeNameSize = judgesStyle.measureString(judgeName);
+    graphics.drawString(judgeName, judgesStyle,
+        bounds: Rect.fromLTWH(contentXPosition, contentYPosition, 0, 0));
+    contentXPosition += judgeNameSize.width + 40;
+
+    // Adjust the Y position for the next judge name
+    if (contentXPosition + judgeNameSize.width >
+        page.getClientSize().width) {
+      // If it would, move to the next line and reset contentXPosition
+      contentYPosition += judgeNameSize.height +
+          20; // Adjust the Y position for the next line
+      contentXPosition = 0; // Reset the X position for the next line
+    }
+  }
+}
     }
 
     // Create a new PDF grid
@@ -1185,17 +1192,22 @@ class _WinnerState extends State<Winner> {
     newPageGraphics.drawString(textToAdd, textFont,
         bounds: Rect.fromLTWH(textStartX, 0, textSize.width, textSize.height));
 
+
     if (widget.event_category == "Pageants") {
 // Draw the overAllScoreGrid on the new page
+     double contentYYPosition = await drawLogoAndEventDetails(newPageGraphics, eventData, newPage);
+
       overAllScoreGrid.draw(
         page: newPage,
-        bounds: Rect.fromLTWH(0, textSize.height + 10,
+        bounds: Rect.fromLTWH(0, contentYYPosition,
             newPage.getClientSize().width, newPage.getClientSize().height),
       );
     } else {
+      double contentYYPosition = await drawLogoAndEventDetails(newPageGraphics, eventData, newPage);
+
       newGrid.draw(
         page: newPage,
-        bounds: Rect.fromLTWH(0, textSize.height + 10,
+        bounds: Rect.fromLTWH(0, contentYYPosition,
             newPage.getClientSize().width, newPage.getClientSize().height),
       );
     }
@@ -1275,9 +1287,12 @@ class _WinnerState extends State<Winner> {
     }
 
     final PdfPage secondPage = document.pages.add();
+    PdfGraphics secondGraphics = secondPage.graphics;
+    contentYPosition = await drawLogoAndEventDetails(secondGraphics, eventData, secondPage);
+
     secondGrid.draw(
         page: secondPage,
-        bounds: Rect.fromLTWH(0, 0, secondPage.getClientSize().width,
+        bounds: Rect.fromLTWH(0, contentYPosition, secondPage.getClientSize().width,
             secondPage.getClientSize().height));
 
     // Save the document

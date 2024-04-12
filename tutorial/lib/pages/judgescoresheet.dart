@@ -1687,7 +1687,6 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                     padding:
                         const EdgeInsets.only(top: 8.0, left: 5.0, right: 5.0),
                     child: Container(
-                      height: 300,
                       child: Column(
                         children: [
                           DataTable(
@@ -2071,7 +2070,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       return SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: criterias.map((criteriaItem) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.center,
