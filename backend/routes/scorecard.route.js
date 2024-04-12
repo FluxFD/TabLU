@@ -303,6 +303,7 @@ router.get("/winners/:eventId", async (req, res) => {
               scorecard.userId.toString() === judge.userId._id.toString()
           )
           .map((scorecard) => ({
+            contestantNumber: scorecard.contestantId.contestantNumber,
             contestantName: scorecard.contestantId.name,
             criteriaName: scorecard.criteria.criteriaId.criterianame,
             judgeRawScore: scorecard.criteria.rawScore,
@@ -316,8 +317,8 @@ router.get("/winners/:eventId", async (req, res) => {
         };
       }),
     };
-    console.log("DSdsd");
-    console.log(response);
+
+    console.log(response.judges[0]);
     // Respond with the top three winners, event details, scorecards, contestants, and judges
     res.status(200).json({ contestants, response });
   } catch (error) {
