@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:tutorial/pages/chart.dart';
+import 'package:tutorial/pages/editnavigation.dart';
 import 'package:tutorial/pages/eventinfo.dart';
 import 'package:tutorial/pages/globals.dart';
 import 'package:tutorial/pages/dashboard.dart';
@@ -91,7 +92,7 @@ class _EventsManagementState extends State<EventsManagement> {
     token = await SharedPreferencesUtils.retrieveToken();
     try {
       final response =
-          await http.get(Uri.parse('https://tab-lu.onrender.com/api/events'));
+          await http.get(Uri.parse('http://192.168.101.6:8080/api/events'));
       if (response.statusCode == 200) {
         final dynamic eventData = json.decode(response.body);
         print(eventData);
@@ -125,7 +126,7 @@ class _EventsManagementState extends State<EventsManagement> {
         throw Exception('Authentication token not found');
       }
 
-      final url = Uri.parse("https://tab-lu.onrender.com/user-events");
+      final url = Uri.parse("http://192.168.101.6:8080/user-events");
       final response = await http.get(
         url,
         // Include the Authorization header with the token
@@ -178,7 +179,7 @@ class _EventsManagementState extends State<EventsManagement> {
     // If deletion is confirmed, proceed with the deletion
     if (deleteConfirmed == true) {
       try {
-        final url = Uri.parse("https://tab-lu.onrender.com/api/event/$eventId");
+        final url = Uri.parse("http://192.168.101.6:8080/api/event/$eventId");
         final response = await http.delete(url);
 
         if (response.statusCode == 200) {
@@ -200,7 +201,7 @@ class _EventsManagementState extends State<EventsManagement> {
 
   Future<bool> fetchJudgesScoreSubmitted(String eventId) async {
     final url =
-    Uri.parse('https://tab-lu.onrender.com/judges/$eventId/confirmed');
+    Uri.parse('http://192.168.101.6:8080/judges/$eventId/confirmed');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -279,8 +280,9 @@ class _EventsManagementState extends State<EventsManagement> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => EditEventScreen(
+                                        builder: (context) => EditNavigation(
                                           eventId: events[index].eventId,
+                                          isEdit: true,
                                         ),
                                       ),
                                     );

@@ -37,12 +37,12 @@ router.post("/signin", async (req, res) => {
     // Check if a user with the given email or username already exists
     const existingUser = await User.findOne({
       $or: [{ username: username }, { email: email }],
-      isEmailVerified: true
-    }); 
+      isEmailVerified: true,
+    });
 
     const existingNotVerifiedUser = await User.findOne({
       $or: [{ username: username }, { email: email }],
-      isEmailVerified: false
+      isEmailVerified: false,
     });
 
     if (!validator.isEmail(email)) {
@@ -60,13 +60,13 @@ router.post("/signin", async (req, res) => {
 
     const verificationCode = generateVerificationCode();
 
-    if (existingNotVerifiedUser){
+    if (existingNotVerifiedUser) {
       existingNotVerifiedUser.verificationCode = verificationCode;
       existingNotVerifiedUser.username = username;
       existingNotVerifiedUser.email = email;
       existingNotVerifiedUser.password = password;
       existingNotVerifiedUser.save();
-    }else{
+    } else {
       const newUser = new User({
         username: username,
         email: email,
@@ -77,7 +77,6 @@ router.post("/signin", async (req, res) => {
       newUser.isEmailVerified = false;
       await newUser.save();
     }
-   
 
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
@@ -85,8 +84,8 @@ router.post("/signin", async (req, res) => {
       secure: false,
       requireTLS: true,
       auth: {
-        user: "avbreyrd@gmail.com",
-        pass: "dbde fhua iozz wxxy",
+        user: "group5tablu@gmail.com",
+        pass: "dtnu elfi gdmy amro",
       },
       tls: {
         ciphers: "SSLv3",
@@ -94,11 +93,24 @@ router.post("/signin", async (req, res) => {
       },
     });
 
+    // Email content
     const mailOptions = {
-      from: "avbreyrd@gmail.com",
+      from: "group5tablu@gmail.com",
       to: email,
-      subject: "Email Verification Code",
-      text: `Your verification code is: ${verificationCode}`,
+      subject: "Verify you account with TabLU",
+      html: `<p>Hi there <strong>${email}</strong></p>
+       <p>Thanks for joining TabLU! Get Ready to Crush Your Event Planning!</p>
+      <p>To complete your registration and unlock all the features of TabLU, simply verify your email address using the following code:</p>
+      <h2>${verificationCode}</h2>
+    <p>Just enter this code in the designated field within the TabLU app, and your email will be verified. Then, you're good to go!</p>
+    <p><strong>Didn't request this email?</strong></p>
+    <p>No worries! If you didn't intend to create a TabLU account, you can simply disregard this message. Your privacy is important to us, and we won't send you any further messages unless you confirm your email address.
+    </p>
+    <p>Welcome to the TabLU community!</p>
+    <p>Best regards</p>
+    <p>"The TabLU Team"</p>
+  
+      `,
     };
 
     await transporter.sendMail(mailOptions);
@@ -164,7 +176,6 @@ router.post("/login", async (req, res) => {
   const { username, password, fcmToken } = req.body;
   try {
     const user = await User.findOne({ username: username });
-
 
     if (!user || user.isEmailVerified == false) {
       return res.status(401).json({ message: "Invalid username or password" });
@@ -241,8 +252,8 @@ router.post("/send-verification-code", async (req, res) => {
       secure: false,
       requireTLS: true,
       auth: {
-        user: "avbreyrd@gmail.com",
-        pass: "dbde fhua iozz wxxy",
+        user: "group5tablu@gmail.com",
+        pass: "dtnu elfi gdmy amro",
       },
       tls: {
         ciphers: "SSLv3",
@@ -252,10 +263,24 @@ router.post("/send-verification-code", async (req, res) => {
 
     // Email content
     const mailOptions = {
-      from: "avbreyrd@gmail.com",
+      from: "group5tablu@gmail.com",
       to: userEmail,
       subject: "Password Reset Verification Code",
-      text: `Your verification code is: ${verificationCode}`,
+      html: `<p>Hi there <strong>${userEmail}</strong></p>
+      <p>We understand you might be having trouble accessing your TabLU account. No worries, we're here to help!</p>
+      <p>To reset your forgotten passcode, follow these simple steps:</p>
+      <ul>
+        <li>Copy the six-digit code: <strong>${verificationCode}</strong></li>
+        <li>Launch the TabLU app and enter the code in the designated field.</li>
+        <li>Create a strong new password for your account.</li>
+      </ul>
+      <p><strong>Didn't request this?</strong></p>
+      <p>If you remember your password or didn't request a reset, simply disregard this email. Your account security is our priority.</p>
+      <p>Need further assistance?</p>
+      <p>Contact our support team at group5tablu@gmail.com</p>
+      <p>Best regards,</p>
+      <p>The TabLU Team</p>
+      `,
     };
 
     await transporter.sendMail(mailOptions);

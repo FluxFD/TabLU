@@ -6,6 +6,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'dart:convert';
 import 'package:tutorial/pages/criteria.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:uuid/uuid.dart';
+
 
 class Contestant {
   int contestantNumber;
@@ -78,7 +80,8 @@ class Contestant {
 
 class Contestants extends StatefulWidget {
   final String eventId;
-  Contestants({required this.eventId});
+  final bool isEdit;
+  Contestants({required this.eventId, required this.isEdit});
   @override
   _ContestantsState createState() => _ContestantsState();
 }
@@ -87,14 +90,13 @@ class _ContestantsState extends State<Contestants> {
   late ImagePicker _picker;
   File? _addSelectImage;
   int _lastContestantNumber = 0; // State for contestant number
-
+  bool isLoopRunning = false;
 
   @override
   void initState() {
     super.initState();
     _picker = ImagePicker();
     contestantsFuture = fetchContestants();
-
   }
 
   late Future<List<Contestant>> contestantsFuture;
@@ -119,7 +121,7 @@ class _ContestantsState extends State<Contestants> {
     try {
       String eventId = widget.eventId;
       final url =
-          Uri.parse("https://tab-lu.onrender.com/get-contestants/$eventId");
+          Uri.parse("http://192.168.101.6:8080/get-contestants/$eventId");
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -152,7 +154,7 @@ class _ContestantsState extends State<Contestants> {
 
   Future<void> deleteContestant(int index, String? contestantId) async {
     final url = Uri.parse(
-        "https://tab-lu.onrender.com/delete-contestant/$contestantId");
+        "http://192.168.101.6:8080/delete-contestant/$contestantId");
 
     try {
       final response = await http.delete(url);
@@ -245,11 +247,11 @@ class _ContestantsState extends State<Contestants> {
     }
   }
   Future<void> addProfilePicture(Contestant contestant) async {
-    bool galleryPermission = await _requestGalleryPermission();
-    if (!galleryPermission) {
-      // Handle permission not granted
-      return;
-    }
+    // bool galleryPermission = await _requestGalleryPermission();
+    // if (!galleryPermission) {
+    //   // Handle permission not granted
+    //   return;
+    // }
 
     final XFile? image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
@@ -267,11 +269,11 @@ class _ContestantsState extends State<Contestants> {
   }
 
   Future<void> changeProfilePicture(Contestant contestant) async {
-    bool galleryPermission = await _requestGalleryPermission();
-    if (!galleryPermission) {
-      // Handle permission not granted
-      return;
-    }
+    // bool galleryPermission = await _requestGalleryPermission();
+    // if (!galleryPermission) {
+    //   // Handle permission not granted
+    //   return;
+    // }
 
     final XFile? image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
@@ -287,7 +289,6 @@ class _ContestantsState extends State<Contestants> {
       print('Image selection canceled');
     }
   }
-
   Future<bool> _requestGalleryPermission() async {
     PermissionStatus status = await Permission.storage.request();
     return status == PermissionStatus.granted;
@@ -295,10 +296,10 @@ class _ContestantsState extends State<Contestants> {
 
   Future<void> createContestant(
       String eventId, Map<String, dynamic> contestantData) async {
-    final url = Uri.parse("https://tab-lu.onrender.com/contestants");
+
+    final url = Uri.parse("http://192.168.101.6:8080/contestants");
     try {
       // Read the image file
-
       final imageFile = contestantData["profilePic"];
       print("File Image: ${imageFile}");
       if (imageFile != null) {
@@ -327,10 +328,13 @@ class _ContestantsState extends State<Contestants> {
         var response = await request.send();
 
         if (response.statusCode == 201) {
+          setState(() {
+            contestantsFuture = fetchContestants();
+          });
           print('Contestant created successfully');
         } else {
           print(
-              'Failed to create contestant. Status code: ${response.statusCode}');
+              'Failed to create contestant. Staus code: ${response.statusCode}');
           print('Response body: ${await response.stream.bytesToString()}');
         }
       } else {
@@ -361,6 +365,9 @@ class _ContestantsState extends State<Contestants> {
         print("Image file not found: ${contestantData["profilePic"]}");
       }
     } catch (e) {
+      setState(() {
+        isLoopRunning = false; // Loop has ended
+      });
       print('Error creating contestant: $e');
     }
   }
@@ -397,7 +404,7 @@ class _ContestantsState extends State<Contestants> {
 // Function to update the contestant information in the database
   Future<void> updateContestant(String eventId, Contestant contestant) async {
     final url =
-        Uri.parse("https://tab-lu.onrender.com/contestants/${contestant.id}");
+        Uri.parse("http://192.168.101.6:8080/contestants/${contestant.id}");
 
     try {
       final response = await http.put(
@@ -567,23 +574,42 @@ class _ContestantsState extends State<Contestants> {
             ),
             const SizedBox(width: 10),
             ElevatedButton(
-              onPressed: isContestantsEmpty ? null : () async{
+              onPressed: isContestantsEmpty || isLoopRunning ? null : () async {
                 if (contestants.isNotEmpty) {
+                  setState(() {
+                    isLoopRunning = true; // Loop is starting
+                  });
+
                   for (final contestant in contestants) {
                     await createContestant(widget.eventId, contestant.toJson());
                   }
+
+                  setState(() {
+                    isLoopRunning = false; // Loop has ended
+                  });
                 }
 
                 fetchContestants();
                 //  String eventId = widget.eventId;
 
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => Criterias(
-                      eventId: widget.eventId,
+                if (widget.isEdit) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Contestants updated successfully'),
+                      backgroundColor: Colors.green,
                     ),
-                  ),
-                );
+                  );
+                  Navigator.of(context).pop();
+                } else {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => Criterias(
+                        eventId: widget.eventId,
+                        isEdit: false,
+                      ),
+                    ),
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
                 primary: Colors.green,
@@ -638,7 +664,7 @@ class ListItemWidget extends StatelessWidget {
 
   Future<void> deleteContestant(String contestantId) async {
     final url = Uri.parse(
-        "https://tab-lu.onrender.com/delete-contestant/$contestantId");
+        "http://192.168.101.6:8080/delete-contestant/$contestantId");
 
     try {
       final response = await http.delete(url);
@@ -678,7 +704,7 @@ class ListItemWidget extends StatelessWidget {
                       : null as ImageProvider<Object>?,
 
               // ? NetworkImage(
-              //     "https://tab-lu.onrender.com/uploads/${contestant.profilePic?.path}")
+              //     "http://192.168.101.6:8080/uploads/${contestant.profilePic?.path}")
               // : null as ImageProvider<Object>?,
             ),
           ),
@@ -701,7 +727,32 @@ class ListItemWidget extends StatelessWidget {
               ),
               IconButton(
                 icon: const Icon(Icons.delete, color: Colors.red, size: 25),
-                onPressed: onClicked,
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: Text('Confirm Deletion'),
+                        content: Text('Are you sure you want to delete this contestant?'),
+                        actions: <Widget>[
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop(); // Close the dialog
+                            },
+                            child: Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop(); // Close the dialog
+                              onClicked(); // Call the deletion function
+                            },
+                            child: Text('Delete'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
               ),
             ],
           ),
@@ -845,11 +896,11 @@ class _ProfilePictureDialogState extends State<ProfilePictureDialog> {
   }
 
   Future<void> changeProfilePicture() async {
-    bool galleryPermission = await _requestGalleryPermission();
-    if (!galleryPermission) {
-      // Handle permission not granted
-      return;
-    }
+    // bool galleryPermission = await _requestGalleryPermission();
+    // if (!galleryPermission) {
+    //   // Handle permission not granted
+    //   return;
+    // }
 
     final XFile? image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
@@ -1026,11 +1077,11 @@ class _AddContestantDialogState extends State<AddContestantDialog> {
   }
 
   Future<void> addProfilePicture() async {
-    bool galleryPermission = await _requestGalleryPermission();
-    if (!galleryPermission) {
-      // Handle permission not granted
-      return;
-    }
+    // bool galleryPermission = await _requestGalleryPermission();
+    // if (!galleryPermission) {
+    //   // Handle permission not granted
+    //   return;
+    // }
 
     final XFile? image = await ImagePicker().pickImage(
       source: ImageSource.gallery,

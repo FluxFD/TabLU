@@ -13,6 +13,7 @@ class Criteria {
   String percentage;
   String eventId; // Event ID
   List<SubCriteria> subCriteriaList; // List of subcriteria
+  String baseScore; // Added field
 
   Criteria({
     this.criteriaId,
@@ -20,6 +21,7 @@ class Criteria {
     required this.percentage,
     required this.eventId,
     required this.subCriteriaList,
+    required this.baseScore, // Added field
   });
 
   factory Criteria.fromJson(Map<String, dynamic> json) {
@@ -32,6 +34,7 @@ class Criteria {
               ?.map((subCriteriaJson) => SubCriteria.fromJson(subCriteriaJson))
               .toList() ??
           [],
+      baseScore: json['baseScore'] ?? '', // Added field
     );
   }
 
@@ -43,6 +46,7 @@ class Criteria {
       'eventId': eventId,
       'subCriteriaList':
           subCriteriaList.map((subCriteria) => subCriteria.toJson()).toList(),
+      'baseScore': baseScore, // Added field
     };
   }
 }
@@ -117,8 +121,9 @@ class Event {
 
 class Criterias extends StatefulWidget {
   final String eventId;
+  final bool isEdit;
 
-  Criterias({required this.eventId});
+  Criterias({required this.eventId, required this.isEdit});
 
   @override
   _CriteriasState createState() => _CriteriasState();
@@ -131,7 +136,7 @@ class _CriteriasState extends State<Criterias> {
   bool isLoading = true;
   TextEditingController _criteriaNameController = TextEditingController();
   TextEditingController _percentageController = TextEditingController();
-
+  TextEditingController _baseScoreController = TextEditingController();
   void initState() {
     super.initState();
     _initializeState();
@@ -150,8 +155,8 @@ class _CriteriasState extends State<Criterias> {
 
   Future<void> _fetchEvent(String eventId) async {
     try {
-      final response = await http
-          .get(Uri.parse('https://tab-lu.onrender.com/event/$eventId'));
+      final response =
+          await http.get(Uri.parse('http://192.168.101.6:8080/event/$eventId'));
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
@@ -170,7 +175,7 @@ class _CriteriasState extends State<Criterias> {
   Future<void> _fetchCriterias(String eventId) async {
     try {
       final response = await http.get(
-        Uri.parse('https://tab-lu.onrender.com/criteria/$eventId'),
+        Uri.parse('http://192.168.101.6:8080/criteria/$eventId'),
       );
 
       if (response.statusCode == 200) {
@@ -200,7 +205,7 @@ class _CriteriasState extends State<Criterias> {
   Future<void> deleteCriteria(String eventId, String? criteriaId) async {
     print(criteriaId);
     final url = Uri.parse(
-        "https://tab-lu.onrender.com/criteria?eventId=$eventId&criteriaId=$criteriaId");
+        "http://192.168.101.6:8080/criteria?eventId=$eventId&criteriaId=$criteriaId");
     try {
       final response = await http.delete(url);
       // print('Response headers: ${response.headers}');
@@ -229,13 +234,13 @@ class _CriteriasState extends State<Criterias> {
     });
   }
 
-
   void _editCriteria(BuildContext context, Criteria criteria) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         _criteriaNameController.text = criteria.criterianame;
         _percentageController.text = criteria.percentage;
+        _baseScoreController.text = criteria.baseScore;
 
         return AlertDialog(
           shape:
@@ -276,7 +281,40 @@ class _CriteriasState extends State<Criterias> {
                         color: Colors.green,
                       ),
                     ),
+                    onChanged: (value) {
+                      // Ensure the entered base score is a valid integer and not more than 100
+                      if (value.isNotEmpty) {
+                        int percentage = int.tryParse(value) ??
+                            0; // Default to 0 if parsing fails
+                        if (percentage < 0 || percentage > 100) {
+                          // If the base score is not within the valid range, clear the text field
+                          _percentageController.clear();
+                        }
+                      }
+                    },
                   ),
+                TextField(
+                  controller: _baseScoreController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: <TextInputFormatter>[
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  decoration: const InputDecoration(
+                    labelText: 'Base Score',
+                    labelStyle: TextStyle(fontSize: 15, color: Colors.green),
+                  ),
+                  onChanged: (value) {
+                    // Ensure the entered base score is a valid integer and not more than 100
+                    if (value.isNotEmpty) {
+                      int baseScore = int.tryParse(value) ??
+                          0; // Default to 0 if parsing fails
+                      if (baseScore < 0 || baseScore > 100) {
+                        // If the base score is not within the valid range, clear the text field
+                        _baseScoreController.clear();
+                      }
+                    }
+                  },
+                ),
               ],
             ),
           ),
@@ -295,6 +333,7 @@ class _CriteriasState extends State<Criterias> {
                 // Update the criteria
                 criteria.criterianame = _criteriaNameController.text;
                 criteria.percentage = _percentageController.text;
+                criteria.baseScore = _baseScoreController.text;
                 updateTotalPercentage();
 
                 // Notify the list to update the UI
@@ -319,7 +358,7 @@ class _CriteriasState extends State<Criterias> {
         criterias.removeAt(index);
         _listKey.currentState!.removeItem(
           index,
-              (context, animation) => ListItemWidget(
+          (context, animation) => ListItemWidget(
             criteria: removedItem,
             animation: animation,
             onClicked: () => removeItem(index),
@@ -333,7 +372,6 @@ class _CriteriasState extends State<Criterias> {
       });
     }
   }
-
 
   double totalPercentage = 0.0;
 
@@ -427,10 +465,10 @@ class _CriteriasState extends State<Criterias> {
             (currentPercentage + adjustmentPerCriteria).toString();
       }
     } else {
-      final url = Uri.parse("https://tab-lu.onrender.com/criteria");
+      final url = Uri.parse("http://192.168.101.6:8080/criteria");
 
       try {
-        print(criteriaData);
+        // print("Criteria Data ${criteriaData}");
         final response = await http.post(
           url,
           headers: <String, String>{'Content-Type': 'application/json'},
@@ -517,11 +555,13 @@ class _CriteriasState extends State<Criterias> {
           Icons.add,
           color: Colors.white,
         ),
-        onPressed: totalPercentage >= 100.0 && event?.event_category != "Pageants"
+        onPressed: totalPercentage >= 100.0 &&
+                event?.event_category != "Pageants"
             ? null // Set onPressed to null to disable the button
             : () {
                 _criteriaNameController.clear();
                 _percentageController.clear();
+                _baseScoreController.clear();
                 showDialog(
                   context: context,
                   builder: (BuildContext context) {
@@ -570,7 +610,41 @@ class _CriteriasState extends State<Criterias> {
                                     color: Colors.green,
                                   ),
                                 ),
+                                onChanged: (value) {
+                                  // Ensure the entered base score is a valid integer and not more than 100
+                                  if (value.isNotEmpty) {
+                                    int percentage = int.tryParse(value) ??
+                                        0; // Default to 0 if parsing fails
+                                    if (percentage < 0 || percentage > 100) {
+                                      // If the base score is not within the valid range, clear the text field
+                                      _percentageController.clear();
+                                    }
+                                  }
+                                },
                               ),
+                            TextField(
+                              controller: _baseScoreController,
+                              keyboardType: TextInputType.number,
+                              inputFormatters: <TextInputFormatter>[
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              decoration: const InputDecoration(
+                                labelText: 'Base Score',
+                                labelStyle: TextStyle(
+                                    fontSize: 15, color: Colors.green),
+                              ),
+                              onChanged: (value) {
+                                // Ensure the entered base score is a valid integer and not more than 100
+                                if (value.isNotEmpty) {
+                                  int baseScore = int.tryParse(value) ??
+                                      0; // Default to 0 if parsing fails
+                                  if (baseScore < 0 || baseScore > 100) {
+                                    // If the base score is not within the valid range, clear the text field
+                                    _baseScoreController.clear();
+                                  }
+                                }
+                              },
+                            ),
                           ],
                         ),
                       ),
@@ -593,7 +667,6 @@ class _CriteriasState extends State<Criterias> {
 
                             double updatedTotalPercentage =
                                 totalPercentage + newPercentage;
-
                             // Check if the new total percentage will exceed 100%
                             if (updatedTotalPercentage <= 100.0 ||
                                 event?.event_category == "Pageants") {
@@ -603,11 +676,13 @@ class _CriteriasState extends State<Criterias> {
                                 percentage: newPercentage.toString(),
                                 eventId: widget.eventId,
                                 subCriteriaList: [], // Pass the current criteria's subcriteria list
+                                baseScore: _baseScoreController.text,
                               );
 
                               insertItem(newCriterias);
                               _criteriaNameController.clear();
                               _percentageController.clear();
+                              _baseScoreController.clear();
 
                               updateTotalPercentage();
                               Navigator.pop(context);
@@ -694,71 +769,78 @@ class _CriteriasState extends State<Criterias> {
               ),
               const SizedBox(width: 10),
               ElevatedButton(
-                onPressed: criterias.isEmpty ? null : () async {
+                onPressed: criterias.isEmpty
+                    ? null
+                    : () async {
+                        try {
+                          final double totalPercentage =
+                              calculateTotalPercentage();
+                          // if (totalPercentage != 100.0 || event?.event_category != "Pageants") {
+                          //   _showErrorSnackBar(
+                          //     'Error: Total percentage must be 100%. Current total: $totalPercentage%',
+                          //     Colors.red,
+                          //   );
+                          //   return;
+                          // }
+                          if (totalPercentage == 100.0 ||
+                              event?.event_category == "Pageants") {
+                            if (criterias.isNotEmpty) {
+                              for (final criteria in criterias) {
+                                if (widget.eventId != null) {
+                                  await createCriteria(
+                                      widget.eventId!, criteria.toJson());
+                                } else {
+                                  print('Error: Event ID is null');
+                                }
+                              }
+                            }
 
-                  try {
-                    final double totalPercentage = calculateTotalPercentage();
-                    // if (totalPercentage != 100.0 || event?.event_category != "Pageants") {
-                    //   _showErrorSnackBar(
-                    //     'Error: Total percentage must be 100%. Current total: $totalPercentage%',
-                    //     Colors.red,
-                    //   );
-                    //   return;
-                    // }
-                    if (totalPercentage == 100.0 ||
-                        event?.event_category == "Pageants") {
-                      if (criterias.isNotEmpty) {
-                        for (final criteria in criterias) {
-                          if (widget.eventId != null) {
-                            await createCriteria(
-                                widget.eventId!, criteria.toJson());
+                            _fetchCriterias(widget.eventId);
+                            _showErrorSnackBar(
+                                'Criteria created successfully', Colors.green);
+
+                            final String? eventId = widget.eventId;
+                            if (eventId != null) {
+                              print('Fetching event with ID: $eventId');
+                              final response = await http.get(
+                                Uri.parse(
+                                    'http://192.168.101.6:8080/event/$eventId'),
+                              );
+
+                              if (response.statusCode == 200) {
+                                event =
+                                    Event.fromJson(jsonDecode(response.body));
+
+                                // Navigate to the next screen or perform any other actions
+                                if(widget.isEdit){
+                                  Navigator.pop(context);
+                                } else {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ScoreCard(
+                                        eventId: widget.eventId,
+                                        eventData: {},
+                                        judges: [],
+                                      ),
+                                    ),
+                                  );
+                                }
+                              } else {
+                                print(
+                                  'Failed to fetch event data. Status code: ${response.statusCode}',
+                                );
+                              }
+                            }
                           } else {
-                            print('Error: Event ID is null');
+                            _showErrorSnackBar(
+                                'Error: Total percentage must be 100%. Current total: $totalPercentage',
+                                Colors.red);
                           }
+                        } catch (e) {
+                          print('Error fetching event data: $e');
                         }
-                      }
-
-                      _fetchCriterias(widget.eventId);
-                      _showErrorSnackBar(
-                          'Criteria created successfully', Colors.green);
-
-                      final String? eventId = widget.eventId;
-                      if (eventId != null) {
-                        print('Fetching event with ID: $eventId');
-                        final response = await http.get(
-                          Uri.parse(
-                              'https://tab-lu.onrender.com/event/$eventId'),
-                        );
-
-                        if (response.statusCode == 200) {
-                          event = Event.fromJson(jsonDecode(response.body));
-
-                          // Navigate to the next screen or perform any other actions
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ScoreCard(
-                                eventId: widget.eventId,
-                                eventData: {},
-                                judges: [],
-                              ),
-                            ),
-                          );
-                        } else {
-                          print(
-                            'Failed to fetch event data. Status code: ${response.statusCode}',
-                          );
-                        }
-                      }
-                    } else {
-                      _showErrorSnackBar(
-                          'Error: Total percentage must be 100%. Current total: $totalPercentage',
-                          Colors.red);
-                    }
-                  } catch (e) {
-                    print('Error fetching event data: $e');
-                  }
-                },
+                      },
                 style: ElevatedButton.styleFrom(
                   primary: Colors.green,
                   onPrimary: Colors.white,
@@ -891,7 +973,36 @@ class _ListItemWidgetState extends State<ListItemWidget> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red, size: 25),
-                    onPressed: widget.onClicked,
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text('Confirm Deletion'),
+                            content: Text(
+                                'Are you sure you want to delete this criteria?'),
+                            actions: <Widget>[
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context)
+                                      .pop(); // Close the dialog
+                                },
+                                child: Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context)
+                                      .pop(); // Close the dialog
+                                  widget
+                                      .onClicked(); // Call the deletion function
+                                },
+                                child: Text('Delete'),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
                   ),
                   IconButton(
                     icon: const Icon(Icons.add, color: Colors.grey, size: 25),
@@ -1043,12 +1154,37 @@ class _ListItemWidgetState extends State<ListItemWidget> {
                 IconButton(
                   icon: Icon(Icons.delete, color: Colors.red),
                   onPressed: () {
-                    setState(() {
-                      widget.criteria.subCriteriaList.removeAt(index);
-                      if (widget.event_category == "Pageants") {
-                        updateMainCriteriaPercentage();
-                      }
-                    });
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: Text('Confirm Deletion'),
+                          content: Text(
+                              'Are you sure you want to delete this sub-criteria?'),
+                          actions: <Widget>[
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop(); // Close the dialog
+                              },
+                              child: Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop(); // Close the dialog
+                                setState(() {
+                                  widget.criteria.subCriteriaList
+                                      .removeAt(index);
+                                  if (widget.event_category == "Pageants") {
+                                    updateMainCriteriaPercentage();
+                                  }
+                                });
+                              },
+                              child: Text('Delete'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
                   },
                 ),
               ],

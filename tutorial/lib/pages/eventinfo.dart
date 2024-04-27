@@ -8,6 +8,7 @@ import 'dart:math';
 import 'dart:convert';
 import 'package:tutorial/pages/contestants.dart' as contestants;
 import 'package:tutorial/pages/dashboard.dart';
+import 'package:tutorial/pages/editnavigation.dart';
 import 'package:tutorial/pages/globals.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial/utility/sharedPref.dart';
@@ -816,7 +817,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     print(eventData["accessCode"]);
     final response = await http.post(
       Uri.parse(
-          'https://tab-lu.onrender.com/events'), // Use Uri.parse to convert the string to Uri
+          'http://192.168.101.6:8080/events'), // Use Uri.parse to convert the string to Uri
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $authToken',
@@ -861,7 +862,7 @@ class _EditEventScreen extends State<EditEventScreen> {
   TextEditingController _eventNameController = TextEditingController();
   TextEditingController _venueController = TextEditingController();
   TextEditingController _organizerController = TextEditingController();
-  String? eventId;
+  String eventId= '';
   String? token;
   bool isButtonDisabled = false;
   
@@ -869,7 +870,7 @@ class _EditEventScreen extends State<EditEventScreen> {
     token = await SharedPreferencesUtils.retrieveToken();
     try {
       final response = await http
-          .get(Uri.parse('https://tab-lu.onrender.com/event/$eventId'));
+          .get(Uri.parse('http://192.168.101.6:8080/event/$eventId'));
 
       if (response.statusCode == 200) {
         final dynamic eventData = json.decode(response.body);
@@ -1023,6 +1024,16 @@ class _EditEventScreen extends State<EditEventScreen> {
   //   }
   // }
 
+  void _showSnackbar(String message, MaterialColor color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: Duration(seconds: 3),
+        backgroundColor: color,
+      ),
+    );
+  }
+
   // Define a method to check if all fields are filled
   bool areAllFieldsFilled() {
     return _eventNameController.text.isNotEmpty &&
@@ -1077,11 +1088,7 @@ class _EditEventScreen extends State<EditEventScreen> {
             // Retrieve the token asynchronously
             String? token = await retrieveToken();
             // Navigate to the SearchEvents screen with the retrieved token
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => SearchEvents(token: token),
-              ),
-            );
+            Navigator.pop(context);
           },
         ),
       ),
@@ -1516,15 +1523,9 @@ class _EditEventScreen extends State<EditEventScreen> {
                             await editEvent(event, authToken, widget.eventId);
                         if (createdEventId != null) {
                           // Show snackbar when event is successfully edited
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Event edited successfully'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                          Navigator.of(context).push(MaterialPageRoute(
-                              builder: (context) => contestants.Contestants(
-                                  eventId: createdEventId)));
+                          _showSnackbar(
+                              'Event successfully edited', Colors.green);
+                           Navigator.pop(context);
                         }
                       } else {
                         // Handle the case where login fails
@@ -1695,7 +1696,7 @@ class _EditEventScreen extends State<EditEventScreen> {
       Map<String, dynamic> eventData, String authToken, String eventId) async {
     final response = await http.put(
       Uri.parse(
-          'https://tab-lu.onrender.com/events/$eventId'), // Include eventId in the URL
+          'http://192.168.101.6:8080/events/$eventId'), // Include eventId in the URL
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $authToken',
@@ -1784,7 +1785,7 @@ class _EventCreatedDialogState extends State<EventCreatedDialog> {
                   Navigator.pop(context);
                   Navigator.of(context).push(MaterialPageRoute(
                       builder: (context) =>
-                          contestants.Contestants(eventId: widget.eventId)));
+                          contestants.Contestants(eventId: widget.eventId, isEdit: false)));
                   // Do something when the "Close" button is pressed
                 },
                 child: Text('Close'),

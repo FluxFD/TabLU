@@ -161,6 +161,7 @@ class Criteria {
   List<SubCriteria> subCriteriaList; // List of subcriteria
   String eventId;
   int score;
+  String baseScore;
 
   Criteria({
     required this.criteriaId,
@@ -169,6 +170,7 @@ class Criteria {
     required this.subCriteriaList,
     required this.eventId,
     required this.score,
+    required this.baseScore,
   });
 
   Criteria copyWith({
@@ -178,6 +180,7 @@ class Criteria {
     List<SubCriteria>? subCriteriaList,
     String? eventId,
     int? score,
+    String? baseScore,
   }) {
     return Criteria(
       criteriaId: criteriaId ?? this.criteriaId,
@@ -186,6 +189,7 @@ class Criteria {
       subCriteriaList: subCriteriaList ?? this.subCriteriaList,
       eventId: eventId ?? this.eventId,
       score: score ?? this.score,
+      baseScore: baseScore ?? this.baseScore,
     );
   }
 
@@ -202,6 +206,7 @@ class Criteria {
               .toList() ??
           [],
       score: json['score'] != null ? int.parse(json['score'].toString()) : 0,
+      baseScore: json['baseScore'] != null ? json['baseScore'].toString() : '',
     );
   }
 }
@@ -427,7 +432,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                           // Send server notification
                           final response = await http.post(
                             Uri.parse(
-                                'https://tab-lu.onrender.com/notifications'),
+                                'http://192.168.101.6:8080/notifications'),
                             headers: {'Content-Type': 'application/json'},
                             body: requestBodyJson,
                           );
@@ -460,6 +465,35 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     );
   }
 
+  bool areScoresValid() {
+    bool result = true;
+    for (var entry in judgeControllers.entries) {
+      String uniqueKey = entry.key;
+      TextEditingController controller = entry.value;
+
+      // Extract contestantId and criteriaId from the uniqueKey
+      var ids = uniqueKey.split('_');
+      var contestantId = ids[0];
+      var criteriaId = ids[1];
+
+      // Find the corresponding contestant and criteria
+      var contestant = _contestants.firstWhere((c) => c.id == contestantId);
+      var criteria = criterias.firstWhere((c) => c.criteriaId == criteriaId);
+
+      // Parse the controller's text and baseScore to double
+      double score = double.tryParse(controller.text) ?? 0.0;
+      double baseScore = double.tryParse(criteria.baseScore) ?? 0.0;
+      print("$score $baseScore");
+      // If the score is greater than the baseScore, return false
+
+      if (score < baseScore) {
+        result = false;
+        break;
+      }
+    }
+    return result;
+  }
+
   Future<void> handleSubmit() async {
     try {
       if (!isCreator) {
@@ -468,6 +502,17 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
             content: Text(
                 "You are not the creator of this event. Can't submit scores"),
             backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      if (!areScoresValid()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'The score you entered is outside the base range'),
+            backgroundColor: Colors.red,
           ),
         );
         return;
@@ -482,6 +527,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
         );
         return;
       }
+      return;
 
       String? token = await SharedPreferencesUtils.retrieveToken();
       String? userId;
@@ -586,7 +632,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
       print("Datas: ${submissionData}");
 
-      var url = Uri.parse('https://tab-lu.onrender.com/scorecards');
+      var url = Uri.parse('http://192.168.101.6:8080/scorecards');
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -628,7 +674,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
   Future<bool> fetchJudges(String eventId) async {
     final url =
-        Uri.parse('https://tab-lu.onrender.com/judges/$eventId/confirmed');
+        Uri.parse('http://192.168.101.6:8080/judges/$eventId/confirmed');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -729,13 +775,13 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
           // Handle the case when no matching criteria is found
           // You can return a default criteria or throw an exception if needed
           return Criteria(
-            criteriaId: 'Default Criteria ID',
-            criterianame: 'Default Criteria',
-            percentage: 'Default Percentage',
-            eventId: 'Default Event ID',
-            subCriteriaList: [],
-            score: 0,
-          );
+              criteriaId: 'Default Criteria ID',
+              criterianame: 'Default Criteria',
+              percentage: 'Default Percentage',
+              eventId: 'Default Event ID',
+              subCriteriaList: [],
+              score: 0,
+              baseScore: 'Default based score');
         },
       );
       matchingCriteria.score = criteriaScore;
@@ -793,7 +839,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   Future<String?> fetchImagePath(Contestant contestant) async {
     final contestantId = contestant.id;
     final url = Uri.parse(
-        'https://tab-lu.onrender.com/uploads/${contestantId}'); // Replace with your server URL
+        'http://192.168.101.6:8080/uploads/${contestantId}'); // Replace with your server URL
     try {
       final response = await http.get(url, headers: {
         'Content-Type': 'application/json',
@@ -1039,7 +1085,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                   labelText: 'score',
                   isDense: true, // Reduces the height of the input field
                   border: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.green),
+                    borderSide: BorderSide(color: Colors.green
+                    ),
                   ),
                 ),
               ),
@@ -1131,7 +1178,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   // }
 
   Future<String> fetchEventId() async {
-    final String url = 'https://tab-lu.onrender.com/latest-event-id';
+    final String url = 'http://192.168.101.6:8080/latest-event-id';
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -1167,7 +1214,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       print('Fetched Event ID: $eventId');
       if (eventId.isNotEmpty) {
         final response = await http
-            .get(Uri.parse("https://tab-lu.onrender.com/event/$eventId"));
+            .get(Uri.parse("http://192.168.101.6:8080/event/$eventId"));
         print('Event Details Response Status Code: ${response.statusCode}');
         if (response.statusCode == 200) {
           dynamic eventData = jsonDecode(response.body);
@@ -1226,7 +1273,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   Future<void> fetchContestants(String eventId) async {
     try {
       final response = await http.get(
-        Uri.parse("https://tab-lu.onrender.com/events/$eventId/contestants"),
+        Uri.parse("http://192.168.101.6:8080/events/$eventId/contestants"),
       );
       if (response.statusCode == 200) {
         final dynamic contestantData = jsonDecode(response.body);
@@ -1348,7 +1395,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       }
       // Make a GET request to your server endpoint with contestantId and eventId as query parameters
       final Uri uri = Uri.parse(
-          'https://tab-lu.onrender.com/judge-scorecards'); // Update the URL accordingly
+          'http://192.168.101.6:8080/judge-scorecards'); // Update the URL accordingly
       final response = await http.get(
         uri.replace(queryParameters: {
           'contestantId': contestantId ?? '',
@@ -1428,8 +1475,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   Future<List<Criteria>> fetchCriteria(String eventId,
       {VoidCallback? onCriteriaFetched}) async {
     try {
-      final response = await http.get(
-          Uri.parse("https://tab-lu.onrender.com/events/$eventId/criteria"));
+      final response = await http
+          .get(Uri.parse("http://192.168.101.6:8080/events/$eventId/criteria"));
       print('Fetch Criteria - Status Code: ${response.statusCode}');
       print('Fetch Criteria - Response Body: ${response.body}');
 
@@ -1526,8 +1573,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   //------------------------------------------------------------
 
   Future<Map<String, dynamic>> fetchEventData(String eventId) async {
-    final response = await http
-        .get(Uri.parse('https://tab-lu.onrender.com/events/$eventId'));
+    final response =
+        await http.get(Uri.parse('http://192.168.101.6:8080/events/$eventId'));
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> eventData = json.decode(response.body);
@@ -1673,7 +1720,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                 ),
                 Center(
                   child: Text(
-                    'Instructions: Judges can only enter scores from 1 to 100',
+                    'Instructions: Judges can only enter scores from based score to 100',
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w200,
@@ -2028,11 +2075,46 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                         }),
                       ],
                       decoration: InputDecoration(
-                        labelText: 'score',
+                        isDense: true,
+                        labelText:
+                            criteria.baseScore, // Use baseScore as labelText
                         border: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.green),
+                          borderSide: BorderSide(
+                            color: (judgeControllers[uniqueKey]!
+                                        .text
+                                        .isNotEmpty &&
+                                double.parse(
+                                            judgeControllers[uniqueKey]!.text) <
+                                    double.parse(criteria.baseScore))
+                                ? Colors.red
+                                : Colors.black54,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: (judgeControllers[uniqueKey]!
+                                        .text
+                                        .isNotEmpty &&
+                                    double.parse(
+                                            judgeControllers[uniqueKey]!.text) <
+                                        double.parse(criteria.baseScore))
+                                ? Colors.red
+                                : Colors.black54,
+                            width: (judgeControllers[uniqueKey]!
+                                        .text
+                                        .isNotEmpty &&
+                                double.parse(
+                                            judgeControllers[uniqueKey]!.text) <
+                                    double.parse(criteria.baseScore))
+                                ? 2.0
+                                : 1.0, // Change width when condition is true
+                          ),
                         ),
                       ),
+                      onChanged: (value) {
+                        setState(
+                            () {}); // Rebuild the widget to update the border color
+                      },
                       enabled: !criteria.subCriteriaList
                           .isNotEmpty, // Enable or disable based on the bool parameter
                     ),
@@ -2256,110 +2338,143 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
     // Filter controllers based on the existence of subcriteria
     for (var i = 0; i < criteria.subCriteriaList.length; i++) {
-      // var subCriteria = criteria.subCriteriaList[i];
-      String subUniqueKey =
-          "${uniqueKey}_${i}"; // Assuming subCriteria has an index property
+      String subUniqueKey = "${uniqueKey}_${i}"; // Define subUniqueKey here
       TextEditingController? controller = subCriteriaControllers[subUniqueKey];
       if (controller != null) {
         validControllers.add(controller);
       }
     }
     return SingleChildScrollView(
-      child: AlertDialog(
-        title: Text('Sub criteria'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('Please enter score (1-100)'),
-            SizedBox(height: 8),
-            ...validControllers.map((controller) {
-              int index = validControllers.indexOf(controller);
-              String subCriteriaName =
-                  criteria.subCriteriaList![index].subCriteriaName;
-              double subCriteriaPercentage =
-                  double.parse(criteria.subCriteriaList![index].percentage);
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: TextFormField(
-                  controller: controller,
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(
-                        r'^\d{0,3}(\.\d{0,2})?$')), // Allow up to 3 digits followed by an optional decimal and up to 2 decimal places
-                    TextInputFormatter.withFunction((oldValue, newValue) {
-                      try {
-                        if (newValue.text.isEmpty) {
-                          return newValue;
-                        }
-                        final enteredValue = double.parse(newValue.text);
-                        if (enteredValue >= 0 && enteredValue <= 100) {
-                          return newValue;
-                        } else {
-                          return oldValue;
-                        }
-                      } catch (e) {
-                        return oldValue;
-                      }
-                    }),
-                  ],
-                  decoration: InputDecoration(
-                    labelText:
-                        "${subCriteriaName} ${subCriteriaPercentage.toString()}%",
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.green),
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              bool isValid = true;
-              validControllers.forEach((controller) {
-                if (controller.text.isEmpty) {
-                  isValid = false;
-                  Fluttertoast.showToast(
-                    msg: 'Please fill in all fields',
-                    gravity: ToastGravity.BOTTOM,
-                    backgroundColor: Colors.red,
-                    textColor: Colors.white,
-                  );
-                  return;
-                }
-              });
-              if (isValid) {
-                double totalScore = 0;
-                for (var controller in validControllers) {
-                  double subCriteriaScore = double.parse(controller.text);
+      child: StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          return AlertDialog(
+            title: Text('Sub criteria'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('Please enter score (1-100)'),
+                SizedBox(height: 8),
+                ...validControllers.map((controller) {
                   int index = validControllers.indexOf(controller);
+                  String subCriteriaName =
+                      criteria.subCriteriaList![index].subCriteriaName;
                   double subCriteriaPercentage =
+                  double.parse(criteria.subCriteriaList![index].percentage);
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: TextFormField(
+                      controller: controller,
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(
+                            r'^\d{0,3}(\.\d{0,2})?$')),
+                        // Allow up to 3 digits followed by an optional decimal and up to 2 decimal places
+                        TextInputFormatter.withFunction((oldValue, newValue) {
+                          try {
+                            if (newValue.text.isEmpty) {
+                              return newValue;
+                            }
+                            final enteredValue = double.parse(newValue.text);
+                            if (enteredValue >= 0 && enteredValue <= 100) {
+                              return newValue;
+                            } else {
+                              return oldValue;
+                            }
+                          } catch (e) {
+                            return oldValue;
+                          }
+                        }),
+                      ],
+                      decoration: InputDecoration(
+                        labelText: criteria.baseScore,
+                        // Use baseScore as labelText
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: (controller.text.isNotEmpty &&
+                                int.parse(controller.text) <
+                                    int.parse(criteria.baseScore))
+                                ? Colors.red
+                                : Colors.black54,
+                            width: (controller.text.isNotEmpty &&
+                                int.parse(controller.text) <
+                                    int.parse(criteria.baseScore))
+                                ? 2
+                                : 1,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: (controller.text.isNotEmpty &&
+                                int.parse(controller.text) <
+                                    int.parse(criteria.baseScore))
+                                ? Colors.red
+                                : Colors.black54,
+                            width: (controller.text.isNotEmpty &&
+                                int.parse(controller.text) <
+                                    int.parse(criteria.baseScore))
+                                ? 2
+                                : 1,
+                          ),
+                        ),
+                      ),
+                      onChanged: (value) {
+                        setState(() {});
+                      },
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  bool isValid = true;
+                  validControllers.forEach((controller) {
+                    if (controller.text.isEmpty) {
+                      isValid = false;
+                      Fluttertoast.showToast(
+                        msg: 'Please fill in all fields',
+                        gravity: ToastGravity.BOTTOM,
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
+                      );
+                      return;
+                    }
+                  });
+                  if (isValid) {
+                    double totalScore = 0;
+                    for (var controller in validControllers) {
+                      double subCriteriaScore = double.parse(controller.text);
+                      int index = validControllers.indexOf(controller);
+                      double subCriteriaPercentage =
                       double.parse(criteria.subCriteriaList[index].percentage);
-                  totalScore +=
-                      subCriteriaScore * (subCriteriaPercentage / 100);
-                }
-                TextEditingController judgeController =
+                      String subUniqueKey = "${uniqueKey}_${index}"; // Define subUniqueKey here
+                      totalScore +=
+                          subCriteriaScore * (subCriteriaPercentage / 100);
+                    }
+                    TextEditingController judgeController =
                     judgeControllers[uniqueKey]!;
-                judgeController.text = totalScore.toStringAsFixed(2);
-                Navigator.of(context).pop();
-              }
-            },
-            child: Text('Save'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: Text('Close'),
-          ),
-        ],
+                    judgeController.text = totalScore.toStringAsFixed(2);
+                    Navigator.of(context).pop();
+                  }
+                },
+                child: Text('Save'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('Close'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
+
 
   Widget buildContestantRow(Contestant contestant, int number) {
     return Card(

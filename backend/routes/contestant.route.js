@@ -134,6 +134,8 @@ router.get("/uploads/:contestantId", async (req, res) => {
   }
 });
 
+let processedTokens = new Set();
+
 router.post("/contestants", uploads.single("profilePic"), async (req, res) => {
   try {
     const {
@@ -144,6 +146,8 @@ router.post("/contestants", uploads.single("profilePic"), async (req, res) => {
       contestantId,
       contestantNumber,
     } = req.body;
+
+
     console.log("Name:", name);
     console.log("Course:", course);
     console.log("Department:", department);

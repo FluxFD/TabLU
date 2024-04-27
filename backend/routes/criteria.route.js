@@ -9,10 +9,10 @@ const ScoreCard = require("../models/scorecard.model");
 // API for adding new criteria
 router.post("/criteria", async (req, res) => {
   try {
-    const { criterianame, percentage, eventId, criteriaId, subCriteriaList } =
+    const { criterianame, percentage, eventId, criteriaId, subCriteriaList, baseScore } =
       req.body;
 
-    console.log("Criteria ID:", subCriteriaList);
+    // console.log("Criteria ID:", subCriteriaList);
 
     // Check if a criteria with the same name already exists
     if (criteriaId) {
@@ -34,6 +34,7 @@ router.post("/criteria", async (req, res) => {
       existingCriteria.criterianame = criterianame;
       existingCriteria.percentage = percentage;
       existingCriteria.subCriteriaList = subCriteriaList;
+      existingCriteria.baseScore = baseScore;
       await existingCriteria.save();
       return res.status(200).json({ message: "Criteria edited successfully" });
     }
@@ -63,6 +64,7 @@ router.post("/criteria", async (req, res) => {
       percentage,
       eventId,
       subCriteriaList,
+      baseScore,
     });
 
     const savedCriteria = await newCriteria.save();

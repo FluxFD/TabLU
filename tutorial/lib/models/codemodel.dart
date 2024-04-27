@@ -234,7 +234,7 @@ class _EventCalendarScreenState extends State<EventCalendarScreen> {
         userId = decodedToken['userId'];
       }
       final response = await http.get(
-          Uri.parse('https://tab-lu.onrender.com/calendar-events/$userId'));
+          Uri.parse('http://192.168.101.6:8080/calendar-events/$userId'));
       if (response.statusCode == 200) {
         print(response);
         final List<dynamic> data = json.decode(response.body);
