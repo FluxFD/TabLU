@@ -5,6 +5,7 @@ const criteriaSchema = new mongoose.Schema({
   percentage: String,
   subCriteriaList: Array,
   baseScore: String,
+  isSpecialAwards: Boolean,
   eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Event' },
 });
 

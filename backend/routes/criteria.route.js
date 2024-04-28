@@ -5,11 +5,12 @@ const Criteria = require("../models/criteria.model");
 const Scorecard = require("../models/scorecard.model");
 const { someFunction, Event } = require("../models/event.model");
 const ScoreCard = require("../models/scorecard.model");
+const e = require("express");
 
 // API for adding new criteria
 router.post("/criteria", async (req, res) => {
   try {
-    const { criterianame, percentage, eventId, criteriaId, subCriteriaList, baseScore } =
+    const { criterianame, percentage, eventId, criteriaId, subCriteriaList, baseScore, isSpecialAwards } =
       req.body;
 
     // console.log("Criteria ID:", subCriteriaList);
@@ -35,6 +36,7 @@ router.post("/criteria", async (req, res) => {
       existingCriteria.percentage = percentage;
       existingCriteria.subCriteriaList = subCriteriaList;
       existingCriteria.baseScore = baseScore;
+      existingCriteria.isSpecialAwards = isSpecialAwards;
       await existingCriteria.save();
       return res.status(200).json({ message: "Criteria edited successfully" });
     }
@@ -65,6 +67,7 @@ router.post("/criteria", async (req, res) => {
       eventId,
       subCriteriaList,
       baseScore,
+      isSpecialAwards,
     });
 
     const savedCriteria = await newCriteria.save();
