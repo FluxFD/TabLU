@@ -92,7 +92,7 @@ class _EventsManagementState extends State<EventsManagement> {
     token = await SharedPreferencesUtils.retrieveToken();
     try {
       final response =
-          await http.get(Uri.parse('http://192.168.101.6:8080/api/events'));
+          await http.get(Uri.parse('https://tabluprod.onrender.com/api/events'));
       if (response.statusCode == 200) {
         final dynamic eventData = json.decode(response.body);
         print(eventData);
@@ -126,7 +126,7 @@ class _EventsManagementState extends State<EventsManagement> {
         throw Exception('Authentication token not found');
       }
 
-      final url = Uri.parse("http://192.168.101.6:8080/user-events");
+      final url = Uri.parse("https://tabluprod.onrender.com/user-events");
       final response = await http.get(
         url,
         // Include the Authorization header with the token
@@ -179,7 +179,7 @@ class _EventsManagementState extends State<EventsManagement> {
     // If deletion is confirmed, proceed with the deletion
     if (deleteConfirmed == true) {
       try {
-        final url = Uri.parse("http://192.168.101.6:8080/api/event/$eventId");
+        final url = Uri.parse("https://tabluprod.onrender.com/api/event/$eventId");
         final response = await http.delete(url);
 
         if (response.statusCode == 200) {
@@ -201,7 +201,7 @@ class _EventsManagementState extends State<EventsManagement> {
 
   Future<bool> fetchJudgesScoreSubmitted(String eventId) async {
     final url =
-    Uri.parse('http://192.168.101.6:8080/judges/$eventId/confirmed');
+    Uri.parse('https://tabluprod.onrender.com/judges/$eventId/confirmed');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {

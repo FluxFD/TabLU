@@ -6,6 +6,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
+import '../refresher.dart';
+
 class ChartData extends StatefulWidget {
   ChartData({
     Key? key,
@@ -29,7 +31,7 @@ class _MyHomePageState extends State<ChartData> {
   // late Timer _timer;
   List<String> contestantNames = [];
   final io.Socket socket =
-      io.io('http://192.168.101.6:8080', <String, dynamic>{
+      io.io('https://tabluprod.onrender.com', <String, dynamic>{
     'transports': ['websocket'],
     'autoConnect': false,
   });
@@ -72,74 +74,78 @@ class _MyHomePageState extends State<ChartData> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text('Live Scores Update'),
-        ),
-        body: Column(
-          children: [
-            if (widget.eventCategory == "Pageants")
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20), // Adjust the value as needed
-                  child: Center(
-                    child: Text(
-                      'Live scores not available for category pageants',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16),
+    return Refresher(
+      onRefresh: fetchScoreCards,
+      child: SafeArea(
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text('Live Scores Update'),
+          ),
+          body: Column(
+            children: [
+              if (widget.eventCategory == "Pageants")
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                        horizontal: 20), // Adjust the value as needed
+                    child: Center(
+                      child: Text(
+                        'Live scores not available for category pageants',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                Expanded(
+                  child: SfCartesianChart(
+                    isTransposed: true,
+                    series: <BarSeries<LiveData, String>>[
+                      BarSeries<LiveData, String>(
+                        onRendererCreated: (ChartSeriesController controller) {
+                          _chartSeriesController = controller;
+                        },
+                        dataSource: chartData,
+                        color: Color.fromARGB(255, 16, 172, 55),
+                        xValueMapper: (LiveData sales, _) =>
+                            sales.name.split(' ')[0],
+                        yValueMapper: (LiveData sales, _) => sales.speed,
+                        // Add data labels
+                        dataLabelSettings: const DataLabelSettings(
+                          isVisible: true,
+                          alignment: ChartAlignment.center,
+                        ),
+                      )
+                    ],
+                    primaryXAxis: CategoryAxis(
+                      majorGridLines: const MajorGridLines(width: 0),
+                      title: AxisTitle(text: 'Contestants'),
+                    ),
+                    primaryYAxis: NumericAxis(
+                      axisLine: const AxisLine(width: 0),
+                      majorTickLines: const MajorTickLines(size: 0),
+                      title: AxisTitle(text: 'Live Score'),
                     ),
                   ),
                 ),
-              )
-            else
-            Expanded(
-              child: SfCartesianChart(
-                isTransposed: true,
-                series: <BarSeries<LiveData, String>>[
-                  BarSeries<LiveData, String>(
-                    onRendererCreated: (ChartSeriesController controller) {
-                      _chartSeriesController = controller;
+              // Display the fetched data in a ListView for testing4
+              if (widget.eventCategory != "Pageants")
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: chartData.length,
+                    itemBuilder: (context, index) {
+                      return ListTile(
+                        title: Text(
+                          'Contestant: ${chartData[index].name}, Score: ${chartData[index].speed.toStringAsFixed(2)}',
+                          textAlign: TextAlign.center,
+                        ),
+                      );
                     },
-                    dataSource: chartData,
-                    color: Color.fromARGB(255, 16, 172, 55),
-                    xValueMapper: (LiveData sales, _) =>
-                        sales.name.split(' ')[0],
-                    yValueMapper: (LiveData sales, _) => sales.speed,
-                    // Add data labels
-                    dataLabelSettings: const DataLabelSettings(
-                      isVisible: true,
-                      alignment: ChartAlignment.center,
-                    ),
-                  )
-                ],
-                primaryXAxis: CategoryAxis(
-                  majorGridLines: const MajorGridLines(width: 0),
-                  title: AxisTitle(text: 'Contestants'),
+                  ),
                 ),
-                primaryYAxis: NumericAxis(
-                  axisLine: const AxisLine(width: 0),
-                  majorTickLines: const MajorTickLines(size: 0),
-                  title: AxisTitle(text: 'Live Score'),
-                ),
-              ),
-            ),
-            // Display the fetched data in a ListView for testing4
-            if (widget.eventCategory != "Pageants")
-            Expanded(
-              child: ListView.builder(
-                itemCount: chartData.length,
-                itemBuilder: (context, index) {
-                  return ListTile(
-                    title: Text(
-                      'Contestant: ${chartData[index].name}, Score: ${chartData[index].speed}',
-                      textAlign: TextAlign.center,
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -174,7 +180,7 @@ class _MyHomePageState extends State<ChartData> {
 
   Future<void> fetchScoreCards() async {
     final eventId = widget.eventId;
-    final url = Uri.parse('http://192.168.101.6:8080/winners/$eventId');
+    final url = Uri.parse('https://tabluprod.onrender.com/winners/$eventId');
 
     try {
       final response = await http.get(url);
@@ -188,10 +194,12 @@ class _MyHomePageState extends State<ChartData> {
           setState(() {
             chartData =
                 List<LiveData>.from(contestantData.asMap().entries.map((entry) {
+              double averageScore = entry.value['averageScore'].toDouble();
+              averageScore = double.parse(averageScore.toStringAsFixed(2));
               return LiveData(
                 entry.key,
                 entry.value['name'].toString(),
-                entry.value['averageScore'].toDouble(),
+                averageScore,
               );
             }));
 

@@ -281,7 +281,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     contestants: [],
     criterias: [],
   );
-  bool isCreator = true;
+  bool isCreator = false;
   VoidCallback? onCriteriaFetched;
 
   @override
@@ -303,7 +303,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     }
     // 99
     if (userId == event.userId) {
-      isCreator = false;
+      print('userId: $userId and event.userId: ${event.userId}');
+      isCreator = true;
     }
   }
 
@@ -432,7 +433,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                           // Send server notification
                           final response = await http.post(
                             Uri.parse(
-                                'http://192.168.101.6:8080/notifications'),
+                                'https://tabluprod.onrender.com/notifications'),
                             headers: {'Content-Type': 'application/json'},
                             body: requestBodyJson,
                           );
@@ -462,6 +463,18 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
           },
         );
       },
+    );
+  }
+
+  BorderSide _getBorderSide(TextEditingController controller, Criteria criteria) {
+    bool isNotEmptyAndLessThanBaseScore = controller.text.isNotEmpty &&
+        double.parse(controller.text) < double.parse(criteria.baseScore);
+    Color color = isNotEmptyAndLessThanBaseScore ? Colors.red : Colors.black54;
+    double width = isNotEmptyAndLessThanBaseScore ? 2 : 1;
+
+    return BorderSide(
+      color: color,
+      width: width,
     );
   }
 
@@ -496,12 +509,26 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
   Future<void> handleSubmit() async {
     try {
-      if (!isCreator) {
+      checkCreator(event);
+
+      if (isCreator) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => Winner(
+              event_category: event.eventCategory,
+              eventId: widget.eventId,
+            ),
+          ),
+        );
+        return;
+      }
+
+      if (!areAllFieldsPopulated()) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
-                "You are not the creator of this event. Can't submit scores"),
-            backgroundColor: Colors.orange,
+            content: Text('Please fill in all the fields before submitting.'),
+            backgroundColor: Colors.red,
           ),
         );
         return;
@@ -517,17 +544,6 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
         );
         return;
       }
-
-      if (!areAllFieldsPopulated()) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please fill in all the fields before submitting.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-      return;
 
       String? token = await SharedPreferencesUtils.retrieveToken();
       String? userId;
@@ -632,7 +648,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
       print("Datas: ${submissionData}");
 
-      var url = Uri.parse('http://192.168.101.6:8080/scorecards');
+      var url = Uri.parse('https://tabluprod.onrender.com/scorecards');
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -674,7 +690,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
   Future<bool> fetchJudges(String eventId) async {
     final url =
-        Uri.parse('http://192.168.101.6:8080/judges/$eventId/confirmed');
+        Uri.parse('https://tabluprod.onrender.com/judges/$eventId/confirmed');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -839,7 +855,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   Future<String?> fetchImagePath(Contestant contestant) async {
     final contestantId = contestant.id;
     final url = Uri.parse(
-        'http://192.168.101.6:8080/uploads/${contestantId}'); // Replace with your server URL
+        'https://tabluprod.onrender.com/uploads/${contestantId}'); // Replace with your server URL
     try {
       final response = await http.get(url, headers: {
         'Content-Type': 'application/json',
@@ -1178,7 +1194,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   // }
 
   Future<String> fetchEventId() async {
-    final String url = 'http://192.168.101.6:8080/latest-event-id';
+    final String url = 'https://tabluprod.onrender.com/latest-event-id';
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -1214,7 +1230,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       print('Fetched Event ID: $eventId');
       if (eventId.isNotEmpty) {
         final response = await http
-            .get(Uri.parse("http://192.168.101.6:8080/event/$eventId"));
+            .get(Uri.parse("https://tabluprod.onrender.com/event/$eventId"));
         print('Event Details Response Status Code: ${response.statusCode}');
         if (response.statusCode == 200) {
           dynamic eventData = jsonDecode(response.body);
@@ -1273,7 +1289,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
   Future<void> fetchContestants(String eventId) async {
     try {
       final response = await http.get(
-        Uri.parse("http://192.168.101.6:8080/events/$eventId/contestants"),
+        Uri.parse("https://tabluprod.onrender.com/events/$eventId/contestants"),
       );
       if (response.statusCode == 200) {
         final dynamic contestantData = jsonDecode(response.body);
@@ -1395,7 +1411,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       }
       // Make a GET request to your server endpoint with contestantId and eventId as query parameters
       final Uri uri = Uri.parse(
-          'http://192.168.101.6:8080/judge-scorecards'); // Update the URL accordingly
+          'https://tabluprod.onrender.com/judge-scorecards'); // Update the URL accordingly
       final response = await http.get(
         uri.replace(queryParameters: {
           'contestantId': contestantId ?? '',
@@ -1476,7 +1492,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
       {VoidCallback? onCriteriaFetched}) async {
     try {
       final response = await http
-          .get(Uri.parse("http://192.168.101.6:8080/events/$eventId/criteria"));
+          .get(Uri.parse("https://tabluprod.onrender.com/events/$eventId/criteria"));
       print('Fetch Criteria - Status Code: ${response.statusCode}');
       print('Fetch Criteria - Response Body: ${response.body}');
 
@@ -1574,7 +1590,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
 
   Future<Map<String, dynamic>> fetchEventData(String eventId) async {
     final response =
-        await http.get(Uri.parse('http://192.168.101.6:8080/events/$eventId'));
+        await http.get(Uri.parse('https://tabluprod.onrender.com/events/$eventId'));
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> eventData = json.decode(response.body);
@@ -2051,9 +2067,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
                       inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(
-                            3), // Limit to 3 digits
+                        FilteringTextInputFormatter.allow(RegExp(r'^\d{0,2}(\.\d{0,2})?$|^100(\.0{0,2})?$'),
+                        ),
                         TextInputFormatter.withFunction((oldValue, newValue) {
                           // Custom logic to restrict input to the range of 0-100
                           try {
@@ -2061,7 +2076,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                               // Allow empty value
                               return newValue;
                             }
-                            final enteredValue = int.parse(newValue.text);
+                            final enteredValue = double.parse(newValue.text);
                             if (enteredValue >= 0 && enteredValue <= 100) {
                               return newValue;
                             } else {
@@ -2353,7 +2368,7 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Please enter score (1-100)'),
+                Text('Please enter score (${criteria.baseScore}-100)'),
                 SizedBox(height: 8),
                 ...validControllers.map((controller) {
                   int index = validControllers.indexOf(controller);
@@ -2368,9 +2383,8 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
                       inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(
-                            r'^\d{0,3}(\.\d{0,2})?$')),
-                        // Allow up to 3 digits followed by an optional decimal and up to 2 decimal places
+                        FilteringTextInputFormatter.allow(RegExp(r'^\d{0,2}(\.\d{0,2})?$|^100(\.0{0,2})?$')),
+                      // Allow up to 3 digits followed by an optional decimal and up to 2 decimal places
                         TextInputFormatter.withFunction((oldValue, newValue) {
                           try {
                             if (newValue.text.isEmpty) {
@@ -2388,18 +2402,18 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                         }),
                       ],
                       decoration: InputDecoration(
-                        labelText: criteria.baseScore,
+                        labelText: '$subCriteriaName (${subCriteriaPercentage}%)',
                         // Use baseScore as labelText
                         border: OutlineInputBorder(
                           borderSide: BorderSide(
                             color: (controller.text.isNotEmpty &&
-                                int.parse(controller.text) <
-                                    int.parse(criteria.baseScore))
+                                double.parse(controller.text) <
+                                    double.parse(criteria.baseScore))
                                 ? Colors.red
                                 : Colors.black54,
                             width: (controller.text.isNotEmpty &&
-                                int.parse(controller.text) <
-                                    int.parse(criteria.baseScore))
+                                double.parse(controller.text) <
+                                    double.parse(criteria.baseScore))
                                 ? 2
                                 : 1,
                           ),
@@ -2407,13 +2421,13 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                         focusedBorder: OutlineInputBorder(
                           borderSide: BorderSide(
                             color: (controller.text.isNotEmpty &&
-                                int.parse(controller.text) <
-                                    int.parse(criteria.baseScore))
+                                double.parse(controller.text) <
+                                    double.parse(criteria.baseScore))
                                 ? Colors.red
                                 : Colors.black54,
                             width: (controller.text.isNotEmpty &&
-                                int.parse(controller.text) <
-                                    int.parse(criteria.baseScore))
+                                double.parse(controller.text) <
+                                    double.parse(criteria.baseScore))
                                 ? 2
                                 : 1,
                           ),
@@ -2443,6 +2457,21 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
                       return;
                     }
                   });
+                  for (var controller in validControllers) {
+                    double subCriteriaScore = double.parse(controller.text);
+                    int index = validControllers.indexOf(controller);
+                    double baseScore = double.parse(criteria.baseScore);
+                    if (subCriteriaScore < baseScore) {
+                      isValid = false;
+                      Fluttertoast.showToast(
+                        msg: 'All scores must be greater than or equal to the base score',
+                        gravity: ToastGravity.BOTTOM,
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
+                      );
+                      return;
+                    }
+                  }
                   if (isValid) {
                     double totalScore = 0;
                     for (var controller in validControllers) {
@@ -2592,110 +2621,6 @@ class _JudgeScoreSheetState extends State<JudgeScoreSheet> {
     );
   }
 
-// Widget buildCriteriaRow(String criterianame, String percentage) {
-//   TextEditingController _scoreController = TextEditingController();
-//   return Row(
-//     children: [
-//       Padding(
-//         padding: const EdgeInsets.only(left: 20),
-//         child: Text(
-//           criterianame,
-//           style: const TextStyle(
-//             fontWeight: FontWeight.w500,
-//             color: Colors.green,
-//           ),
-//         ),
-//       ),
-//       const SizedBox(width: 10), // Adjust the spacing as needed
-//       Container(
-//         width: 50, // Adjust the width as needed
-//         child: Padding(
-//           padding: const EdgeInsets.only(left: 20),
-//           child: Text(
-//             percentage, // Display the actual percentage value
-//             style: const TextStyle(
-//               color: Colors.green,
-//             ),
-//           ),
-//         ),
-//       ),
-
-//       const SizedBox(width: 30),
-//       Expanded(
-//         child: Container(
-//           height: 50,
-//           width: 90,
-//           child: TextField(
-//             controller: _scoreController,
-//             keyboardType: TextInputType.number,
-//             onChanged: (score) {
-//               print('onChanged - criteriaName: $criterianame');
-//               setState(() {
-//                 criteriaScore = int.tryParse(score) ?? 9;
-
-//                 if (contestant != null) {
-//                   if (criterianame != null) {
-//                     getCriteriaScore(
-//                       contestant!,
-//                       criterianame,
-//                       criteriaScore!,
-//                     );
-//                     int index = contestant.criterias.indexWhere(
-//                       (criteria) =>
-//                           criteria.criterianame.trim().toLowerCase() ==
-//                           criterianame.trim().toLowerCase(),
-//                     );
-
-//                     if (index != -1) {
-//                       contestant.criterias[index].score = criteriaScore!;
-//                     } else {
-//                       print(
-//                         'Warning: No matching criteria found in the contestant\'s list.',
-//                       );
-//                       print(
-//                         'List of criteria names in the contestant: ${contestant.criterias.map((c) => c.criterianame).toList()}',
-//                       );
-//                     }
-//                     updateTotalScore(contestant!);
-//                   } else {
-//                     print(
-//                       'Warning: criteriaName is null. Set a default value or handle this case.',
-//                     );
-//                   }
-//                 } else {
-//                   print('Warning: Contestant is null.');
-//                 }
-//               });
-//             },
-//             decoration: InputDecoration(
-//               hintStyle: const TextStyle(
-//                 color: Colors.grey,
-//               ),
-//               contentPadding: const EdgeInsets.symmetric(
-//                 vertical: 10.0,
-//                 horizontal: 15.0,
-//               ),
-//               focusedBorder: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(30),
-//                 borderSide: const BorderSide(
-//                   color: Color.fromARGB(255, 5, 70, 20),
-//                   width: 2.0,
-//                 ),
-//               ),
-//               enabledBorder: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(10),
-//                 borderSide: BorderSide(
-//                   color: Colors.grey.withOpacity(0.5),
-//                   width: 1.0,
-//                 ),
-//               ),
-//             ),
-//           ),
-//         ),
-//       ),
-//     ],
-//   );
-// }
 }
 
 extension IndexedIterable<E> on Iterable<E> {

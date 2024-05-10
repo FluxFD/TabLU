@@ -817,7 +817,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     print(eventData["accessCode"]);
     final response = await http.post(
       Uri.parse(
-          'http://192.168.101.6:8080/events'), // Use Uri.parse to convert the string to Uri
+          'https://tabluprod.onrender.com/events'), // Use Uri.parse to convert the string to Uri
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $authToken',
@@ -870,7 +870,7 @@ class _EditEventScreen extends State<EditEventScreen> {
     token = await SharedPreferencesUtils.retrieveToken();
     try {
       final response = await http
-          .get(Uri.parse('http://192.168.101.6:8080/event/$eventId'));
+          .get(Uri.parse('https://tabluprod.onrender.com/event/$eventId'));
 
       if (response.statusCode == 200) {
         final dynamic eventData = json.decode(response.body);
@@ -1696,7 +1696,7 @@ class _EditEventScreen extends State<EditEventScreen> {
       Map<String, dynamic> eventData, String authToken, String eventId) async {
     final response = await http.put(
       Uri.parse(
-          'http://192.168.101.6:8080/events/$eventId'), // Include eventId in the URL
+          'https://tabluprod.onrender.com/events/$eventId'), // Include eventId in the URL
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $authToken',

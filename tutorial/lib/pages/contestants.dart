@@ -121,7 +121,7 @@ class _ContestantsState extends State<Contestants> {
     try {
       String eventId = widget.eventId;
       final url =
-          Uri.parse("http://192.168.101.6:8080/get-contestants/$eventId");
+          Uri.parse("https://tabluprod.onrender.com/get-contestants/$eventId");
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -154,7 +154,7 @@ class _ContestantsState extends State<Contestants> {
 
   Future<void> deleteContestant(int index, String? contestantId) async {
     final url = Uri.parse(
-        "http://192.168.101.6:8080/delete-contestant/$contestantId");
+        "https://tabluprod.onrender.com/delete-contestant/$contestantId");
 
     try {
       final response = await http.delete(url);
@@ -297,7 +297,7 @@ class _ContestantsState extends State<Contestants> {
   Future<void> createContestant(
       String eventId, Map<String, dynamic> contestantData) async {
 
-    final url = Uri.parse("http://192.168.101.6:8080/contestants");
+    final url = Uri.parse("https://tabluprod.onrender.com/contestants");
     try {
       // Read the image file
       final imageFile = contestantData["profilePic"];
@@ -404,7 +404,7 @@ class _ContestantsState extends State<Contestants> {
 // Function to update the contestant information in the database
   Future<void> updateContestant(String eventId, Contestant contestant) async {
     final url =
-        Uri.parse("http://192.168.101.6:8080/contestants/${contestant.id}");
+        Uri.parse("https://tabluprod.onrender.com/contestants/${contestant.id}");
 
     try {
       final response = await http.put(
@@ -588,8 +588,10 @@ class _ContestantsState extends State<Contestants> {
                     isLoopRunning = false; // Loop has ended
                   });
                 }
-
-                fetchContestants();
+                setState(() {
+                  contestantsFuture = fetchContestants();
+                  print("Contestants ${contestants.length}");
+                });
                 //  String eventId = widget.eventId;
 
                 if (widget.isEdit) {
@@ -664,7 +666,7 @@ class ListItemWidget extends StatelessWidget {
 
   Future<void> deleteContestant(String contestantId) async {
     final url = Uri.parse(
-        "http://192.168.101.6:8080/delete-contestant/$contestantId");
+        "https://tabluprod.onrender.com/delete-contestant/$contestantId");
 
     try {
       final response = await http.delete(url);
@@ -704,7 +706,7 @@ class ListItemWidget extends StatelessWidget {
                       : null as ImageProvider<Object>?,
 
               // ? NetworkImage(
-              //     "http://192.168.101.6:8080/uploads/${contestant.profilePic?.path}")
+              //     "https://tabluprod.onrender.com/uploads/${contestant.profilePic?.path}")
               // : null as ImageProvider<Object>?,
             ),
           ),

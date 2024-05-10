@@ -48,3 +48,6 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Keystore files
+*.keystore
+*.jks

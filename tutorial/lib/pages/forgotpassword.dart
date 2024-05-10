@@ -21,7 +21,7 @@ class _ForgotpassState extends State<Forgotpass> {
       });
 
       var response = await http.post(
-        Uri.parse('http://192.168.101.6:8080/send-verification-code'),
+        Uri.parse('https://tabluprod.onrender.com/send-verification-code'),
         body: {'email': email},
       );
 
@@ -336,7 +336,7 @@ class _ResetPassState extends State<ResetPass> {
   Future<void> resetPassword(
       String resetToken, String newPassword, String accessCode) async {
     try {
-      final Uri url = Uri.parse("http://192.168.101.6:8080/reset-password");
+      final Uri url = Uri.parse("https://tabluprod.onrender.com/reset-password");
 
       final Map<String, dynamic> requestBody = {
         'resetToken': resetToken,

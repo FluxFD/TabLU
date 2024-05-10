@@ -55,7 +55,7 @@ class _NotifState extends State<Notif> {
 
   Future<List<dynamic>> fetchNotifications(String? userId) async {
     final response = await http.get(
-      Uri.parse('http://192.168.101.6:8080/get-notifications/$userId'),
+      Uri.parse('https://tabluprod.onrender.com/get-notifications/$userId'),
     );
 
     if (response.statusCode == 200) {
@@ -105,7 +105,7 @@ class _NotifState extends State<Notif> {
       String userId, String eventId) async {
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.101.6:8080/update-confirmation'),
+        Uri.parse('https://tabluprod.onrender.com/update-confirmation'),
         body: {
           'userId': userId,
           'eventId': eventId,
@@ -126,7 +126,7 @@ class _NotifState extends State<Notif> {
   Future<void> rejectJudgeRequest(String userId, String eventId) async {
     try {
       final response = await http.delete(
-        Uri.parse('http://192.168.101.6:8080/reject-request/$userId/$eventId'),
+        Uri.parse('https://tabluprod.onrender.com/reject-request/$userId/$eventId'),
       );
 
       if (response.statusCode == 200) {
@@ -142,7 +142,7 @@ class _NotifState extends State<Notif> {
   Future<void> deleteNotification(String userId) async {
     try {
       final response = await http.delete(
-        Uri.parse('http://192.168.101.6:8080/delete-notification/$userId'),
+        Uri.parse('https://tabluprod.onrender.com/delete-notification/$userId'),
       );
 
       if (response.statusCode == 200) {
@@ -169,7 +169,7 @@ class _NotifState extends State<Notif> {
       print("Event ID:" + eventId);
       // Make an HTTP POST request to send a notification without specifying the type
       final response = await http.post(
-        Uri.parse('http://192.168.101.6:8080/notifications'),
+        Uri.parse('https://tabluprod.onrender.com/notifications'),
         body: {
           'eventId': eventId,
           'userId': widget.userId,
@@ -195,7 +195,7 @@ class _NotifState extends State<Notif> {
   Future<String?> getUsernameById(String userId) async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.101.6:8080/get-username/$userId'),
+        Uri.parse('https://tabluprod.onrender.com/get-username/$userId'),
       );
 
       if (response.statusCode == 200) {
@@ -312,9 +312,34 @@ class _NotifState extends State<Notif> {
                 itemBuilder: (context, index) {
                   return Dismissible(
                     key: Key(index.toString()),
+                    confirmDismiss: (direction) async {
+                      // Show a confirmation dialog and get the user's decision
+                      return await showDialog(
+                        context: context,
+                        builder: (context) {
+                          return AlertDialog(
+                            title: Text('Confirm'),
+                            content: Text('Are you sure you want to delete this item?'),
+                            actions: <Widget>[
+                              TextButton(
+                                child: Text('Cancel'),
+                                onPressed: () {
+                                  Navigator.of(context).pop(false);
+                                },
+                              ),
+                              TextButton(
+                                child: Text('Delete'),
+                                onPressed: () {
+                                  Navigator.of(context).pop(true);
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
                     onDismissed: (direction) async {
                       // Handle delete logic here
-
                       final String notificationType =
                           snapshot.data![index]['type'];
                       final String userId = snapshot.data![index]['userId'];

@@ -129,7 +129,7 @@ class _EventsJoinedState extends State<EventsJoined> {
       String userId = decodedToken['userId'];
       // Construct the URL with the userId as a query parameter
       String url =
-          'http://192.168.101.6:8080/get-all-judges-events?userId=$userId';
+          'https://tabluprod.onrender.com/get-all-judges-events?userId=$userId';
 
       // Make the HTTP request
       final response = await http.get(
@@ -352,7 +352,7 @@ class _EventsJoinedState extends State<EventsJoined> {
   Future<void> deleteEvent(String judgeId) async {
     try {
       final response = await http.delete(
-        Uri.parse('http://192.168.101.6:8080/delete-judge/$judgeId'),
+        Uri.parse('https://tabluprod.onrender.com/delete-judge/$judgeId'),
         headers: {
           'Content-Type': 'application/json',
           // Add any other headers if needed

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ffi';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +13,7 @@ class Criteria {
   String criterianame;
   String percentage;
   String eventId; // Event ID
+  bool isSpecialAwards;
   List<SubCriteria> subCriteriaList; // List of subcriteria
   String baseScore; // Added field
 
@@ -20,6 +22,7 @@ class Criteria {
     required this.criterianame,
     required this.percentage,
     required this.eventId,
+    required this.isSpecialAwards,
     required this.subCriteriaList,
     required this.baseScore, // Added field
   });
@@ -29,12 +32,13 @@ class Criteria {
       criteriaId: json['_id'] ?? '',
       criterianame: json['criterianame'] ?? '',
       percentage: json['percentage'] ?? '',
+      isSpecialAwards: json['isSpecialAwards'] ?? false,
       eventId: json['eventId'] ?? '',
       subCriteriaList: (json['subCriteriaList'] as List<dynamic>?)
               ?.map((subCriteriaJson) => SubCriteria.fromJson(subCriteriaJson))
               .toList() ??
           [],
-      baseScore: json['baseScore'] ?? '', // Added field
+      baseScore: json['baseScore'] ?? '0', // Added field
     );
   }
 
@@ -43,6 +47,7 @@ class Criteria {
       'criteriaId': criteriaId,
       'criterianame': criterianame,
       'percentage': percentage,
+      'isSpecialAwards': isSpecialAwards,
       'eventId': eventId,
       'subCriteriaList':
           subCriteriaList.map((subCriteria) => subCriteria.toJson()).toList(),
@@ -131,12 +136,22 @@ class Criterias extends StatefulWidget {
 
 class _CriteriasState extends State<Criterias> {
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
+  final GlobalKey<AnimatedListState> _anotherListKey =
+      GlobalKey<AnimatedListState>();
+
   List<Criteria> criterias = [];
+  List<Criteria> specialAwards = [];
   Event? event;
   bool isLoading = true;
+  bool isMainCriteriaOpen = true;
+  bool isSpecialAwardsOpen = true;
+  bool isSending = false;
+  late final Animation<double> animation;
   TextEditingController _criteriaNameController = TextEditingController();
   TextEditingController _percentageController = TextEditingController();
   TextEditingController _baseScoreController = TextEditingController();
+  TextEditingController _specialAwardsNameController = TextEditingController();
+
   void initState() {
     super.initState();
     _initializeState();
@@ -155,8 +170,8 @@ class _CriteriasState extends State<Criterias> {
 
   Future<void> _fetchEvent(String eventId) async {
     try {
-      final response =
-          await http.get(Uri.parse('http://192.168.101.6:8080/event/$eventId'));
+      final response = await http
+          .get(Uri.parse('https://tabluprod.onrender.com/event/$eventId'));
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
@@ -175,7 +190,7 @@ class _CriteriasState extends State<Criterias> {
   Future<void> _fetchCriterias(String eventId) async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.101.6:8080/criteria/$eventId'),
+        Uri.parse('https://tabluprod.onrender.com/criteria/$eventId'),
       );
 
       if (response.statusCode == 200) {
@@ -183,8 +198,21 @@ class _CriteriasState extends State<Criterias> {
         final List<Criteria> fetchedCriterias = criteriaList
             .map((criteriaJson) => Criteria.fromJson(criteriaJson))
             .toList();
+
+        List<Criteria> fetchedMainCriterias = [];
+        List<Criteria> fetchedSpecialAwards = [];
+
+        for (var criteria in fetchedCriterias) {
+          if (criteria.isSpecialAwards) {
+            fetchedSpecialAwards.add(criteria);
+          } else {
+            fetchedMainCriterias.add(criteria);
+          }
+        }
+
         setState(() {
-          criterias = fetchedCriterias;
+          criterias = fetchedMainCriterias;
+          specialAwards = fetchedSpecialAwards;
         });
       } else {
         print('Failed to fetch criteria. Status code: ${response.statusCode}');
@@ -195,17 +223,20 @@ class _CriteriasState extends State<Criterias> {
   }
 
   void updateTotalPercentage() {
-    if (event?.event_category != "Pageants") {
-      setState(() {
-        totalPercentage = calculateTotalPercentage();
-      });
-    }
+    // if (event?.event_category != "Pageants") {
+    //   setState(() {
+    //     totalPercentage = calculateTotalPercentage();
+    //   });
+    // }
+    setState(() {
+      totalPercentage = calculateTotalPercentage();
+    });
   }
 
   Future<void> deleteCriteria(String eventId, String? criteriaId) async {
     print(criteriaId);
     final url = Uri.parse(
-        "http://192.168.101.6:8080/criteria?eventId=$eventId&criteriaId=$criteriaId");
+        "https://tabluprod.onrender.com/criteria?eventId=$eventId&criteriaId=$criteriaId");
     try {
       final response = await http.delete(url);
       // print('Response headers: ${response.headers}');
@@ -226,12 +257,38 @@ class _CriteriasState extends State<Criterias> {
     }
   }
 
-  void insertItem(Criteria criteria) {
-    setState(() {
-      final newIndex = 0;
-      criterias.insert(newIndex, criteria);
-      _listKey.currentState!.insertItem(newIndex);
-    });
+  void insertItem(Criteria criteria, String type) {
+    if (type == "Main Criteria") {
+      setState(() {
+        final newIndex = 0;
+        criterias.insert(newIndex, criteria);
+        _listKey.currentState!.insertItem(newIndex);
+      });
+    } else {
+      setState(() {
+        final newIndex = 0;
+        specialAwards.insert(newIndex, criteria);
+        _anotherListKey.currentState!.insertItem(newIndex);
+      });
+    }
+  }
+
+  bool validateFields(
+      BuildContext context, List<TextEditingController> controllers) {
+    for (var controller in controllers) {
+      if (controller.text.isEmpty) {
+        // Show a SnackBar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Please fill in all fields'),
+            duration: Duration(seconds: 3),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return false; // Return false as not all fields are valid
+      }
+    }
+    return true; // Return true as all fields are valid
   }
 
   void _editCriteria(BuildContext context, Criteria criteria) {
@@ -267,32 +324,31 @@ class _CriteriasState extends State<Criterias> {
                     labelStyle: TextStyle(fontSize: 15, color: Colors.green),
                   ),
                 ),
-                if (event?.event_category != "Pageants")
-                  TextField(
-                    controller: _percentageController,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: <TextInputFormatter>[
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
-                    decoration: const InputDecoration(
-                      labelText: 'Percentage',
-                      labelStyle: TextStyle(
-                        fontSize: 15,
-                        color: Colors.green,
-                      ),
+                TextField(
+                  controller: _percentageController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: <TextInputFormatter>[
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  decoration: const InputDecoration(
+                    labelText: 'Percentage',
+                    labelStyle: TextStyle(
+                      fontSize: 15,
+                      color: Colors.green,
                     ),
-                    onChanged: (value) {
-                      // Ensure the entered base score is a valid integer and not more than 100
-                      if (value.isNotEmpty) {
-                        int percentage = int.tryParse(value) ??
-                            0; // Default to 0 if parsing fails
-                        if (percentage < 0 || percentage > 100) {
-                          // If the base score is not within the valid range, clear the text field
-                          _percentageController.clear();
-                        }
-                      }
-                    },
                   ),
+                  onChanged: (value) {
+                    // Ensure the entered base score is a valid integer and not more than 100
+                    if (value.isNotEmpty) {
+                      int percentage = int.tryParse(value) ??
+                          0; // Default to 0 if parsing fails
+                      if (percentage < 0 || percentage > 100) {
+                        // If the base score is not within the valid range, clear the text field
+                        _percentageController.clear();
+                      }
+                    }
+                  },
+                ),
                 TextField(
                   controller: _baseScoreController,
                   keyboardType: TextInputType.number,
@@ -330,12 +386,36 @@ class _CriteriasState extends State<Criterias> {
             ),
             TextButton(
               onPressed: () {
+                bool isAllField = validateFields(context, [
+                  _criteriaNameController,
+                  _percentageController,
+                  _baseScoreController
+                ]);
+                if (!isAllField) {
+                  return;
+                }
                 // Update the criteria
                 criteria.criterianame = _criteriaNameController.text;
+                double updatedTotalPercentage = totalPercentage +
+                    double.parse(_percentageController.text) -
+                    double.parse(criteria.percentage);
+                if (updatedTotalPercentage > 100.0) {
+                  // Show a SnackBar
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Total percentage cannot exceed 100%'),
+                      duration: Duration(seconds: 3),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return; // Return to prevent the rest of the code from executing
+                }
                 criteria.percentage = _percentageController.text;
-                criteria.baseScore = _baseScoreController.text;
-                updateTotalPercentage();
+                criteria.baseScore = _baseScoreController.text.isEmpty
+                    ? "0"
+                    : _baseScoreController.text;
 
+                updateTotalPercentage();
                 // Notify the list to update the UI
                 _listKey.currentState!.setState(() {});
                 Navigator.pop(context);
@@ -351,17 +431,31 @@ class _CriteriasState extends State<Criterias> {
     );
   }
 
-  void removeItem(int index) {
-    if (index >= 0 && index < criterias.length) {
+  void removeItem(int index, String method) {
+    print("object");
+    if (method == "Special Awards" || method == "deleteAll") {
+      removeItemFromList(
+          index, specialAwards, _anotherListKey, "Special Awards");
+    }
+    if (method == "Main Criteria" || method == "deleteAll") {
+      removeItemFromList(index, criterias, _listKey, "Main Criteria");
+    }
+  }
+
+  void removeItemFromList(int index, List<Criteria> list,
+      GlobalKey<AnimatedListState> listKey, String method) {
+    if (index >= 0 && index < list.length) {
       setState(() {
-        final removedItem = criterias[index];
-        criterias.removeAt(index);
-        _listKey.currentState!.removeItem(
+        final removedItem = list[index];
+        list.removeAt(index);
+        listKey.currentState!.removeItem(
           index,
           (context, animation) => ListItemWidget(
-            criteria: removedItem,
+            criteria: method == "Main Criteria" ? removedItem : null,
+            specialAwards: method == "Special Awards" ? removedItem : null,
+            criteriaType: method,
             animation: animation,
-            onClicked: () => removeItem(index),
+            onClicked: () => removeItem(index, method),
             onEdit: () {},
             onAdd: () {},
             event_category: event?.event_category,
@@ -394,8 +488,8 @@ class _CriteriasState extends State<Criterias> {
     );
   }
 
-  Future<void> createCriteria(
-      String eventId, Map<String, dynamic> criteriaData) async {
+  Future<void> createCriteria(String eventId, Map<String, dynamic> criteriaData,
+      String criteriaType) async {
     if (eventId == null) {
       print('Error: Event ID is null');
       return;
@@ -422,18 +516,17 @@ class _CriteriasState extends State<Criterias> {
       }
       if (event?.event_category == "Pageants" && subPercentage < 100) {
         _showErrorSnackBar(
-            'Total percentage of sub-criteria must be 100', Colors.orange);
+            'Total percentage of ${criteriaType == "Main Criteria" ? "sub-criteria" : "criteria"} must be 100',
+            Colors.orange);
         allSubCriteriaPercentagesAre100 = false;
-        print("sss ${subPercentage}");
       }
 
       if (subPercentage != 100.0 &&
           criteriaData['subCriteriaList'] != null &&
           (criteriaData['subCriteriaList'] as List).isNotEmpty) {
-        print("sss {subPercentage}");
-
         _showErrorSnackBar(
-            'Total percentage of sub-criteria is not 100', Colors.orange);
+            'Total percentage of ${criteriaType == "Main Criteria" ? "sub-criteria" : "criteria"} must be 100',
+            Colors.orange);
         allSubCriteriaPercentagesAre100 = false;
       }
     }
@@ -443,16 +536,16 @@ class _CriteriasState extends State<Criterias> {
           'One or more criteria have a total sub-criteria percentage not equal to 100');
     }
 
-    final double totalPercentage = calculateTotalPercentage();
+    final double totalPercent = calculateTotalPercentage();
     final double newPercentage =
         double.tryParse(criteriaData['percentage'] ?? '0.0') ?? 0.0;
     print(newPercentage);
 
-    if (totalPercentage > 100.0 && event?.event_category != "Pageants") {
+    if (totalPercent > 100.0 && event?.event_category != "Pageants") {
       _showErrorSnackBar(
           'Total percentage exceeds 100%. Adjusting percentages.',
           Colors.orange);
-      final double adjustment = 100.0 - totalPercentage;
+      final double adjustment = 100.0 - totalPercent;
       final double adjustedPercentage = newPercentage - adjustment;
       criteriaData['percentage'] = adjustedPercentage.toString();
       final int criteriaCount = criterias.length;
@@ -465,7 +558,7 @@ class _CriteriasState extends State<Criterias> {
             (currentPercentage + adjustmentPerCriteria).toString();
       }
     } else {
-      final url = Uri.parse("http://192.168.101.6:8080/criteria");
+      final url = Uri.parse("https://tabluprod.onrender.com/criteria");
 
       try {
         // print("Criteria Data ${criteriaData}");
@@ -532,192 +625,345 @@ class _CriteriasState extends State<Criterias> {
           },
         ),
       ),
-      body: AnimatedList(
-        key: _listKey,
-        initialItemCount: criterias.length,
-        itemBuilder: (context, index, animation) {
-          return ListItemWidget(
-            criteria: criterias[index],
-            animation: animation,
-            onClicked: () => removeItem(index),
-            onEdit: () => _editCriteria(context, criterias[index]),
-            onAdd: () => (),
-            event_category: event?.event_category,
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor:
-            totalPercentage >= 100.0 && event?.event_category != "Pageants"
-                ? Colors.grey
-                : Colors.green,
-        child: const Icon(
-          Icons.add,
-          color: Colors.white,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            parentMainCriteria(context),
+            if (event?.event_category == "Pageants")
+              parentSpecialAwards(context)
+          ],
         ),
-        onPressed: totalPercentage >= 100.0 &&
-                event?.event_category != "Pageants"
-            ? null // Set onPressed to null to disable the button
-            : () {
-                _criteriaNameController.clear();
-                _percentageController.clear();
-                _baseScoreController.clear();
-                showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return AlertDialog(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10.0),
+      ),
+      floatingActionButton: totalPercentage >= 100.0 &&
+              event?.event_category != "Pageants"
+          ? FloatingActionButton(
+              onPressed: () {
+                // Add onPressed functionality here
+              },
+              child: Icon(
+                Icons.add,
+                color: Colors.white,
+              ),
+              backgroundColor: totalPercentage >= 100.0 &&
+                      event?.event_category != "Pageants"
+                  ? Colors.grey
+                  : Colors.green,
+            )
+          : Container(
+              decoration: BoxDecoration(
+                borderRadius:
+                    BorderRadius.circular(20), // Adjust the value as needed
+                color: totalPercentage >= 100.0 &&
+                        event?.event_category != "Pageants"
+                    ? Colors.grey
+                    : Colors.green,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(6.0),
+                child: PopupMenuButton<String>(
+                  icon: const Icon(Icons.add, color: Colors.white),
+                  itemBuilder: (BuildContext context) =>
+                      <PopupMenuEntry<String>>[
+                    const PopupMenuItem<String>(
+                      value: 'Main Criteria',
+                      child: Text('Main Criteria'),
+                    ),
+                    if (event?.event_category == "Pageants")
+                      const PopupMenuItem<String>(
+                        value: 'Special Awards',
+                        child: Text('Special Awards'),
                       ),
-                      title: const Center(
-                        child: Text(
-                          'Add Criteria Information',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Color.fromARGB(255, 5, 78, 7),
-                          ),
-                        ),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        vertical: 30,
-                        horizontal: 20,
-                      ),
-                      content: SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            const SizedBox(height: 10),
-                            TextField(
-                              controller: _criteriaNameController,
-                              decoration: const InputDecoration(
-                                labelText: 'Criteria Name',
-                                labelStyle: TextStyle(
-                                  fontSize: 15,
-                                  color: Colors.green,
-                                ),
+                  ],
+                  onSelected: (String value) {
+                    if (value == 'Main Criteria' && totalPercentage >= 100.0) {
+                      return null;
+                    }
+                    switch (value) {
+                      case 'Main Criteria':
+                        _criteriaNameController.clear();
+                        _percentageController.clear();
+                        _baseScoreController.clear();
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10.0),
                               ),
-                            ),
-                            if (event?.event_category != "Pageants")
-                              TextField(
-                                controller: _percentageController,
-                                keyboardType: TextInputType.number,
-                                inputFormatters: <TextInputFormatter>[
-                                  FilteringTextInputFormatter.digitsOnly,
-                                ],
-                                decoration: const InputDecoration(
-                                  labelText: 'Percentage',
-                                  labelStyle: TextStyle(
-                                    fontSize: 15,
-                                    color: Colors.green,
+                              title: const Center(
+                                child: Text(
+                                  'Add Criteria Information',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Color.fromARGB(255, 5, 78, 7),
                                   ),
                                 ),
-                                onChanged: (value) {
-                                  // Ensure the entered base score is a valid integer and not more than 100
-                                  if (value.isNotEmpty) {
-                                    int percentage = int.tryParse(value) ??
-                                        0; // Default to 0 if parsing fails
-                                    if (percentage < 0 || percentage > 100) {
-                                      // If the base score is not within the valid range, clear the text field
-                                      _percentageController.clear();
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 30,
+                                horizontal: 20,
+                              ),
+                              content: SingleChildScrollView(
+                                child: Column(
+                                  children: [
+                                    const SizedBox(height: 10),
+                                    TextField(
+                                      controller: _criteriaNameController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Criteria Name',
+                                        labelStyle: TextStyle(
+                                          fontSize: 15,
+                                          color: Colors.green,
+                                        ),
+                                      ),
+                                    ),
+                                    TextField(
+                                      controller: _percentageController,
+                                      keyboardType: TextInputType.number,
+                                      inputFormatters: <TextInputFormatter>[
+                                        FilteringTextInputFormatter.digitsOnly,
+                                      ],
+                                      decoration: const InputDecoration(
+                                        labelText: 'Percentage',
+                                        labelStyle: TextStyle(
+                                          fontSize: 15,
+                                          color: Colors.green,
+                                        ),
+                                      ),
+                                      onChanged: (value) {
+                                        // Ensure the entered base score is a valid integer and not more than 100
+                                        if (value.isNotEmpty) {
+                                          int percentage = int.tryParse(
+                                                  value) ??
+                                              0; // Default to 0 if parsing fails
+                                          if (percentage < 0 ||
+                                              percentage > 100) {
+                                            // If the base score is not within the valid range, clear the text field
+                                            _percentageController.clear();
+                                          }
+                                        }
+                                      },
+                                    ),
+                                    TextField(
+                                      controller: _baseScoreController,
+                                      keyboardType: TextInputType.number,
+                                      inputFormatters: <TextInputFormatter>[
+                                        FilteringTextInputFormatter.digitsOnly,
+                                      ],
+                                      decoration: const InputDecoration(
+                                        labelText: 'Base Score',
+                                        labelStyle: TextStyle(
+                                            fontSize: 15, color: Colors.green),
+                                      ),
+                                      onChanged: (value) {
+                                        // Ensure the entered base score is a valid integer and not more than 100
+                                        if (value.isNotEmpty) {
+                                          int baseScore = int.tryParse(value) ??
+                                              0; // Default to 0 if parsing fails
+                                          if (baseScore < 0 ||
+                                              baseScore > 100) {
+                                            // If the base score is not within the valid range, clear the text field
+                                            _baseScoreController.clear();
+                                          }
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text(
+                                    'Cancel',
+                                    style: TextStyle(color: Colors.green),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () async {
+                                    bool isAllField = validateFields(context, [
+                                      _criteriaNameController,
+                                      _percentageController,
+                                      _baseScoreController
+                                    ]);
+                                    if (!isAllField) {
+                                      return;
                                     }
-                                  }
-                                },
-                              ),
-                            TextField(
-                              controller: _baseScoreController,
-                              keyboardType: TextInputType.number,
-                              inputFormatters: <TextInputFormatter>[
-                                FilteringTextInputFormatter.digitsOnly,
+                                    // Calculate total percentage including the new criteria
+                                    double newPercentage = double.tryParse(
+                                            _percentageController.text) ??
+                                        0.0;
+
+                                    double updatedTotalPercentage =
+                                        totalPercentage + newPercentage;
+                                    print(updatedTotalPercentage);
+                                    // Check if the new total percentage will exceed 100%
+                                    if (updatedTotalPercentage <= 100.0) {
+                                      Criteria newCriterias = Criteria(
+                                          criterianame:
+                                              _criteriaNameController.text ??
+                                                  '',
+                                          percentage: newPercentage.toString(),
+                                          isSpecialAwards: false,
+                                          eventId: widget.eventId,
+                                          subCriteriaList: [], // Pass the current criteria's subcriteria list
+                                          baseScore:
+                                              _baseScoreController.text.isEmpty
+                                                  ? "0"
+                                                  : _baseScoreController.text);
+
+                                      insertItem(newCriterias, "Main Criteria");
+                                      _criteriaNameController.clear();
+                                      _percentageController.clear();
+                                      _baseScoreController.clear();
+
+                                      updateTotalPercentage();
+                                      Navigator.pop(context);
+                                    } else {
+                                      _showErrorSnackBar(
+                                        'Error: Total percentage will exceed 100%. Current total: $totalPercentage',
+                                        Colors.red,
+                                      );
+                                    }
+                                  },
+                                  child: const Text(
+                                    'Add',
+                                    style: TextStyle(color: Colors.green),
+                                  ),
+                                ),
                               ],
-                              decoration: const InputDecoration(
-                                labelText: 'Base Score',
-                                labelStyle: TextStyle(
-                                    fontSize: 15, color: Colors.green),
+                            );
+                          },
+                        );
+                        break;
+                      case 'Special Awards':
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10.0),
                               ),
-                              onChanged: (value) {
-                                // Ensure the entered base score is a valid integer and not more than 100
-                                if (value.isNotEmpty) {
-                                  int baseScore = int.tryParse(value) ??
-                                      0; // Default to 0 if parsing fails
-                                  if (baseScore < 0 || baseScore > 100) {
-                                    // If the base score is not within the valid range, clear the text field
-                                    _baseScoreController.clear();
-                                  }
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pop(context);
+                              title: const Center(
+                                child: Text(
+                                  'Add Special Awards',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Color.fromARGB(255, 5, 78, 7),
+                                  ),
+                                ),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 30,
+                                horizontal: 20,
+                              ),
+                              content: SingleChildScrollView(
+                                child: Column(
+                                  children: [
+                                    const SizedBox(height: 10),
+                                    TextField(
+                                      controller: _specialAwardsNameController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Special Award Name',
+                                        labelStyle: TextStyle(
+                                          fontSize: 15,
+                                          color: Colors.green,
+                                        ),
+                                      ),
+                                    ),
+                                    TextField(
+                                      controller: _baseScoreController,
+                                      keyboardType: TextInputType.number,
+                                      inputFormatters: <TextInputFormatter>[
+                                        FilteringTextInputFormatter.digitsOnly,
+                                      ],
+                                      decoration: const InputDecoration(
+                                        labelText: 'Base Score',
+                                        labelStyle: TextStyle(
+                                            fontSize: 15, color: Colors.green),
+                                      ),
+                                      onChanged: (value) {
+                                        // Ensure the entered base score is a valid integer and not more than 100
+                                        if (value.isNotEmpty) {
+                                          int baseScore = int.tryParse(value) ??
+                                              0; // Default to 0 if parsing fails
+                                          if (baseScore < 0 ||
+                                              baseScore > 100) {
+                                            // If the base score is not within the valid range, clear the text field
+                                            _baseScoreController.clear();
+                                          }
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text(
+                                    'Cancel',
+                                    style: TextStyle(color: Colors.green),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () async {
+                                    if (event?.event_category == "Pageants") {
+                                      bool isAllField = validateFields(
+                                          context, [
+                                        _specialAwardsNameController,
+                                        _baseScoreController
+                                      ]);
+                                      if (!isAllField) {
+                                        return;
+                                      }
+                                      Criteria newCriterias = Criteria(
+                                        criterianame:
+                                            _specialAwardsNameController.text ??
+                                                '',
+                                        percentage: '0.0',
+                                        isSpecialAwards: true,
+                                        eventId: widget.eventId,
+                                        subCriteriaList: [], // Pass the current criteria's subcriteria list
+                                        baseScore: _baseScoreController.text,
+                                      );
+
+                                      insertItem(
+                                          newCriterias, "Special Awards");
+                                      _specialAwardsNameController.clear();
+                                      _baseScoreController.clear();
+
+                                      updateTotalPercentage();
+                                      Navigator.pop(context);
+                                    } else {
+                                      _showErrorSnackBar(
+                                        'Error: Total percentage will exceed 100%. Current total: $totalPercentage',
+                                        Colors.red,
+                                      );
+                                    }
+                                  },
+                                  child: const Text(
+                                    'Add',
+                                    style: TextStyle(color: Colors.green),
+                                  ),
+                                ),
+                              ],
+                            );
                           },
-                          child: const Text(
-                            'Cancel',
-                            style: TextStyle(color: Colors.green),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            // Calculate total percentage including the new criteria
-                            double newPercentage =
-                                double.tryParse(_percentageController.text) ??
-                                    0.0;
-
-                            double updatedTotalPercentage =
-                                totalPercentage + newPercentage;
-                            // Check if the new total percentage will exceed 100%
-                            if (updatedTotalPercentage <= 100.0 ||
-                                event?.event_category == "Pageants") {
-                              Criteria newCriterias = Criteria(
-                                criterianame:
-                                    _criteriaNameController.text ?? '',
-                                percentage: newPercentage.toString(),
-                                eventId: widget.eventId,
-                                subCriteriaList: [], // Pass the current criteria's subcriteria list
-                                baseScore: _baseScoreController.text,
-                              );
-
-                              insertItem(newCriterias);
-                              _criteriaNameController.clear();
-                              _percentageController.clear();
-                              _baseScoreController.clear();
-
-                              updateTotalPercentage();
-                              Navigator.pop(context);
-                            } else {
-                              _showErrorSnackBar(
-                                'Error: Total percentage will exceed 100%. Current total: $totalPercentage',
-                                Colors.red,
-                              );
-                            }
-                          },
-                          child: const Text(
-                            'Add',
-                            style: TextStyle(color: Colors.green),
-                          ),
-                        ),
-                      ],
-                    );
+                        );
+                        break;
+                    }
                   },
-                );
-              },
-      ),
+                ),
+              ),
+            ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.only(left: 16, right: 16, bottom: 10),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              if (event?.event_category != 'Pageants') // Check event category
-                Text(
-                  'Total: ${totalPercentage.toStringAsFixed(2)}%',
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-            ],
-          ),
           const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -742,7 +988,13 @@ class _CriteriasState extends State<Criterias> {
                             onPressed: () {
                               // Delete all criteria
                               for (int i = criterias.length - 1; i >= 0; i--) {
-                                removeItem(i);
+                                removeItem(i, "Main Criteria");
+                              }
+
+                              for (int i = specialAwards.length - 1;
+                                  i >= 0;
+                                  i--) {
+                                removeItem(i, "Special Awards");
                               }
                               // Close the dialog
                               Navigator.of(context).pop();
@@ -769,9 +1021,12 @@ class _CriteriasState extends State<Criterias> {
               ),
               const SizedBox(width: 10),
               ElevatedButton(
-                onPressed: criterias.isEmpty
+                onPressed: isSending || criterias.isEmpty
                     ? null
                     : () async {
+                        setState(() {
+                          isSending = true;
+                        });
                         try {
                           final double totalPercentage =
                               calculateTotalPercentage();
@@ -782,13 +1037,20 @@ class _CriteriasState extends State<Criterias> {
                           //   );
                           //   return;
                           // }
-                          if (totalPercentage == 100.0 ||
-                              event?.event_category == "Pageants") {
+                          if (totalPercentage == 100.0) {
                             if (criterias.isNotEmpty) {
                               for (final criteria in criterias) {
                                 if (widget.eventId != null) {
-                                  await createCriteria(
-                                      widget.eventId!, criteria.toJson());
+                                  await createCriteria(widget.eventId!,
+                                      criteria.toJson(), "Main Criteria");
+                                } else {
+                                  print('Error: Event ID is null');
+                                }
+                              }
+                              for (final awards in specialAwards) {
+                                if (widget.eventId != null) {
+                                  await createCriteria(widget.eventId!,
+                                      awards.toJson(), "Special Awards");
                                 } else {
                                   print('Error: Event ID is null');
                                 }
@@ -804,7 +1066,7 @@ class _CriteriasState extends State<Criterias> {
                               print('Fetching event with ID: $eventId');
                               final response = await http.get(
                                 Uri.parse(
-                                    'http://192.168.101.6:8080/event/$eventId'),
+                                    'https://tabluprod.onrender.com/event/$eventId'),
                               );
 
                               if (response.statusCode == 200) {
@@ -812,7 +1074,7 @@ class _CriteriasState extends State<Criterias> {
                                     Event.fromJson(jsonDecode(response.body));
 
                                 // Navigate to the next screen or perform any other actions
-                                if(widget.isEdit){
+                                if (widget.isEdit) {
                                   Navigator.pop(context);
                                 } else {
                                   Navigator.push(
@@ -840,6 +1102,11 @@ class _CriteriasState extends State<Criterias> {
                         } catch (e) {
                           print('Error fetching event data: $e');
                         }
+                        finally {
+                          setState(() {
+                            isSending = false; // Set isSending to false when the process ends
+                          });
+                        }
                       },
                 style: ElevatedButton.styleFrom(
                   primary: Colors.green,
@@ -863,9 +1130,175 @@ class _CriteriasState extends State<Criterias> {
       ),
     );
   }
+
+  Widget parentMainCriteria(BuildContext context) {
+    return AnimatedSize(
+      curve: Curves.easeInOut,
+      duration: Duration(milliseconds: 500),
+      child: Card(
+        margin: const EdgeInsets.all(8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              contentPadding: const EdgeInsets.all(10),
+              leading: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        isMainCriteriaOpen = !isMainCriteriaOpen;
+                      });
+                    },
+                    child: Transform.rotate(
+                      angle: isMainCriteriaOpen ? -pi / 75 : -pi / 2,
+                      child: SizedBox(
+                          height: 50,
+                          child: Icon(
+                            Icons.arrow_drop_down_circle_outlined,
+                            color: Colors.green,
+                            size: 30,
+                          )),
+                    ),
+                  ),
+                ],
+              ),
+              title: Text(
+                "Main Criteria",
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.black,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Container(
+              constraints: BoxConstraints(maxHeight: 450), // Set maximum height
+              height: isMainCriteriaOpen ? criterias.length * 120 : 0,
+              child: AnimatedList(
+                key: _listKey,
+                initialItemCount: criterias.length,
+                itemBuilder: (context, index, animation) {
+                  final criteria = criterias[index];
+                  return ListItemWidget(
+                    criteriaType: "Main Criteria",
+                    criteria: criteria,
+                    animation: animation,
+                    onClicked: () => removeItem(index, "Main Criteria"),
+                    onEdit: () => _editCriteria(context, criteria),
+                    onAdd: () {},
+                    event_category: event?.event_category,
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(
+                  left: 16.0, bottom: 16.0), // Add padding to the left
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Total: ${totalPercentage.toStringAsFixed(2)}%',
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget parentSpecialAwards(BuildContext context) {
+    return AnimatedSize(
+      curve: Curves.easeInOut,
+      duration: Duration(milliseconds: 500),
+      child: Card(
+        margin: const EdgeInsets.all(8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            ListTile(
+              contentPadding: const EdgeInsets.all(10),
+              leading: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        isSpecialAwardsOpen = !isSpecialAwardsOpen;
+                      });
+                    },
+                    child: Transform.rotate(
+                      angle: isSpecialAwardsOpen ? -pi / 75 : -pi / 2,
+                      child: SizedBox(
+                          height: 50,
+                          child: Icon(
+                            Icons.arrow_drop_down_circle_outlined,
+                            color: Colors.green,
+                            size: 30,
+                          )),
+                    ),
+                  ),
+                ],
+              ),
+              title: Text(
+                "Special Awards",
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.black,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Container(
+              constraints: BoxConstraints(maxHeight: 450), // Set maximum height
+              height: isSpecialAwardsOpen ? specialAwards.length * 120 : 0,
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (ScrollNotification scrollInfo) {
+                  if (scrollInfo.metrics.pixels ==
+                      scrollInfo.metrics.maxScrollExtent) {
+                    return true;
+                  }
+                  return false;
+                },
+                child: AnimatedList(
+                  key: _anotherListKey,
+                  initialItemCount: specialAwards.length,
+                  itemBuilder: (context, index, animation) {
+                    final criteria = specialAwards[index];
+                    final specialAward = specialAwards[index];
+                    return ListItemWidget(
+                      criteriaType: "Special Awards",
+                      criteria: criteria,
+                      specialAwards: specialAward,
+                      animation: animation,
+                      onClicked: () => removeItem(index, "Special Awards"),
+                      onEdit: () => _editCriteria(context, criteria),
+                      onAdd: () {},
+                      event_category: event?.event_category,
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class ListItemWidget extends StatefulWidget {
+class ListItemSpecialWidget extends StatefulWidget {
   final Criteria criteria;
   final Animation<double> animation;
   final VoidCallback onClicked;
@@ -873,8 +1306,41 @@ class ListItemWidget extends StatefulWidget {
   final VoidCallback onAdd;
   final event_category;
 
-  ListItemWidget({
+  ListItemSpecialWidget({
     required this.criteria,
+    required this.animation,
+    required this.onClicked,
+    required this.onEdit,
+    required this.onAdd,
+    required this.event_category,
+  });
+
+  @override
+  _ListItemSpecialWidgetState createState() => _ListItemSpecialWidgetState();
+}
+
+class _ListItemSpecialWidgetState extends State<ListItemSpecialWidget> {
+  @override
+  Widget build(BuildContext context) {
+    // Implement your widget build method here
+    return Container();
+  }
+}
+
+class ListItemWidget extends StatefulWidget {
+  final Criteria? criteria;
+  final Criteria? specialAwards;
+  final String criteriaType;
+  final Animation<double> animation;
+  final VoidCallback onClicked;
+  final VoidCallback onEdit;
+  final VoidCallback onAdd;
+  final event_category;
+
+  ListItemWidget({
+    this.criteria,
+    this.specialAwards,
+    required this.criteriaType,
     required this.animation,
     required this.onClicked,
     required this.onEdit,
@@ -890,25 +1356,126 @@ class _ListItemWidgetState extends State<ListItemWidget> {
   bool isDropdownOpen = false;
 
   // Method to calculate the total percentage
-  double calculateTotalPercentage() {
-    return widget.criteria.subCriteriaList
+  double? calculateTotalPercentage() {
+    return widget.specialAwards?.subCriteriaList
         .map((subCriteria) => double.parse(subCriteria.percentage))
-        .fold(0, (previousValue, element) => previousValue + element);
+        .fold(0, (previousValue, element) => previousValue! + element);
   }
 
   // Method to update the main criteria's percentage
   void updateMainCriteriaPercentage() {
     print(calculateTotalPercentage().toString());
     setState(() {
-      widget.criteria.percentage = calculateTotalPercentage().toString();
+      widget.specialAwards?.percentage = calculateTotalPercentage().toString();
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return SizeTransition(
-      sizeFactor: widget.animation,
-      child: buildItem(context),
+      sizeFactor: CurvedAnimation(
+        parent: widget.animation,
+        curve: Curves.easeInOut,
+      ),
+      child: Card(
+        margin: const EdgeInsets.all(8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        color: Colors.white,
+        child: Column(
+          children: [
+            ListTile(
+              contentPadding: const EdgeInsets.all(10),
+              leading: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        isDropdownOpen = !isDropdownOpen;
+                      });
+                    },
+                    child: Transform.rotate(
+                      angle: isDropdownOpen ? pi / -75 : pi / -2,
+                      child: Icon(
+                        Icons.arrow_drop_down_circle_outlined,
+                        color: Colors.green,
+                        size: 30,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              title: Text(
+                '${widget.criteria?.criterianame}',
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.black,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              subtitle: Text(
+                'Percentage: ${widget.criteria?.percentage}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.blue, size: 25),
+                    onPressed: widget.onEdit,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red, size: 25),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text('Confirm Deletion'),
+                            content: Text(
+                                'Are you sure you want to delete this criteria?'),
+                            actions: <Widget>[
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context)
+                                      .pop(); // Close the dialog
+                                },
+                                child: Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context)
+                                      .pop(); // Close the dialog
+                                  widget
+                                      .onClicked(); // Call the deletion function
+                                },
+                                child: Text('Delete'),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add, color: Colors.grey, size: 25),
+                    onPressed: () {
+                      _showAddSubCriteriaModal(context);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            if (isDropdownOpen) buildDropdownList(),
+          ],
+        ),
+      ),
     );
   }
 
@@ -949,7 +1516,7 @@ class _ListItemWidgetState extends State<ListItemWidget> {
                 ],
               ),
               title: Text(
-                widget.criteria.criterianame,
+                widget.criteria!.criterianame,
                 style: const TextStyle(
                   fontSize: 16,
                   color: Colors.black,
@@ -957,7 +1524,7 @@ class _ListItemWidgetState extends State<ListItemWidget> {
                 ),
               ),
               subtitle: Text(
-                'Percentage: ${widget.criteria.percentage}',
+                'Percentage: ${widget.criteria!.percentage}',
                 style: const TextStyle(
                   fontSize: 14,
                   color: Colors.grey,
@@ -1043,7 +1610,8 @@ class _ListItemWidgetState extends State<ListItemWidget> {
                     TextField(
                       controller: subCriteriaNameController,
                       decoration: InputDecoration(
-                        hintText: 'Enter sub criteria name',
+                        hintText:
+                            'Enter ${widget.criteriaType == "Main Criteria" ? "sub-criteria" : "criteria"} name',
                       ),
                     ),
                     SizedBox(height: 16.0),
@@ -1061,7 +1629,8 @@ class _ListItemWidgetState extends State<ListItemWidget> {
                       ),
                       onPressed: () {
                         // Calculate total percentage including the new subcriteria
-                        double totalPercentage = widget.criteria.subCriteriaList
+                        double totalPercentage = widget
+                            .criteria!.subCriteriaList
                             .map((subCriteria) =>
                                 double.parse(subCriteria.percentage))
                             .fold(
@@ -1080,7 +1649,8 @@ class _ListItemWidgetState extends State<ListItemWidget> {
                             percentage: percentageController.text,
                           );
                           setState(() {
-                            widget.criteria.subCriteriaList.add(newSubCriteria);
+                            widget.criteria!.subCriteriaList
+                                .add(newSubCriteria);
                           });
                           if (widget.event_category == "Pageants") {
                             updateMainCriteriaPercentage();
@@ -1123,9 +1693,9 @@ class _ListItemWidgetState extends State<ListItemWidget> {
             color: Colors.grey,
             thickness: 1, // Adjust thickness as needed
           ),
-          if (widget.criteria.subCriteriaList.isNotEmpty) Text("Sub-criteria"),
+          // if (widget.criteria!.subCriteriaList.isNotEmpty || widget.specialAwards!.subCriteriaList.isNotEmpty) Text(widget.criteriaType),
           for (int index = 0;
-              index < widget.criteria.subCriteriaList.length;
+              index < widget.criteria!.subCriteriaList.length;
               index++)
             Row(
               children: [
@@ -1133,7 +1703,7 @@ class _ListItemWidgetState extends State<ListItemWidget> {
                   child: Padding(
                     padding: const EdgeInsets.only(right: 8.0),
                     child: Text(
-                      widget.criteria.subCriteriaList[index].subCriteriaName,
+                      widget.criteria!.subCriteriaList[index].subCriteriaName,
                       style: TextStyle(
                         color: Colors.black,
                         fontSize: 16.0,
@@ -1144,7 +1714,7 @@ class _ListItemWidgetState extends State<ListItemWidget> {
                 Padding(
                   padding: const EdgeInsets.only(left: 8.0),
                   child: Text(
-                    '${widget.criteria.subCriteriaList[index].percentage} %',
+                    '${widget.criteria!.subCriteriaList[index].percentage} %',
                     style: TextStyle(
                       color: Colors.black,
                       fontSize: 16.0,
@@ -1172,7 +1742,7 @@ class _ListItemWidgetState extends State<ListItemWidget> {
                               onPressed: () {
                                 Navigator.of(context).pop(); // Close the dialog
                                 setState(() {
-                                  widget.criteria.subCriteriaList
+                                  widget.criteria!.subCriteriaList
                                       .removeAt(index);
                                   if (widget.event_category == "Pageants") {
                                     updateMainCriteriaPercentage();
@@ -1189,7 +1759,12 @@ class _ListItemWidgetState extends State<ListItemWidget> {
                 ),
               ],
             ),
-          if (widget.criteria.subCriteriaList.isEmpty) Text("No Sub-criteria"),
+          if (widget.criteriaType == "Main Criteria" &&
+              widget.criteria!.subCriteriaList.isEmpty)
+            Text("No Sub-criteria")
+          else if (widget.criteriaType == "Special Awards" &&
+              widget.specialAwards!.subCriteriaList.isEmpty)
+            Text("No Criteria")
         ],
       ),
     );
